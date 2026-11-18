@@ -103,3 +103,54 @@ jobs:
           distribution: temurin # cf. justification dans test-back
           java-version: 17
       - run: ./gradlew build
+
+  # --- Analyse de qualité ---------------------------------------------------
+  # Remplace l'analyse automatique de SonarQube Cloud par un scan lancé ici, ce qui permet d'envoyer la
+  # couverture de tests (JaCoCo pour le back, lcov pour le front). Configuration dans sonar-project.properties.
+  sonar:
+    # Seulement sur les PR et sur main, comme l'analyse automatique précédente: pas d'analyse des autres
+    # branches (non garanti par le plan gratuit). Les PR venant d'un fork n'ont pas accès au secret
+    # SONAR_TOKEN: elles sont exclues pour ne pas échouer systématiquement.
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-26.04 # cf. justification dans test-front
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Historique complet (recommandé par SonarSource): un clone superficiel dégrade l'attribution
+          # du nouveau code et la détection des auteurs.
+          fetch-depth: 0
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin # cf. justification dans test-back
+          java-version: 17
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 20 # même version que test-front (cf. justification)
+          package-manager-cache: false # cf. justification dans test-front
+      # Job autonome: il refait les tests avec couverture au lieu de récupérer des artefacts des autres
+      # jobs. Plus simple (pas d'actions upload/download à épingler), au prix de tests exécutés deux fois.
+      # À optimiser seulement si la durée de la CI le justifie (mesure de référence: docs/quality/ci-baseline).
+      - name: Tests back avec couverture (JaCoCo)
+        working-directory: back
+        run: ./gradlew test
+      - name: Tests front avec couverture (lcov)
+        working-directory: front
+        run: |
+          npm ci --ignore-scripts
+          npm test -- --no-watch --no-progress --code-coverage --browsers=ChromeHeadlessNoSandbox
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
+      # Les chemins du lcov sont relatifs à front/ (`src/...`) alors que le scan part de la racine du dépôt.
+      - name: Aligner les chemins lcov sur la racine du dépôt
+        run: sed -i 's#^SF:src/#SF:front/src/#' front/coverage/microcrm/lcov.info
+      - uses: SonarSource/sonarqube-scan-action@59202af334b4ba7b5db01b701b8e79f8b3bef0f4 # v8.5.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          # Organisation et clé du projet déduites du dépôt GitHub (convention d'un projet importé depuis
+          # GitHub: <propriétaire>_<dépôt>) pour ne pas les écrire en dur.
+          args: >
+            -Dsonar.organization=${{ github.repository_owner }}
+            -Dsonar.projectKey=${{ github.repository_owner }}_${{ github.event.repository.name }}
