@@ -4,6 +4,8 @@
 
 - [ ] ci: ajouter le cache npm et Gradle (`cache:` de `setup-node` / `setup-java`)
   - Pré-requis: mesurer les durées de run sans cache (`gh run view`), puis avec cache.
+  - Mesure sans cache (premier run, 18/11/2026): test-back ~48 s, test-front ~59 s, build-front ~45 s,
+    build-back ~45 s, soit environ 2 min au total.
   - Justification: gain non démontré, retiré du premier workflow.
 
 - [ ] ci: figer les versions des COTS (composants tiers), jamais `latest`, et les référencer par SHA
@@ -60,13 +62,36 @@ la cible au moment de la migration si une version plus récente est sortie.
   - Alpine 3.19 → 3.24 (vérifier la disponibilité de `caddy`, `openjdk21-jre-headless`, `supervisor`).
   - Aligner Java sur 21 entre compilation (`gradle:jdk17` → image JDK 21) et exécution.
   - Remplacer `node` et `gradle:*` en `latest` par des versions fixes (cf. tâche des versions figées).
+  - Appliquer au `Dockerfile` le correctif déjà fait dans le workflow (règles Sonar `S6505` et `S8543`,
+    lignes 7 et 8): `npm ci --ignore-scripts` puis `npm run build -- --optimization` à la place de
+    `npx @angular/cli build --optimization`. Validé en CI, à valider aussi par un build d'image.
+  - Les images finales tournent en `root` par défaut (Sonar `S6471`): ajouter un utilisateur non privilégié
+    si l'application le permet (ports 80 et 443 pour Caddy: à vérifier).
 - [ ] ci: aligner le workflow sur les nouvelles versions
   - `node-version: 20` → 24, `java-version: 17` → 21, dans `.github/workflows/ci.yml`.
   - À faire en même temps que les migrations front et back correspondantes, pas avant.
+- [ ] sonar: traiter les issues de l'état initial (35: 20 bugs, 9 code smells, 6 vulnérabilités)
+  - Source: `docs/quality/0.0.1-initial-state/sonar-main-issues.json` (cliché du 18/11/2026).
+  - Vulnérabilités du `Dockerfile` (`S6505`, `S8543`, `S6471`): traitées dans la tâche « docker ».
+  - `back/build.gradle` (`S8569`): versions non prévisibles sans verrouillage des dépendances;
+    activer le verrouillage Gradle (`dependencyLocking`, fichier `gradle.lockfile`).
+  - `front/src/index.html` (`S5725`): feuille de style Bulma chargée depuis un CDN sans contrôle d'intégrité.
+    Ajouter `integrity` et `crossorigin="anonymous"` (hash SRI), ou mieux, installer Bulma via npm pour
+    l'embarquer dans le bundle et supprimer la dépendance au CDN.
+  - Bugs du front (20): promesses non gérées (`typescript:S9383`, 12), champs de formulaire sans label
+    (`Web:InputWithoutLabelCheck`, 7), tableau sans en-têtes `<th>` (`Web:S5256`, 1).
+  - Code smells (9): labels de formulaire (`Web:S6853`, 6), opération asynchrone dans un constructeur
+    (`typescript:S7059`, 1), `Number.parseInt` à préférer à `parseInt` (`typescript:S7773`, 2).
+  - À faire de préférence après la migration d'Angular, pour ne pas corriger deux fois du code touché par `ng update`.
 - [ ] sécurité: auditer le back et les images, puis scanner dans la CI
   - Back (Gradle) et images Docker n'ont pas encore été analysés.
   - Ajouter un scan de vulnérabilités dans la CI une fois les mises à jour faites, pour ne pas les réintroduire.
 
 ## Fait
 
-- [x] ci: workflow GitHub Actions équivalent à `.gitlab-ci.yml`
+- [x] ci: workflow GitHub Actions équivalent à `.gitlab-ci.yml` (PR #1)
+- [x] ci: vulnérabilités Sonar du workflow corrigées (`S6505`, `S8543`): Angular CLI lancé depuis le lockfile
+  (`npm test`, `npm run build`) au lieu de `npx @angular/cli`, et `npm ci --ignore-scripts`
+- [x] qualité: cliché SonarQube de l'état initial dans `docs/quality/0.0.1-initial-state/`
+  (35 issues, 262 risques de dépendances) et script `scripts/sonar-export.sh`
+- [x] état initial: logbooks dans `docs/logbook/0.0.1-initial-state/` et tag `v0.0.1`
