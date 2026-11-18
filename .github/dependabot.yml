@@ -1,0 +1,20 @@
+# Mises à jour automatiques des composants tiers. Dependabot ouvre une PR par mise à jour ; pour les
+# actions GitHub épinglées par SHA, il met à jour le SHA ET le commentaire de version (`# v7.0.1`).
+#
+# Périmètre volontairement limité aux actions GitHub pour l'instant :
+#   - npm et gradle ne sont pas activés : ils ouvriraient des PR de montée de version majeure
+#     (Angular, Spring Boot) qui sont planifiées à part, une majeure à la fois (cf. docs/BACKLOG.md).
+#   - docker sera ajouté quand les images du Dockerfile seront épinglées (cf. docs/BACKLOG.md).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # Une version publiée depuis moins de 7 jours n'est pas proposée : laisse le temps de détecter une
+    # release compromise ou défectueuse (ne s'applique pas aux mises à jour de sécurité).
+    cooldown:
+      default-days: 7
+    # Messages de commit au format conventional commits (`ci: bump ...`).
+    commit-message:
+      prefix: ci
