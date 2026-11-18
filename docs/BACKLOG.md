@@ -38,17 +38,6 @@ wrapper (`./gradlew wrapper --gradle-version <x>`) à chaque nouvelle mineure.
 Les cibles Spring Boot 4.1 et Angular 22 dépassent 05/2027 de peu pour Spring Boot (07/2027): réévaluer
 la cible au moment de la migration si une version plus récente est sortie.
 
-- [ ] front: migrer Angular 17 → 22
-  - Une majeure à la fois avec `ng update` (18, 19, 20, 21, 22), tests et build verts à chaque étape.
-  - TypeScript, zone.js, rxjs et outils de test (karma, jasmine) suivent les versions exigées par Angular.
-  - Vérifier la compatibilité d'Angular 22 avec Node 24 (matrice de compatibilité officielle).
-  - Résultat attendu: `npm audit` sans critique et sans vulnérabilité sur les dépendances de production.
-- [ ] back: migrer Spring Boot 3.2.5 → 4.1.x
-  - Passer par les étapes documentées (3.5, puis 4.0, puis 4.1), tests verts à chaque étape.
-  - Mettre à jour Gradle (dernière mineure de la 9.x, ou au minimum la version exigée par Spring Boot,
-    à confirmer dans ses notes de version) et les plugins.
-  - Vérifier l'état de maintenance de `ro.polak:spring-boot-data-fixtures:0.2.0`, remplacer si abandonnée.
-  - Passer `sourceCompatibility` à Java 21.
 - [ ] back: verrouiller les dépendances Gradle (`gradle.lockfile`)
   - Constat: Sonar `S8569` sur `back/build.gradle`. Sans fichier de verrouillage, les versions résolues
     peuvent changer d'un build à l'autre (plugins, dépendances transitives), ce qui rend la CI et les images
@@ -62,14 +51,12 @@ la cible au moment de la migration si une version plus récente est sortie.
     Par défaut Gradle échoue si les versions résolues diffèrent du fichier, mais pas si le fichier est
     absent: ajouter `lockMode = LockMode.STRICT` pour que ce second cas échoue aussi.
   - Vérifier que les tests et le build restent verts en CI, et que `S8569` disparaît de Sonar.
-- [ ] docker: mettre à jour les images
-  - Alpine 3.19 → 3.24 (vérifier la disponibilité de `caddy`, `openjdk21-jre-headless`, `supervisor`).
-    Les images sont épinglées par digest: mettre à jour version et digest ensemble.
-  - Aligner Java sur 21 entre compilation (`gradle:8.7-jdk17` → image JDK 21) et exécution.
-  - Le stage `back` fait `EXPOSE 4200`, alors que Tomcat écoute sur 8080 (journaux du conteneur) et que le front
-    appelle `http://localhost:8080` (`front/src/app/config.ts`): corriger le port exposé.
+- [ ] docker: exécuter les images en utilisateur non privilégié
   - Les images finales tournent en `root` par défaut (Sonar `S6471`): ajouter un utilisateur non privilégié
-    si l'application le permet (ports 80 et 443 pour Caddy: à vérifier).
+    si l'application le permet (ports 80 et 443 pour Caddy: à vérifier). Cf. aussi la tâche nginx.
+- [ ] back: vérifier la maintenance de `ro.polak:spring-boot-data-fixtures:0.2.0`
+  - Fonctionne avec Spring Boot 4.1.2 (jeu de données de démonstration chargé), mais l'état de maintenance de
+    la bibliothèque n'a pas été vérifié: la remplacer si elle est abandonnée.
 - [ ] docker: étudier le remplacement de Caddy par nginx (à l'étude, décision non prise)
   - Motivation: nginx est plus standard et mieux documenté que Caddy. Ce n'est pas un argument de sécurité:
     avec un `USER` explicite, un port élevé et les bons droits, les deux donnent un conteneur non-root équivalent.
@@ -99,9 +86,6 @@ la cible au moment de la migration si une version plus récente est sortie.
     (son socket `/var/run/supervisor.sock` n'est pas accessible à un autre utilisateur) et le back sous le même
     utilisateur, quel que soit le serveur choisi.
   - À faire avec la mise à jour d'Alpine, pour n'installer qu'une fois le paquet nginx de la version cible.
-- [ ] ci: aligner le workflow sur les nouvelles versions
-  - `node-version: 20` → 24, `java-version: 17` → 21, dans `.github/workflows/ci.yml`.
-  - À faire en même temps que les migrations front et back correspondantes, pas avant.
 - [ ] sonar: traiter les issues de l'état initial (39 avec le scan CI: 24 bugs, 9 code smells, 6 vulnérabilités)
   - Sources: `docs/quality/sonar-ci-scan-baseline/sonar-main-issues.json` (scan CI, 39 issues, à utiliser) et
     `docs/quality/0.0.1-initial-state/sonar-main-issues.json` (analyse automatique, 35 issues). L'écart de 4 issues
@@ -150,3 +134,15 @@ la cible au moment de la migration si une version plus récente est sortie.
   Le budget Angular `maximumWarning` passe de 500 kB à 800 kB, car le CSS est maintenant dans le bundle
   (total initial en production: 745 kB). Pistes non faites: retirer le thème sombre (environ 100 kB, mais change le
   rendu en mode sombre), monter Bulma de version avec la migration Angular
+- [x] versions: montée de toutes les briques obsolètes (branche `chore/upgrade-versions`, un commit par étape,
+  tests et build verts à chaque étape)
+  - Back: Spring Boot 3.2.5 → 3.5.16 → 4.0.9 → 4.1.2, Gradle 8.7 → 9.9.1, Java 17 → 21 (`sourceCompatibility`).
+    Spring Boot 4 découpe ses modules de test: ajout de `spring-boot-starter-data-jpa-test` et nouveaux packages
+    de `@DataJpaTest` et `TestEntityManager`. Vérifié sur le jar: API `/organizations` et `/persons`, CORS.
+  - Front: Angular 17 → 18 → 19 → 20 → 21 → 22, TypeScript 5.4 → 6.0, zone.js 0.15, avec les migrations
+    officielles de `ng update` à chaque étape. `npm audit`: 0 vulnérabilité (90 dans l'état initial, dont 5
+    critiques). Budget Angular `maximumWarning` à 850 kB (804 kB en production).
+  - Docker: Alpine 3.19 → 3.24, `gradle:9.9.1-jdk21`, `EXPOSE 8080` du stage `back`; les trois cibles se
+    construisent et l'image `standalone` sert l'API et le front (HTTPS, gzip, repli SPA).
+  - CI: Node 20 → 24 et Java 17 → 21 dans le workflow.
+  - La tâche « back: verrouiller les dépendances Gradle » n'est plus bloquée par la migration.
