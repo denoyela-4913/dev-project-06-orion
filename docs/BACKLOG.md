@@ -8,13 +8,6 @@
     build-back ~45 s, soit environ 2 min au total.
   - Justification: gain non démontré, retiré du premier workflow.
 
-- [ ] docker: figer les versions des images, jamais `latest`, et les référencer par digest
-  - Reste à traiter (actions GitHub et runner déjà faits, cf. « Fait »): les images du `Dockerfile`
-    (`node` et `gradle:jdk17` sans version précise, `alpine:3.19`): version fixe plus digest
-    (`image:version@sha256:...`), avec la version en commentaire comme pour les actions.
-  - Ajouter l'écosystème `docker` à `.github/dependabot.yml` une fois les images épinglées.
-  - À coordonner avec la mise à jour des images (Alpine, Java 21) pour ne pas épingler deux fois.
-
 ### Résoudre les CVE (en particulier les critiques) en mettant à jour les briques obsolètes
 
 Constat sur l'état initial (tag `v0.0.1`, analyse du 18/11/2026, dates de fin de support d'après endoflife.date):
@@ -71,11 +64,10 @@ la cible au moment de la migration si une version plus récente est sortie.
   - Vérifier que les tests et le build restent verts en CI, et que `S8569` disparaît de Sonar.
 - [ ] docker: mettre à jour les images
   - Alpine 3.19 → 3.24 (vérifier la disponibilité de `caddy`, `openjdk21-jre-headless`, `supervisor`).
-  - Aligner Java sur 21 entre compilation (`gradle:jdk17` → image JDK 21) et exécution.
-  - Remplacer `node` et `gradle:*` en `latest` par des versions fixes (cf. tâche des versions figées).
-  - Appliquer au `Dockerfile` le correctif déjà fait dans le workflow (règles Sonar `S6505` et `S8543`,
-    lignes 7 et 8): `npm ci --ignore-scripts` puis `npm run build -- --optimization` à la place de
-    `npx @angular/cli build --optimization`. Validé en CI, à valider aussi par un build d'image.
+    Les images sont épinglées par digest: mettre à jour version et digest ensemble.
+  - Aligner Java sur 21 entre compilation (`gradle:8.7-jdk17` → image JDK 21) et exécution.
+  - Le stage `back` fait `EXPOSE 4200`, alors que Tomcat écoute sur 8080 (journaux du conteneur) et que le front
+    appelle `http://localhost:8080` (`front/src/app/config.ts`): corriger le port exposé.
   - Les images finales tournent en `root` par défaut (Sonar `S6471`): ajouter un utilisateur non privilégié
     si l'application le permet (ports 80 et 443 pour Caddy: à vérifier).
 - [ ] docker: étudier le remplacement de Caddy par nginx (à l'étude, décision non prise)
@@ -97,8 +89,11 @@ la cible au moment de la migration si une version plus récente est sortie.
       (`COPY --from=front / /`), ce qui se complique si `front` change d'image de base.
       Pertinent si les images sont restructurées.
   - Dans les deux cas, épingler la version et le digest de l'image (cf. tâche des versions figées).
-  - Points à vérifier: le rechargement d'une route profonde renvoie bien `index.html`, la compression est
-    active, et les ports exposés (80 et 443 dans le `Dockerfile`) correspondent à ce que nginx écoute.
+  - Comportement actuel de Caddy (vérifié par un build d'image): sert en HTTPS sur le port 443 avec un certificat
+    qu'il génère lui-même (autorité interne), et redirige le port 80 vers HTTPS (308). nginx devra reproduire ce
+    comportement ou le simplifier (HTTP seul): à décider.
+  - Points à vérifier: le rechargement d'une route profonde renvoie bien `index.html` et la compression est
+    active (les deux fonctionnent aujourd'hui avec Caddy).
   - Le non-root (`S6471`) est un chantier distinct: Sonar ne vise que le stage `standalone` (ligne 44), qui
     lance `supervisord` en root pour le serveur web et Java. Il faut un `USER`, un `supervisord` non-root
     (son socket `/var/run/supervisor.sock` n'est pas accessible à un autre utilisateur) et le back sous le même
@@ -144,6 +139,10 @@ la cible au moment de la migration si une version plus récente est sortie.
 - [x] ci: analyse SonarQube lancée depuis la CI (`sonarqube-scan-action` v8.5.0, un seul projet) à la place de
   l'analyse automatique, avec la couverture de tests (JaCoCo pour le back, lcov pour le front). Le job `sonar` ne
   tourne que sur les PR (hors forks) et sur `main`; organisation et clé du projet déduites du contexte GitHub
+- [x] docker: images du `Dockerfile` épinglées par version et digest, version en commentaire (`node:24-slim`,
+  `gradle:8.7-jdk17`, `alpine:3.19`), `npm ci --ignore-scripts` et `npm run build` à la place de `npx`
+  (Sonar `S6505`, `S8543`), `as` → `AS`, et Dependabot pour Docker limité aux correctifs et digests.
+  Vérifié par un build des 3 cibles et un test de démarrage (front HTTPS, repli SPA, gzip, API back)
 - [x] qualité: cliché SonarQube de l'état initial dans `docs/quality/0.0.1-initial-state/`
   (35 issues, 262 risques de dépendances) et script `scripts/sonar-export.sh`
 - [x] état initial: logbooks dans `docs/logbook/0.0.1-initial-state/` et tag `v0.0.1`
