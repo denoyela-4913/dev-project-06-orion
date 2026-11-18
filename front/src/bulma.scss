@@ -1,0 +1,21 @@
+// Bulma modulaire: seuls les modules utilisés par le front sont compilés (le CSS complet pèse 647 kB,
+// celui-ci environ 250 kB). Si un nouveau composant Bulma est utilisé dans un template, ajouter son
+// module ici (liste: node_modules/bulma/sass/). Le module `themes` est indispensable: il définit les
+// variables CSS (couleurs, tailles) dont tous les autres modules dépendent.
+@use "bulma/sass/themes";
+@use "bulma/sass/base";
+@use "bulma/sass/elements/button";
+@use "bulma/sass/elements/table";
+@use "bulma/sass/elements/title";
+@use "bulma/sass/form/shared";
+@use "bulma/sass/form/input-textarea";
+@use "bulma/sass/form/select";
+@use "bulma/sass/form/tools";
+@use "bulma/sass/grid/columns";
+@use "bulma/sass/layout/container";
+@use "bulma/sass/layout/section";
+@use "bulma/sass/layout/level";
+@use "bulma/sass/helpers/color";
+@use "bulma/sass/helpers/typography";
+@use "bulma/sass/helpers/spacing";
+@use "bulma/sass/helpers/float";
