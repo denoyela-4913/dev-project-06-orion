@@ -102,6 +102,23 @@ la cible au moment de la migration si une version plus récente est sortie.
 - [ ] ci: aligner le workflow sur les nouvelles versions
   - `node-version: 20` → 24, `java-version: 17` → 21, dans `.github/workflows/ci.yml`.
   - À faire en même temps que les migrations front et back correspondantes, pas avant.
+- [ ] front: bug fonctionnel, l'ajout d'une organisation à une personne ne met pas à jour la liste des personnes de l'organisation
+  - Constat (signalé à la validation visuelle, présent aussi dans la version initiale `v0.0.1`).
+  - Piste (non vérifiée): dans `person-details.component.ts`, `addSelectedOrganization()` et `removeOrganization()`
+    appellent `organizationService.addPerson/removePerson(...)` sans attendre la promesse, puis `refresh()`
+    immédiatement: le rechargement peut partir avant que l'API ait enregistré le lien. Ce sont les promesses non
+    gérées signalées par Sonar (`typescript:S9383`). Vérifier aussi que la page de l'organisation recharge ses
+    personnes à l'affichage (`fetchById` puis `fetchOrganizationPersons`).
+  - À faire: attendre les promesses (`await` ou `.then`) avant de rafraîchir, ajouter un test qui vérifie
+    l'ordre des appels, et contrôler les deux sens (ajout et retrait).
+- [ ] front: bug fonctionnel, le format du champ email n'est pas vérifié
+  - Constat (signalé à la validation visuelle, présent aussi dans la version initiale `v0.0.1`).
+  - Piste (non vérifiée): le template affiche déjà le message « Email must be a valid email address. » sur
+    l'erreur `email`, mais le validateur `email` d'Angular n'est actif sur un formulaire à base de modèle que
+    si l'attribut `email` est posé sur l'`<input>` (`type="email"` seul ne l'active pas). De plus, le back
+    (`Person.java`) n'a pas de contrainte `@Email`: une valeur invalide envoyée directement à l'API est acceptée.
+  - À faire: ajouter l'attribut `email` côté front, une contrainte `@Email` côté back (le front ne suffit pas
+    comme contrôle), et des tests dans les deux couches.
 - [ ] sonar: traiter les issues de l'état initial (39 avec le scan CI: 24 bugs, 9 code smells, 6 vulnérabilités)
   - Sources: `docs/quality/sonar-ci-scan-baseline/sonar-main-issues.json` (scan CI, 39 issues, à utiliser) et
     `docs/quality/0.0.1-initial-state/sonar-main-issues.json` (analyse automatique, 35 issues). L'écart de 4 issues
