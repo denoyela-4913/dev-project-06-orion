@@ -27,7 +27,12 @@ module.exports = function (config) {
     coverageReporter: {
       dir: require("path").join(__dirname, "./coverage/microcrm"),
       subdir: ".",
-      reporters: [{ type: "html" }, { type: "text-summary" }],
+      // lcovonly : format lu par SonarQube (sonar.javascript.lcov.reportPaths).
+      reporters: [
+        { type: "html" },
+        { type: "text-summary" },
+        { type: "lcovonly" },
+      ],
     },
     reporters: ["progress", "kjhtml"],
     browsers: ["ChromeHeadlessNoSandbox", "ChromeHeadless", "Chrome"],
