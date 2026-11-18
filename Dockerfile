@@ -16,9 +16,9 @@ WORKDIR /src
 RUN npm ci --ignore-scripts \
     && npm run build -- --optimization
 
-# Gradle 8.7 (celui du wrapper) avec JDK 17.0.11. Remplace `gradle:jdk17` (dernier Gradle).
+# Gradle 9.9.1 (celui du wrapper) avec JDK 21 (LTS, celui de build.gradle et de l'image d'exécution).
 # `./gradlew` télécharge sa propre distribution: l'image apporte surtout le JDK.
-FROM gradle:8.7-jdk17@sha256:4ad3845d9ee2843537747bd5f067cc6c7a18e737d0079a880a5a074feda392a4 AS back-build
+FROM gradle:9.9.1-jdk21@sha256:607055593f1acc874a98aa7c1cb5adb414b3879bb0a5e1e7240180020fb97277 AS back-build
 
 COPY ./back /src
 
@@ -26,8 +26,8 @@ WORKDIR /src
 
 RUN ./gradlew build
 
-# Alpine 3.19.9 (fin de support dépassée: mise à jour prévue, cf. docs/BACKLOG.md).
-FROM alpine:3.19@sha256:6baf43584bcb78f2e5847d1de515f23499913ac9f12bdf834811a3145eb11ca1 AS front
+# Alpine 3.24.4 (LTS, fin de support 01/06/2028).
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS front
 
 COPY --from=front-build /src/dist/microcrm/browser /app/front
 COPY misc/docker/Caddyfile /app/Caddyfile
@@ -41,8 +41,8 @@ EXPOSE 443
 
 CMD ["/usr/sbin/caddy", "run"]
 
-# Alpine 3.19.9, cf. ci-dessus.
-FROM alpine:3.19@sha256:6baf43584bcb78f2e5847d1de515f23499913ac9f12bdf834811a3145eb11ca1 AS back
+# Alpine 3.24.4, cf. ci-dessus.
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS back
 
 COPY --from=back-build /src/build/libs/microcrm-0.0.1-SNAPSHOT.jar /app/back/microcrm-0.0.1-SNAPSHOT.jar
 
@@ -50,12 +50,12 @@ RUN apk add openjdk21-jre-headless
 
 WORKDIR /app
 
-EXPOSE 4200
+EXPOSE 8080
 
 CMD ["java", "-jar", "/app/back/microcrm-0.0.1-SNAPSHOT.jar"]
 
-# Alpine 3.19.9, cf. ci-dessus.
-FROM alpine:3.19@sha256:6baf43584bcb78f2e5847d1de515f23499913ac9f12bdf834811a3145eb11ca1 AS standalone
+# Alpine 3.24.4, cf. ci-dessus.
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS standalone
 
 COPY --from=front / /
 COPY --from=back / /
