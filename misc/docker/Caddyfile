@@ -1,3 +1,9 @@
+{
+	# Caddy ne tourne pas en root: il ne peut pas installer son autorité de certification interne dans le
+	# magasin de confiance du système (sans intérêt dans un conteneur, et source d'une erreur au démarrage).
+	skip_install_trust
+}
+
 * {
 	root * /app/front
 	encode gzip
