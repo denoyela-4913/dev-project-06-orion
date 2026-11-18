@@ -1,4 +1,4 @@
-import { DatePipe, NgFor, NgIf } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Person, PersonService } from '../person.service';
@@ -6,7 +6,7 @@ import { Organization, OrganizationService } from '../organization.service';
 
 @Component({
     selector: 'app-main-dashboard',
-    imports: [RouterLink, NgFor, NgIf, DatePipe],
+    imports: [RouterLink, DatePipe],
     templateUrl: './main-dashboard.component.html',
     styleUrl: './main-dashboard.component.css'
 })
