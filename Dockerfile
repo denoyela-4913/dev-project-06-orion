@@ -32,12 +32,21 @@ FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5
 COPY --from=front-build /src/dist/microcrm/browser /app/front
 COPY misc/docker/Caddyfile /app/Caddyfile
 
-RUN apk add caddy
+# Utilisateur non privilégié (Sonar S6471), uid fixe pour que les stages soient cohérents.
+# `setcap cap_net_bind_service`: autorise Caddy à ouvrir les ports 80 et 443 sans être root, ce qui garde
+# les ports et les commandes `docker run` du README inchangés. Le répertoire personnel (`/home/app`)
+# reçoit les données de Caddy (autorité de certification interne).
+RUN apk add --no-cache caddy libcap-utils \
+    && setcap cap_net_bind_service=+ep /usr/sbin/caddy \
+    && apk del libcap-utils \
+    && adduser -D -u 10001 app
 
 WORKDIR /app
 
 EXPOSE 80
 EXPOSE 443
+
+USER app
 
 CMD ["/usr/sbin/caddy", "run"]
 
@@ -46,11 +55,14 @@ FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5
 
 COPY --from=back-build /src/build/libs/microcrm-0.0.1-SNAPSHOT.jar /app/back/microcrm-0.0.1-SNAPSHOT.jar
 
-RUN apk add openjdk21-jre-headless
+RUN apk add openjdk21-jre-headless \
+    && adduser -D -u 10001 app
 
 WORKDIR /app
 
 EXPOSE 8080
+
+USER app
 
 CMD ["java", "-jar", "/app/back/microcrm-0.0.1-SNAPSHOT.jar"]
 
@@ -61,8 +73,14 @@ COPY --from=front / /
 COPY --from=back / /
 COPY misc/docker/supervisor.ini /app/supervisor.ini
 
-RUN apk add supervisor
+# `COPY --from=front / /` puis `--from=back / /` copient aussi `/etc/passwd` et les droits de fichier (dont
+# la capacité de Caddy): l'utilisateur `app` (uid 10001) existe donc déjà, la ligne `getent` ne le recrée
+# que si ces copies changent. supervisord et ses deux programmes tournent sous cet utilisateur.
+RUN apk add supervisor \
+    && (getent passwd app >/dev/null || adduser -D -u 10001 app)
 
 WORKDIR /app
+
+USER app
 
 CMD ["/usr/bin/supervisord", "-c", "/app/supervisor.ini"]
