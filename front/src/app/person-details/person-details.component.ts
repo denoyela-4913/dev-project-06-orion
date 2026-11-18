@@ -1,4 +1,4 @@
-import { NgFor, NgIf } from '@angular/common';
+
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -7,7 +7,7 @@ import { Organization, OrganizationService } from '../organization.service';
 
 @Component({
     selector: 'app-person-details',
-    imports: [NgIf, FormsModule, NgFor, RouterLink],
+    imports: [FormsModule, RouterLink],
     templateUrl: './person-details.component.html',
     styleUrl: './person-details.component.css'
 })
