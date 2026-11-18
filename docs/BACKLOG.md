@@ -119,6 +119,12 @@ la cible au moment de la migration si une version plus récente est sortie.
   - Code smells (9): labels de formulaire (`Web:S6853`, 6), opération asynchrone dans un constructeur
     (`typescript:S7059`, 1), `Number.parseInt` à préférer à `parseInt` (`typescript:S7773`, 2).
   - À faire de préférence après la migration d'Angular, pour ne pas corriger deux fois du code touché par `ng update`.
+- [ ] ci: améliorer la précision de l'analyse Java de Sonar (`sonar.java.libraries`)
+  - Constat: le scan signale `Missing 'sonar.java.libraries'` et des types non résolus, car le scanner générique
+    (choisi pour garder un seul projet Sonar) ne connaît pas le classpath Gradle, contrairement au plugin
+    `org.sonarqube`.
+  - Piste: une tâche Gradle qui écrit le classpath de compilation, passé au scan via `-Dsonar.java.libraries=...`.
+  - À faire après la migration de Spring Boot (le classpath change), et à comparer au nombre d'issues Java actuel.
 - [ ] sécurité: auditer le back et les images, puis scanner dans la CI
   - Back (Gradle) et images Docker n'ont pas encore été analysés.
   - Ajouter un scan de vulnérabilités dans la CI une fois les mises à jour faites, pour ne pas les réintroduire.
@@ -131,6 +137,9 @@ la cible au moment de la migration si une version plus récente est sortie.
 - [x] ci: actions GitHub épinglées par SHA avec la version en commentaire (`checkout` v7.0.1, `setup-node` v7.1.0,
   `setup-java` v6.3.0, ce qui supprime les avertissements Node 20), runner `ubuntu-26.04` à la place de
   `ubuntu-latest`, et Dependabot pour les actions GitHub (`.github/dependabot.yml`)
+- [x] ci: analyse SonarQube lancée depuis la CI (`sonarqube-scan-action` v8.5.0, un seul projet) à la place de
+  l'analyse automatique, avec la couverture de tests (JaCoCo pour le back, lcov pour le front). Le job `sonar` ne
+  tourne que sur les PR (hors forks) et sur `main`; organisation et clé du projet déduites du contexte GitHub
 - [x] qualité: cliché SonarQube de l'état initial dans `docs/quality/0.0.1-initial-state/`
   (35 issues, 262 risques de dépendances) et script `scripts/sonar-export.sh`
 - [x] état initial: logbooks dans `docs/logbook/0.0.1-initial-state/` et tag `v0.0.1`
