@@ -8,14 +8,12 @@
     build-back ~45 s, soit environ 2 min au total.
   - Justification: gain non démontré, retiré du premier workflow.
 
-- [ ] ci: figer les versions des COTS (composants tiers), jamais `latest`, et les référencer par SHA
-  - Actions GitHub: remplacer `@v4` par le SHA du commit (`uses: actions/checkout@<sha> # v4.x.y`),
-    car un tag est déplaçable alors qu'un SHA est immuable (sécurité supply chain, reproductibilité).
-  - À traiter aussi: `ubuntu-latest` (runner) et les images Docker `node:latest` (`Dockerfile`),
-    à remplacer par une version fixe (pour les images, par digest `@sha256:...`).
-  - Inclure la mise à jour des actions signalée par les avertissements du premier run
-    (`checkout`, `setup-node`, `setup-java` v4 dépréciés / Node 20).
-  - Suivi des mises à jour: Dependabot (`github-actions` et `docker`) pour proposer les nouveaux SHA.
+- [ ] docker: figer les versions des images, jamais `latest`, et les référencer par digest
+  - Reste à traiter (actions GitHub et runner déjà faits, cf. « Fait »): les images du `Dockerfile`
+    (`node` et `gradle:jdk17` sans version précise, `alpine:3.19`): version fixe plus digest
+    (`image:version@sha256:...`), avec la version en commentaire comme pour les actions.
+  - Ajouter l'écosystème `docker` à `.github/dependabot.yml` une fois les images épinglées.
+  - À coordonner avec la mise à jour des images (Alpine, Java 21) pour ne pas épingler deux fois.
 
 ### Résoudre les CVE (en particulier les critiques) en mettant à jour les briques obsolètes
 
@@ -118,6 +116,9 @@ la cible au moment de la migration si une version plus récente est sortie.
 - [x] ci: workflow GitHub Actions équivalent à `.gitlab-ci.yml` (PR #1)
 - [x] ci: vulnérabilités Sonar du workflow corrigées (`S6505`, `S8543`): Angular CLI lancé depuis le lockfile
   (`npm test`, `npm run build`) au lieu de `npx @angular/cli`, et `npm ci --ignore-scripts`
+- [x] ci: actions GitHub épinglées par SHA avec la version en commentaire (`checkout` v7.0.1, `setup-node` v7.1.0,
+  `setup-java` v6.3.0, ce qui supprime les avertissements Node 20), runner `ubuntu-26.04` à la place de
+  `ubuntu-latest`, et Dependabot pour les actions GitHub (`.github/dependabot.yml`)
 - [x] qualité: cliché SonarQube de l'état initial dans `docs/quality/0.0.1-initial-state/`
   (35 issues, 262 risques de dépendances) et script `scripts/sonar-export.sh`
 - [x] état initial: logbooks dans `docs/logbook/0.0.1-initial-state/` et tag `v0.0.1`
