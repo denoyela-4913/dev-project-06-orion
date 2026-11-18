@@ -1,0 +1,13 @@
+13/11/2026
+==========
+cd back/
+./gradlew build
+BUILD SUCCESSFUL in 21s
+7 actionable tasks: 7 executed
+java -jar build/libs/microcrm-0.0.1-SNAPSHOT.jar
+
+cd back
+./gradlew test
+
+BUILD SUCCESSFUL in 1s
+4 actionable tasks: 4 up-to-date

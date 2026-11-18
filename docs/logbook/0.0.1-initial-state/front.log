@@ -1,0 +1,36 @@
+13/11/2026
+==========
+npm install
+
+added 925 packages, and audited 926 packages in 16s
+
+118 packages are looking for funding
+  run `npm fund` for details
+
+90 vulnerabilities (7 low, 27 moderate, 51 high, 5 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+
+CHROME_BIN=/snap/bin/chromium npm test
+
+
+> microcrm@0.0.0 test
+> ng test
+
+✔ Browser application bundle generation complete.
+14 11 2026 00:02:56.490:WARN [karma]: No captured browser, open http://localhost:9876/
+14 11 2026 00:02:56.498:INFO [karma-server]: Karma v6.4.3 server started at http://localhost:9876/
+14 11 2026 00:02:56.498:INFO [launcher]: Launching browsers ChromeHeadlessNoSandbox, ChromeHeadless, Chrome with concurrency unlimited
+⠋ Generating browser application bundles...14 11 2026 00:02:56.513:INFO [launcher]: Starting browser ChromeHeadless
+14 11 2026 00:02:56.523:INFO [launcher]: Starting browser ChromeHeadless
+14 11 2026 00:02:56.530:INFO [launcher]: Starting browser Chrome
+✔ Browser application bundle generation complete.
+14 11 2026 00:02:57.033:INFO [Chrome Headless 156.0.0.0 (Ubuntu 0.0.0)]: Connected on socket bsc5kfmUNI0Rwy0wAAAC with id 95256284
+14 11 2026 00:02:57.040:INFO [Chrome Headless 156.0.0.0 (Ubuntu 0.0.0)]: Connected on socket H9rjb4op0HlmFKeHAAAD with id 43971012
+14 11 2026 00:02:57.288:INFO [Chrome 156.0.0.0 (Ubuntu 0.0.0)]: Connected on socket QqbwNErGyjZw1xTzAAAF with id 48054861
+Chrome Headless 156.0.0.0 (Ubuntu 0.0.0): Executed 8 of 8 SUCCESS (0.126 secs / 0.112 secs)
+Chrome 156.0.0.0 (Ubuntu 0.0.0): Executed 8 of 8 SUCCESS (0.126 secs / 0.111 secs)
+Chrome Headless 156.0.0.0 (Ubuntu 0.0.0): Executed 8 of 8 SUCCESS (0.107 secs / 0.092 secs)
+TOTAL: 24 SUCCESS
