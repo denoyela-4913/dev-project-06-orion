@@ -107,15 +107,19 @@ la cible au moment de la migration si une version plus récente est sortie.
 - [ ] ci: aligner le workflow sur les nouvelles versions
   - `node-version: 20` → 24, `java-version: 17` → 21, dans `.github/workflows/ci.yml`.
   - À faire en même temps que les migrations front et back correspondantes, pas avant.
-- [ ] sonar: traiter les issues de l'état initial (35: 20 bugs, 9 code smells, 6 vulnérabilités)
-  - Source: `docs/quality/0.0.1-initial-state/sonar-main-issues.json` (cliché du 18/11/2026).
+- [ ] sonar: traiter les issues de l'état initial (39 avec le scan CI: 24 bugs, 9 code smells, 6 vulnérabilités)
+  - Sources: `docs/quality/sonar-ci-scan-baseline/sonar-main-issues.json` (scan CI, 39 issues, à utiliser) et
+    `docs/quality/0.0.1-initial-state/sonar-main-issues.json` (analyse automatique, 35 issues). L'écart de 4 issues
+    vient d'une analyse plus précise (cf. `docs/quality/sonar-ci-scan-baseline/README.md`), pas d'un changement de code.
   - Vulnérabilités du `Dockerfile` (`S6505`, `S8543`, `S6471`): traitées dans la tâche « docker ».
   - `back/build.gradle` (`S8569`): traité dans la tâche « back: verrouiller les dépendances Gradle ».
   - `front/src/index.html` (`S5725`): feuille de style Bulma chargée depuis un CDN sans contrôle d'intégrité.
     Ajouter `integrity` et `crossorigin="anonymous"` (hash SRI), ou mieux, installer Bulma via npm pour
     l'embarquer dans le bundle et supprimer la dépendance au CDN.
-  - Bugs du front (20): promesses non gérées (`typescript:S9383`, 12), champs de formulaire sans label
-    (`Web:InputWithoutLabelCheck`, 7), tableau sans en-têtes `<th>` (`Web:S5256`, 1).
+  - Bugs du front (24): promesses non gérées (`typescript:S9383`, 16, dont 4 sur `router.navigate(...)` visibles
+    seulement avec le scan CI), champs de formulaire sans label (`Web:InputWithoutLabelCheck`, 7), tableau sans
+    en-têtes `<th>` (`Web:S5256`, 1).
+  - Duplication (1,7 %): 14 lignes dupliquées dans chacun de `Organization.java` et `Person.java`, à examiner.
   - Code smells (9): labels de formulaire (`Web:S6853`, 6), opération asynchrone dans un constructeur
     (`typescript:S7059`, 1), `Number.parseInt` à préférer à `parseInt` (`typescript:S7773`, 2).
   - À faire de préférence après la migration d'Angular, pour ne pas corriger deux fois du code touché par `ng update`.
