@@ -56,6 +56,19 @@ la cible au moment de la migration si une version plus récente est sortie.
     à confirmer dans ses notes de version) et les plugins.
   - Vérifier l'état de maintenance de `ro.polak:spring-boot-data-fixtures:0.2.0`, remplacer si abandonnée.
   - Passer `sourceCompatibility` à Java 21.
+- [ ] back: verrouiller les dépendances Gradle (`gradle.lockfile`)
+  - Constat: Sonar `S8569` sur `back/build.gradle`. Sans fichier de verrouillage, les versions résolues
+    peuvent changer d'un build à l'autre (plugins, dépendances transitives), ce qui rend la CI et les images
+    non reproductibles. C'est l'équivalent Gradle du `package-lock.json` côté front.
+  - À faire APRÈS la migration Spring Boot (tâche ci-dessus): le fichier fige les versions, le générer avant
+    obligerait à le régénérer à chaque étape de la migration.
+  - Activer le verrouillage de toutes les configurations dans `build.gradle`
+    (`dependencyLocking { lockAllConfigurations() }`), générer le fichier avec
+    `./gradlew dependencies --write-locks`, et le commiter.
+  - Mise à jour ensuite: régénérer le fichier avec la même commande à chaque changement de version voulu.
+    Par défaut Gradle échoue si les versions résolues diffèrent du fichier, mais pas si le fichier est
+    absent: ajouter `lockMode = LockMode.STRICT` pour que ce second cas échoue aussi.
+  - Vérifier que les tests et le build restent verts en CI, et que `S8569` disparaît de Sonar.
 - [ ] docker: mettre à jour les images
   - Alpine 3.19 → 3.24 (vérifier la disponibilité de `caddy`, `openjdk21-jre-headless`, `supervisor`).
   - Aligner Java sur 21 entre compilation (`gradle:jdk17` → image JDK 21) et exécution.
@@ -97,8 +110,7 @@ la cible au moment de la migration si une version plus récente est sortie.
 - [ ] sonar: traiter les issues de l'état initial (35: 20 bugs, 9 code smells, 6 vulnérabilités)
   - Source: `docs/quality/0.0.1-initial-state/sonar-main-issues.json` (cliché du 18/11/2026).
   - Vulnérabilités du `Dockerfile` (`S6505`, `S8543`, `S6471`): traitées dans la tâche « docker ».
-  - `back/build.gradle` (`S8569`): versions non prévisibles sans verrouillage des dépendances;
-    activer le verrouillage Gradle (`dependencyLocking`, fichier `gradle.lockfile`).
+  - `back/build.gradle` (`S8569`): traité dans la tâche « back: verrouiller les dépendances Gradle ».
   - `front/src/index.html` (`S5725`): feuille de style Bulma chargée depuis un CDN sans contrôle d'intégrité.
     Ajouter `integrity` et `crossorigin="anonymous"` (hash SRI), ou mieux, installer Bulma via npm pour
     l'embarquer dans le bundle et supprimer la dépendance au CDN.
