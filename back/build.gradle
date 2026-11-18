@@ -13,6 +13,14 @@ java {
 	sourceCompatibility = '21'
 }
 
+// Verrouillage des dépendances (Sonar S8569): les versions résolues sont figées dans gradle.lockfile,
+// l'équivalent du package-lock.json côté front. STRICT: le build échoue si le fichier manque ou si les
+// versions résolues en diffèrent. Mise à jour voulue: ./gradlew dependencies --write-locks
+dependencyLocking {
+	lockAllConfigurations()
+	lockMode = LockMode.STRICT
+}
+
 repositories {
 	mavenCentral()
 }
