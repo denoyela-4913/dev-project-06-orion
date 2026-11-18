@@ -67,6 +67,32 @@ la cible au moment de la migration si une version plus récente est sortie.
     `npx @angular/cli build --optimization`. Validé en CI, à valider aussi par un build d'image.
   - Les images finales tournent en `root` par défaut (Sonar `S6471`): ajouter un utilisateur non privilégié
     si l'application le permet (ports 80 et 443 pour Caddy: à vérifier).
+- [ ] docker: étudier le remplacement de Caddy par nginx (à l'étude, décision non prise)
+  - Motivation: nginx est plus standard et mieux documenté que Caddy. Ce n'est pas un argument de sécurité:
+    avec un `USER` explicite, un port élevé et les bons droits, les deux donnent un conteneur non-root équivalent.
+  - Rôle actuel de Caddy: serveur de fichiers statiques du front, avec compression gzip et repli sur
+    `/index.html` pour les routes Angular (`misc/docker/Caddyfile`). Il ne fait pas de proxy vers le back.
+  - À remplacer si la décision est prise: `apk add caddy` et `CMD` du stage `front` (`Dockerfile`),
+    `COPY misc/docker/Caddyfile`, et la commande `caddy run` de `misc/docker/supervisor.ini` (image `standalone`).
+  - À écrire: un `misc/docker/nginx.conf` équivalent (`root /app/front`, `gzip on`,
+    `try_files $uri /index.html`), lancé avec `nginx -g "daemon off;"`.
+  - Deux options à comparer:
+    - A (défaut): `apk add nginx` sur Alpine, plus configuration non-root dans `nginx.conf`
+      (`listen 8080`, `pid /tmp/nginx.pid`, `*_temp_path` dans `/tmp`) et `USER nginx`.
+      Garde la structure du `Dockerfile`, notamment le stage `standalone`.
+    - B: image `nginx-unprivileged` (non-root, port 8080, PID et temporaires dans `/tmp`, maintenue par l'équipe
+      nginx; registre `nginx/nginx-unprivileged` pour les versions récentes, `nginxinc/...` pour les anciennes,
+      à vérifier). Risque: le stage `standalone` copie tout le système de fichiers de `front` et `back`
+      (`COPY --from=front / /`), ce qui se complique si `front` change d'image de base.
+      Pertinent si les images sont restructurées.
+  - Dans les deux cas, épingler la version et le digest de l'image (cf. tâche des versions figées).
+  - Points à vérifier: le rechargement d'une route profonde renvoie bien `index.html`, la compression est
+    active, et les ports exposés (80 et 443 dans le `Dockerfile`) correspondent à ce que nginx écoute.
+  - Le non-root (`S6471`) est un chantier distinct: Sonar ne vise que le stage `standalone` (ligne 44), qui
+    lance `supervisord` en root pour le serveur web et Java. Il faut un `USER`, un `supervisord` non-root
+    (son socket `/var/run/supervisor.sock` n'est pas accessible à un autre utilisateur) et le back sous le même
+    utilisateur, quel que soit le serveur choisi.
+  - À faire avec la mise à jour d'Alpine, pour n'installer qu'une fois le paquet nginx de la version cible.
 - [ ] ci: aligner le workflow sur les nouvelles versions
   - `node-version: 20` → 24, `java-version: 17` → 21, dans `.github/workflows/ci.yml`.
   - À faire en même temps que les migrations front et back correspondantes, pas avant.
