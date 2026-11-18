@@ -40,7 +40,7 @@ while getopts "b:o:k:h" opt; do
 done
 
 # Clé déduite du remote git (convention d'un projet importé depuis GitHub), pour ne pas l'écrire en dur.
-if [ -z "$key" ]; then
+if [[ -z "$key" ]]; then
   slug=$(git -C "$(dirname "$0")" remote get-url origin | sed -E 's#^.*github\.com[:/]##; s#\.git$##')
   key=${slug/\//_}
 fi
@@ -72,7 +72,7 @@ fetch "$out/sonar-$name-issues.json" issues/search \
   --data-urlencode "componentKeys=$key" --data-urlencode "resolved=false" --data-urlencode "ps=$page_size"
 
 total=$(grep -o '"total":[0-9]*' "$out/sonar-$name-issues.json" | head -1 | cut -d: -f2)
-if [ "${total:-0}" -gt "$page_size" ]; then
+if [[ "${total:-0}" -gt "$page_size" ]]; then
   echo "Attention: $total issues, seules les $page_size premières sont exportées (pas de pagination)." >&2
 fi
 
