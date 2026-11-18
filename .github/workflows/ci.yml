@@ -33,10 +33,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          # Version fixe (GitLab : "node" = latest). Angular 17 ne supporte que
+          # Version fixe (GitLab : "node" = latest). Angular ne supporte que
           # certaines versions de Node ; "latest" peut casser le build sans
-          # changement de code. 20 est une LTS supportée par Angular 17.
-          node-version: 20
+          # changement de code. 24 est une LTS (fin de support 30/04/2028) supportée par
+          # Angular 22, et la même que l'image du Dockerfile.
+          node-version: 24
           # Depuis setup-node v5, un cache npm automatique peut s'activer selon le contenu de
           # package.json. Désactivé explicitement : décision de ne pas mettre de cache avant d'avoir
           # mesuré son gain (cf. docs/BACKLOG.md et docs/quality/ci-baseline).
@@ -55,7 +56,7 @@ jobs:
           CHROME_BIN: /usr/bin/google-chrome
 
   test-back:
-    # GitLab : image gradle:jdk17. Ici setup-java installe le JDK 17.
+    # GitLab : image gradle:jdk17. Ici setup-java installe le JDK 21 (le code est compilé en Java 21).
     runs-on: ubuntu-26.04 # cf. justification dans test-front
     defaults:
       run:
@@ -65,9 +66,9 @@ jobs:
       - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           # Temurin : distribution OpenJDK courante, la plus utilisée ;
-          # version 17 = celle de build.gradle (sourceCompatibility = '17').
+          # version 21 = celle de build.gradle (sourceCompatibility = '21'), LTS jusqu'en 12/2029.
           distribution: temurin
-          java-version: 17
+          java-version: 21
       - run: ./gradlew test
 
   # --- Stage "build" --------------------------------------------------------
@@ -83,7 +84,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 20 # même version que test-front (cf. justification)
+          node-version: 24 # même version que test-front (cf. justification)
           package-manager-cache: false # cf. justification dans test-front
       - run: npm ci --ignore-scripts # cf. justification dans test-front
       # GitLab : `npx @angular/cli build`. `npm run build` exécute `ng build` avec la version
@@ -101,7 +102,7 @@ jobs:
       - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin # cf. justification dans test-back
-          java-version: 17
+          java-version: 21
       - run: ./gradlew build
 
   # --- Analyse de qualité ---------------------------------------------------
@@ -124,10 +125,10 @@ jobs:
       - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin # cf. justification dans test-back
-          java-version: 17
+          java-version: 21
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 20 # même version que test-front (cf. justification)
+          node-version: 24 # même version que test-front (cf. justification)
           package-manager-cache: false # cf. justification dans test-front
       # Job autonome: il refait les tests avec couverture au lieu de récupérer des artefacts des autres
       # jobs. Plus simple (pas d'actions upload/download à épingler), au prix de tests exécutés deux fois.
