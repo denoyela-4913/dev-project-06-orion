@@ -1,0 +1,84 @@
+# Port de .gitlab-ci.yml vers GitHub Actions.
+# Chaque choix non trivial est justifié en commentaire.
+
+name: CI
+
+# push + pull_request, sans filtre de branche : équivalent du comportement par
+# défaut de GitLab CI (pipeline à chaque push). Le workflow de dev impose de
+# valider la CI sur la branche de dev (push) avant d'ouvrir la pull request.
+on:
+  push:
+  pull_request:
+
+jobs:
+  # --- Stage "test" ---------------------------------------------------------
+  test-front:
+    # GitLab : image cypress/browsers (apporte Chrome). Ici le runner
+    # ubuntu-latest fournit déjà Google Chrome : pas besoin d'image dédiée.
+    runs-on: ubuntu-latest
+    # Remplace les "cd front" de GitLab, sans répéter la commande à chaque step.
+    defaults:
+      run:
+        working-directory: front
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Version fixe (GitLab : "node" = latest). Angular 17 ne supporte que
+          # certaines versions de Node ; "latest" peut casser le build sans
+          # changement de code. 20 est une LTS supportée par Angular 17.
+          node-version: 20
+      - run: npm ci
+      - run: npx @angular/cli test --no-watch --no-progress --browsers=ChromeHeadlessNoSandbox
+        env:
+          # GitLab : /opt/google/chrome/chrome (chemin propre à l'image Cypress).
+          # Sur le runner GitHub, Chrome est installé à /usr/bin/google-chrome.
+          # À confirmer au premier run.
+          CHROME_BIN: /usr/bin/google-chrome
+
+  test-back:
+    # GitLab : image gradle:jdk17. Ici setup-java installe le JDK 17.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: back
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          # Temurin : distribution OpenJDK courante, la plus utilisée ;
+          # version 17 = celle de build.gradle (sourceCompatibility = '17').
+          distribution: temurin
+          java-version: 17
+      - run: ./gradlew test
+
+  # --- Stage "build" --------------------------------------------------------
+  # GitLab : "stages: test, build" exécute le build seulement si tous les tests
+  # passent. GitHub n'a pas de stages : "needs" reproduit cette dépendance.
+  build-front:
+    needs: [test-front, test-back]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: front
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20 # même version que test-front (cf. justification)
+      - run: npm ci
+      - run: npx @angular/cli build --optimization
+
+  build-back:
+    needs: [test-front, test-back]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: back
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin # cf. justification dans test-back
+          java-version: 17
+      - run: ./gradlew build
