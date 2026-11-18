@@ -38,19 +38,6 @@ wrapper (`./gradlew wrapper --gradle-version <x>`) à chaque nouvelle mineure.
 Les cibles Spring Boot 4.1 et Angular 22 dépassent 05/2027 de peu pour Spring Boot (07/2027): réévaluer
 la cible au moment de la migration si une version plus récente est sortie.
 
-- [ ] back: verrouiller les dépendances Gradle (`gradle.lockfile`)
-  - Constat: Sonar `S8569` sur `back/build.gradle`. Sans fichier de verrouillage, les versions résolues
-    peuvent changer d'un build à l'autre (plugins, dépendances transitives), ce qui rend la CI et les images
-    non reproductibles. C'est l'équivalent Gradle du `package-lock.json` côté front.
-  - À faire APRÈS la migration Spring Boot (tâche ci-dessus): le fichier fige les versions, le générer avant
-    obligerait à le régénérer à chaque étape de la migration.
-  - Activer le verrouillage de toutes les configurations dans `build.gradle`
-    (`dependencyLocking { lockAllConfigurations() }`), générer le fichier avec
-    `./gradlew dependencies --write-locks`, et le commiter.
-  - Mise à jour ensuite: régénérer le fichier avec la même commande à chaque changement de version voulu.
-    Par défaut Gradle échoue si les versions résolues diffèrent du fichier, mais pas si le fichier est
-    absent: ajouter `lockMode = LockMode.STRICT` pour que ce second cas échoue aussi.
-  - Vérifier que les tests et le build restent verts en CI, et que `S8569` disparaît de Sonar.
 - [ ] docker: exécuter les images en utilisateur non privilégié
   - Les images finales tournent en `root` par défaut (Sonar `S6471`): ajouter un utilisateur non privilégié
     si l'application le permet (ports 80 et 443 pour Caddy: à vérifier). Cf. aussi la tâche nginx.
@@ -108,7 +95,7 @@ la cible au moment de la migration si une version plus récente est sortie.
     `docs/quality/0.0.1-initial-state/sonar-main-issues.json` (analyse automatique, 35 issues). L'écart de 4 issues
     vient d'une analyse plus précise (cf. `docs/quality/sonar-ci-scan-baseline/README.md`), pas d'un changement de code.
   - Vulnérabilités du `Dockerfile` (`S6505`, `S8543`, `S6471`): traitées dans la tâche « docker ».
-  - `back/build.gradle` (`S8569`): traité dans la tâche « back: verrouiller les dépendances Gradle ».
+  - `back/build.gradle` (`S8569`): traité, cf. « Fait » (`gradle.lockfile`). À confirmer sur l'analyse Sonar de `main`.
   - `front/src/index.html` (`S5725`): traité, cf. « Fait » (Bulma installé via npm).
   - Bugs du front (24): promesses non gérées (`typescript:S9383`, 16, dont 4 sur `router.navigate(...)` visibles
     seulement avec le scan CI), champs de formulaire sans label (`Web:InputWithoutLabelCheck`, 7), tableau sans
@@ -162,4 +149,8 @@ la cible au moment de la migration si une version plus récente est sortie.
   - Docker: Alpine 3.19 → 3.24, `gradle:9.9.1-jdk21`, `EXPOSE 8080` du stage `back`; les trois cibles se
     construisent et l'image `standalone` sert l'API et le front (HTTPS, gzip, repli SPA).
   - CI: Node 20 → 24 et Java 17 → 21 dans le workflow.
-  - La tâche « back: verrouiller les dépendances Gradle » n'est plus bloquée par la migration.
+- [x] back: dépendances Gradle verrouillées (`S8569`): `dependencyLocking { lockAllConfigurations(); lockMode = STRICT }`
+  dans `back/build.gradle` et `back/gradle.lockfile` versionné (134 lignes). Vérifié: le build passe, échoue si
+  une version du fichier est modifiée, et le build Docker du back (`COPY ./back`) fonctionne. Mise à jour voulue
+  d'une dépendance: `./gradlew dependencies --write-locks` puis commiter le fichier. Dependabot n'est pas
+  activé pour Gradle: les mises à jour du back restent manuelles
