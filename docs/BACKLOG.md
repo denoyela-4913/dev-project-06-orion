@@ -38,9 +38,6 @@ wrapper (`./gradlew wrapper --gradle-version <x>`) à chaque nouvelle mineure.
 Les cibles Spring Boot 4.1 et Angular 22 dépassent 05/2027 de peu pour Spring Boot (07/2027): réévaluer
 la cible au moment de la migration si une version plus récente est sortie.
 
-- [ ] docker: exécuter les images en utilisateur non privilégié
-  - Les images finales tournent en `root` par défaut (Sonar `S6471`): ajouter un utilisateur non privilégié
-    si l'application le permet (ports 80 et 443 pour Caddy: à vérifier). Cf. aussi la tâche nginx.
 - [ ] back: vérifier la maintenance de `ro.polak:spring-boot-data-fixtures:0.2.0`
   - Fonctionne avec Spring Boot 4.1.2 (jeu de données de démonstration chargé), mais l'état de maintenance de
     la bibliothèque n'a pas été vérifié: la remplacer si elle est abandonnée.
@@ -68,10 +65,10 @@ la cible au moment de la migration si une version plus récente est sortie.
     comportement ou le simplifier (HTTP seul): à décider.
   - Points à vérifier: le rechargement d'une route profonde renvoie bien `index.html` et la compression est
     active (les deux fonctionnent aujourd'hui avec Caddy).
-  - Le non-root (`S6471`) est un chantier distinct: Sonar ne vise que le stage `standalone` (ligne 44), qui
-    lance `supervisord` en root pour le serveur web et Java. Il faut un `USER`, un `supervisord` non-root
-    (son socket `/var/run/supervisor.sock` n'est pas accessible à un autre utilisateur) et le back sous le même
-    utilisateur, quel que soit le serveur choisi.
+  - Le non-root (`S6471`) est déjà fait avec Caddy (cf. « Fait »): si nginx le remplace, reprendre l'utilisateur
+    `app` (uid 10001) et le `supervisord` non-root, et décider des ports: Caddy garde 80 et 443 grâce à
+    `setcap cap_net_bind_service`, nginx pourrait passer sur des ports élevés (le mappage `-p 80:<port>` du
+    README suffit à garder les mêmes URL).
   - À faire avec la mise à jour d'Alpine, pour n'installer qu'une fois le paquet nginx de la version cible.
 - [ ] front: bug fonctionnel, l'ajout d'une organisation à une personne ne met pas à jour la liste des personnes de l'organisation
   - Constat (signalé à la validation visuelle, présent aussi dans la version initiale `v0.0.1`).
@@ -94,7 +91,7 @@ la cible au moment de la migration si une version plus récente est sortie.
   - Sources: `docs/quality/sonar-ci-scan-baseline/sonar-main-issues.json` (scan CI, 39 issues, à utiliser) et
     `docs/quality/0.0.1-initial-state/sonar-main-issues.json` (analyse automatique, 35 issues). L'écart de 4 issues
     vient d'une analyse plus précise (cf. `docs/quality/sonar-ci-scan-baseline/README.md`), pas d'un changement de code.
-  - Vulnérabilités du `Dockerfile` (`S6505`, `S8543`, `S6471`): traitées dans la tâche « docker ».
+  - Vulnérabilités du `Dockerfile` (`S6505`, `S8543`, `S6471`): traitées, cf. « Fait ». À confirmer sur l'analyse de `main`.
   - `back/build.gradle` (`S8569`): traité, cf. « Fait » (`gradle.lockfile`). À confirmer sur l'analyse Sonar de `main`.
   - `front/src/index.html` (`S5725`): traité, cf. « Fait » (Bulma installé via npm).
   - Bugs du front (24): promesses non gérées (`typescript:S9383`, 16, dont 4 sur `router.navigate(...)` visibles
@@ -154,3 +151,11 @@ la cible au moment de la migration si une version plus récente est sortie.
   une version du fichier est modifiée, et le build Docker du back (`COPY ./back`) fonctionne. Mise à jour voulue
   d'une dépendance: `./gradlew dependencies --write-locks` puis commiter le fichier. Dependabot n'est pas
   activé pour Gradle: les mises à jour du back restent manuelles
+- [x] docker: images exécutées en utilisateur non privilégié (`S6471`). Utilisateur `app` (uid 10001) dans les trois
+  stages, `USER app`. Caddy garde les ports 80 et 443 (donc README et `docker run` inchangés) grâce à
+  `setcap cap_net_bind_service=+ep` sur son binaire; le choix d'un port élevé aurait imposé de changer la
+  redirection HTTP→HTTPS. `supervisord`: socket, journal et PID déplacés dans `/tmp` (non-root ne peut pas écrire
+  dans `/var/run`). `skip_install_trust` dans le `Caddyfile`: sans root, Caddy ne peut pas installer son autorité
+  interne dans le magasin système (erreur au démarrage, sans intérêt dans un conteneur). Vérifié sur les trois
+  cibles: processus en uid 10001, ports 80/443, redirection 308, gzip, repli SPA, API sur 8080, journaux sans erreur.
+  Limite: la capacité est ignorée avec `no-new-privileges` ou si `NET_BIND_SERVICE` est retirée du conteneur
