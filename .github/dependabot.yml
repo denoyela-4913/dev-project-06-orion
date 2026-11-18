@@ -4,7 +4,7 @@
 # Périmètre volontairement limité aux actions GitHub pour l'instant :
 #   - npm et gradle ne sont pas activés : ils ouvriraient des PR de montée de version majeure
 #     (Angular, Spring Boot) qui sont planifiées à part, une majeure à la fois (cf. docs/BACKLOG.md).
-#   - docker sera ajouté quand les images du Dockerfile seront épinglées (cf. docs/BACKLOG.md).
+#   - docker: limité aux mises à jour de correctif et de digest (voir plus bas).
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -18,3 +18,20 @@ updates:
     # Messages de commit au format conventional commits (`ci: bump ...`).
     commit-message:
       prefix: ci
+
+  # Images du Dockerfile, épinglées par version et digest. Les montées de version mineure et majeure sont
+  # ignorées: Alpine, Node et Java sont mis à jour volontairement, avec la migration planifiée
+  # (cf. docs/BACKLOG.md). Dependabot ne propose que les nouveaux digests et correctifs de la version suivie.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    commit-message:
+      prefix: build
