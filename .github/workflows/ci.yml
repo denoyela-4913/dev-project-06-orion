@@ -29,11 +29,13 @@ jobs:
           # changement de code. 20 est une LTS supportée par Angular 17.
           node-version: 20
       - run: npm ci
-      - run: npx @angular/cli test --no-watch --no-progress --browsers=ChromeHeadlessNoSandbox
+      # GitLab : `npx @angular/cli test`. `npm test` exécute le script "test" de package.json
+      # (`ng test`) avec l'Angular CLI déjà installé par `npm ci` : la version est celle du
+      # package-lock.json et rien n'est téléchargé à la volée (règles Sonar S6505 et S8543).
+      - run: npm test -- --no-watch --no-progress --browsers=ChromeHeadlessNoSandbox
         env:
           # GitLab : /opt/google/chrome/chrome (chemin propre à l'image Cypress).
-          # Sur le runner GitHub, Chrome est installé à /usr/bin/google-chrome.
-          # À confirmer au premier run.
+          # Sur le runner GitHub, Chrome est installé à /usr/bin/google-chrome (confirmé au premier run).
           CHROME_BIN: /usr/bin/google-chrome
 
   test-back:
@@ -67,7 +69,9 @@ jobs:
         with:
           node-version: 20 # même version que test-front (cf. justification)
       - run: npm ci
-      - run: npx @angular/cli build --optimization
+      # GitLab : `npx @angular/cli build`. `npm run build` exécute `ng build` avec la version
+      # du package-lock.json, sans téléchargement à la volée (cf. test-front).
+      - run: npm run build -- --optimization
 
   build-back:
     needs: [test-front, test-back]
