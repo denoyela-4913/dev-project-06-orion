@@ -108,9 +108,7 @@ la cible au moment de la migration si une version plus récente est sortie.
     vient d'une analyse plus précise (cf. `docs/quality/sonar-ci-scan-baseline/README.md`), pas d'un changement de code.
   - Vulnérabilités du `Dockerfile` (`S6505`, `S8543`, `S6471`): traitées dans la tâche « docker ».
   - `back/build.gradle` (`S8569`): traité dans la tâche « back: verrouiller les dépendances Gradle ».
-  - `front/src/index.html` (`S5725`): feuille de style Bulma chargée depuis un CDN sans contrôle d'intégrité.
-    Ajouter `integrity` et `crossorigin="anonymous"` (hash SRI), ou mieux, installer Bulma via npm pour
-    l'embarquer dans le bundle et supprimer la dépendance au CDN.
+  - `front/src/index.html` (`S5725`): traité, cf. « Fait » (Bulma installé via npm).
   - Bugs du front (24): promesses non gérées (`typescript:S9383`, 16, dont 4 sur `router.navigate(...)` visibles
     seulement avec le scan CI), champs de formulaire sans label (`Web:InputWithoutLabelCheck`, 7), tableau sans
     en-têtes `<th>` (`Web:S5256`, 1).
@@ -146,3 +144,9 @@ la cible au moment de la migration si une version plus récente est sortie.
 - [x] qualité: cliché SonarQube de l'état initial dans `docs/quality/0.0.1-initial-state/`
   (35 issues, 262 risques de dépendances) et script `scripts/sonar-export.sh`
 - [x] état initial: logbooks dans `docs/logbook/0.0.1-initial-state/` et tag `v0.0.1`
+- [x] front: Bulma servi depuis npm au lieu du CDN (`S5725`). Version exacte `1.0.0` (la même, rendu identique,
+  comparé à la version initiale). Bulma est compilé en modulaire (`front/src/bulma.scss`: seuls les modules
+  utilisés, dont `themes` indispensable pour les variables CSS): 434 kB au lieu de 647 kB pour le CSS complet.
+  Le budget Angular `maximumWarning` passe de 500 kB à 800 kB, car le CSS est maintenant dans le bundle
+  (total initial en production: 745 kB). Pistes non faites: retirer le thème sombre (environ 100 kB, mais change le
+  rendu en mode sombre), monter Bulma de version avec la migration Angular
