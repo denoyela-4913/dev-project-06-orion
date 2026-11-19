@@ -70,23 +70,6 @@ la cible au moment de la migration si une version plus récente est sortie.
     `setcap cap_net_bind_service`, nginx pourrait passer sur des ports élevés (le mappage `-p 80:<port>` du
     README suffit à garder les mêmes URL).
   - À faire avec la mise à jour d'Alpine, pour n'installer qu'une fois le paquet nginx de la version cible.
-- [ ] front: bug fonctionnel, l'ajout d'une organisation à une personne ne met pas à jour la liste des personnes de l'organisation
-  - Constat (signalé à la validation visuelle, présent aussi dans la version initiale `v0.0.1`).
-  - Piste (non vérifiée): dans `person-details.component.ts`, `addSelectedOrganization()` et `removeOrganization()`
-    appellent `organizationService.addPerson/removePerson(...)` sans attendre la promesse, puis `refresh()`
-    immédiatement: le rechargement peut partir avant que l'API ait enregistré le lien. Ce sont les promesses non
-    gérées signalées par Sonar (`typescript:S9383`). Vérifier aussi que la page de l'organisation recharge ses
-    personnes à l'affichage (`fetchById` puis `fetchOrganizationPersons`).
-  - À faire: attendre les promesses (`await` ou `.then`) avant de rafraîchir, ajouter un test qui vérifie
-    l'ordre des appels, et contrôler les deux sens (ajout et retrait).
-- [ ] front: bug fonctionnel, le format du champ email n'est pas vérifié
-  - Constat (signalé à la validation visuelle, présent aussi dans la version initiale `v0.0.1`).
-  - Piste (non vérifiée): le template affiche déjà le message « Email must be a valid email address. » sur
-    l'erreur `email`, mais le validateur `email` d'Angular n'est actif sur un formulaire à base de modèle que
-    si l'attribut `email` est posé sur l'`<input>` (`type="email"` seul ne l'active pas). De plus, le back
-    (`Person.java`) n'a pas de contrainte `@Email`: une valeur invalide envoyée directement à l'API est acceptée.
-  - À faire: ajouter l'attribut `email` côté front, une contrainte `@Email` côté back (le front ne suffit pas
-    comme contrôle), et des tests dans les deux couches.
 - [ ] sonar: traiter les issues de l'état initial (39 avec le scan CI: 24 bugs, 9 code smells, 6 vulnérabilités)
   - Sources: `docs/quality/sonar-ci-scan-baseline/sonar-main-issues.json` (scan CI, 39 issues, à utiliser) et
     `docs/quality/0.0.1-initial-state/sonar-main-issues.json` (analyse automatique, 35 issues). L'écart de 4 issues
@@ -107,6 +90,22 @@ la cible au moment de la migration si une version plus récente est sortie.
     `org.sonarqube`.
   - Piste: une tâche Gradle qui écrit le classpath de compilation, passé au scan via `-Dsonar.java.libraries=...`.
   - À faire après la migration de Spring Boot (le classpath change), et à comparer au nombre d'issues Java actuel.
+- [ ] front: remplacer Karma (déprécié) comme lanceur de tests
+  - Constat: `npm ci` affiche des `npm warn deprecated` pour `inflight@1.0.6`, `rimraf@3.0.2` et `glob@7.2.3`. Ils
+    viennent tous de `karma@6.4.4` (`npm ls inflight rimraf glob`), donc des tests seulement, pas de l'application
+    livrée. `npm audit`: 0 vulnérabilité.
+  - Karma 6.4.4 est la dernière version publiée et le projet est en fin de vie: il n'y a pas de correctif à attendre.
+    Forcer des versions récentes avec `overrides` n'est pas testé par Karma, donc écarté.
+  - Pistes: Vitest (proposé par Angular) ou Jest. À comparer avant de choisir, et à mesurer (temps de CI).
+  - À faire après les corrections de bugs et d'issues Sonar du front, pour ne pas mélanger les changements. Les tests
+    écrits pour ces corrections devront être migrés, d'où l'intérêt de limiter leur nombre de dépendances à Karma.
+- [ ] front: migrer les builders `@angular-devkit/build-angular` vers `@angular/build` (dépréciés)
+  - Constat: `npm start` affiche que `@angular-devkit/build-angular:dev-server` est déprécié (support Webpack
+    d'Angular) au profit de `@angular/build:dev-server`. `front/angular.json` utilise ce paquet pour `application`
+    (déjà esbuild), `dev-server`, `extract-i18n` et `karma`.
+  - Piste: `ng update` propose une migration vers `@angular/build`. À vérifier après la tâche Karma, car le builder
+    `karma` en dépend aussi: les deux se traitent mieux ensemble.
+  - À contrôler: taille du bundle (budget 850 kB), `npm start`, build de production et CI.
 - [ ] sécurité: auditer le back et les images, puis scanner dans la CI
   - Back (Gradle) et images Docker n'ont pas encore été analysés.
   - Ajouter un scan de vulnérabilités dans la CI une fois les mises à jour faites, pour ne pas les réintroduire.
@@ -159,3 +158,18 @@ la cible au moment de la migration si une version plus récente est sortie.
   interne dans le magasin système (erreur au démarrage, sans intérêt dans un conteneur). Vérifié sur les trois
   cibles: processus en uid 10001, ports 80/443, redirection 308, gzip, repli SPA, API sur 8080, journaux sans erreur.
   Limite: la capacité est ignorée avec `no-new-privileges` ou si `NET_BIND_SERVICE` est retirée du conteneur
+- [x] front/back: bug fonctionnel, l'ajout d'une organisation à une personne ne mettait pas à jour la liste de l'organisation.
+  La piste du backlog (promesse non attendue) était vraie mais incomplète. Reproduit sur l'API: (1) l'ajout utilisait
+  `PUT` sur `/organizations/{id}/persons`, qui REMPLACE toute la liste (les autres personnes étaient retirées),
+  il faut `POST`; (2) le retrait appelait `DELETE /persons/{id}/organizations/{org}`, qui répond 204 mais ne retire
+  rien (`Person.organizations` est le côté inverse, `mappedBy`), il faut `DELETE /organizations/{org}/persons/{id}`;
+  (3) `addSelectedOrganization` et `removeOrganization` n'attendaient pas la fin de l'appel avant `refresh()`;
+  (4) vu à la validation visuelle: le tableau de la page personne parcourait `organizations` (toutes) au lieu de
+  `person.organizations`, ce qui masquait les ajouts et retraits (corrigé, avec un test).
+  Corrigé dans `organization.service.ts` et `person-details.component.ts`, avec 4 tests qui échouent sur l'ancien code
+- [x] front/back: bug fonctionnel, le format du champ email n'était pas vérifié. Front: l'attribut `email` manquait sur
+  l'`<input>` (le message d'erreur existait mais le validateur n'était pas actif). Back: `@Email` sur
+  `Person.email` et `spring-boot-starter-validation`; le validateur est branché sur les événements `beforeCreate` et
+  `beforeSave` de Spring Data REST, sinon l'API répondait 500 au lieu de 400 pour une valeur invalide. Un email vide
+  reste accepté (champ facultatif). Tests: 3 côté front, 3 côté back (dont un test HTTP qui échoue sans la
+  configuration). Test manuel de l'API: invalide 400 avec le détail, valide 201, vide 201
