@@ -196,7 +196,7 @@
                     </div>
                     <table class="table is-fullwidth">
                       <tbody>
-                        @for (org of organizations; track org) {
+                        @for (org of person.organizations; track org.id) {
                           <tr>
                             <td>
                               <a
