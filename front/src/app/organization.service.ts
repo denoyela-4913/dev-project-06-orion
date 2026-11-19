@@ -57,8 +57,10 @@ export class OrganizationService {
     return org
   }
 
+  // Spring Data REST: sur `/organizations/{id}/persons`, PUT REMPLACE toute la liste (les autres personnes
+  // de l'organisation seraient retirées), POST AJOUTE. Le côté propriétaire de la relation est l'organisation.
   async addPerson(orgId: number, personId: number) {
-    const response = await this.client.put(
+    const response = await this.client.post(
       `${API_BASE_URL}/organizations/${orgId}/persons`,
       `${API_BASE_URL}/persons/${personId}`,
       { headers: { 'Content-Type': 'text/uri-list' } }
@@ -67,9 +69,11 @@ export class OrganizationService {
     return
   }
 
+  // Le retrait passe aussi par l'organisation: `DELETE /persons/{id}/organizations/{org}` répond 204 mais ne
+  // retire rien, car `Person.organizations` n'est que le côté inverse (mappedBy) de la relation.
   async removePerson(orgId: number, personId: number) {
     const response = await this.client.delete(
-      `${API_BASE_URL}/persons/${personId}/organizations/${orgId}`
+      `${API_BASE_URL}/organizations/${orgId}/persons/${personId}`
     )
     await firstValueFrom(response)
     return

@@ -66,23 +66,23 @@ export class PersonDetailsComponent implements OnInit {
     })
   }
 
-  addSelectedOrganization() {
+  // On attend la fin de l'appel avant de recharger: sinon le rechargement peut partir avant que l'API ait
+  // enregistré le lien, et l'écran affiche l'ancien état.
+  async addSelectedOrganization() {
     if (this.selectedOrganization?.id === undefined || this.person.id === undefined) return
-    this.organizationService.addPerson(this.selectedOrganization.id, this.person.id)
-    this.refresh()
+    await this.organizationService.addPerson(this.selectedOrganization.id, this.person.id)
+    await this.refresh()
   }
 
-  removeOrganization(org: Organization) {
+  async removeOrganization(org: Organization) {
     if (org?.id === undefined || this.person.id === undefined) return
-    this.organizationService.removePerson(org.id, this.person.id)
-    this.refresh()
+    await this.organizationService.removePerson(org.id, this.person.id)
+    await this.refresh()
   }
 
-  refresh() {
+  async refresh() {
     if (this.person.id === undefined) return
-    this.personService.fetchById(this.person.id).then(p => {
-      this.person = p
-      this.isNew = false
-    })
+    this.person = await this.personService.fetchById(this.person.id)
+    this.isNew = false
   }
 }
