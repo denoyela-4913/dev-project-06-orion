@@ -14,6 +14,7 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import jakarta.persistence.PreRemove;
+import jakarta.validation.constraints.Email;
 
 @Entity
 public class Person {
@@ -54,6 +55,8 @@ public class Person {
     this.lastName = lastName;
   }
 
+  // Format vérifié côté serveur: le contrôle du front ne protège pas l'API. Une valeur vide reste acceptée.
+  @Email
   private String email;
 
   public String getEmail() {

@@ -8,7 +8,10 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import jakarta.validation.ConstraintViolationException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DataJpaTest
 public class PersonRepositoryIntegrationTest {
@@ -31,5 +34,25 @@ public class PersonRepositoryIntegrationTest {
         Optional<Person> found = personRepository.findByEmail("jdoe@example.net");
 
         assertEquals(jdoe.getEmail(), found.get().getEmail());
+    }
+
+    @Test
+    public void whenEmailHasInvalidFormat_thenSaveIsRejected() {
+        Person person = new Person("John", "Doe", "not-an-email");
+
+        assertThrows(ConstraintViolationException.class, () -> {
+            entityManager.persist(person);
+            entityManager.flush();
+        });
+    }
+
+    @Test
+    public void whenEmailIsEmpty_thenSaveIsAccepted() {
+        Person person = new Person("John", "Doe", "");
+
+        entityManager.persist(person);
+        entityManager.flush();
+
+        assertEquals("", person.getEmail());
     }
 }
