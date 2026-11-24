@@ -1,0 +1,26 @@
+#separator:comma
+#html:true
+#notetype:Basic
+#deck:Orion::pense-bete-devops-outils
+"Quelle question chacun des six outils résout-il : Terraform, Ansible, Docker, Compose, Kubernetes, Helm ?",Terraform : quelle infra créer. Ansible : comment configurer les machines. Docker : comment empaqueter l'appli. Compose : comment la lancer sur une machine. Kubernetes : comment la faire tourner sur un cluster. Helm : comment réutiliser et paramétrer les manifestes k8s.
+Dans quel ordre enchaîne-t-on les outils pour un déploiement complet ?,"Terraform (infra), Ansible (configuration des machines), Docker (image), Helm (déploiement du chart), Kubernetes (l'appli tourne). En dev local, <code>docker compose up</code> remplace les deux dernières étapes."
+Quelle est la différence entre Terraform et Ansible ?,"Terraform provisionne (crée VM, réseau, cluster). Ansible configure l'intérieur des machines existantes (paquets, utilisateurs, services)."
+Quelle est la différence entre Docker Compose et Kubernetes ?,"Compose lance plusieurs conteneurs sur une seule machine (dev, petit serveur). Kubernetes les orchestre sur un cluster (prod, haute disponibilité, mise à l'échelle, redémarrages automatiques)."
+Helm fonctionne-t-il avec Docker Compose ?,Non. Helm n'existe que dans l'univers Kubernetes : c'est un gestionnaire de paquets et de templates pour les manifestes k8s.
+Qu'est-ce qu'un chart Helm et qu'est-ce qu'une release ?,"Un chart est un modèle paramétrable de manifestes k8s (<code>Chart.yaml</code>, <code>templates/</code>, <code>values.yaml</code>). Une release est une installation de ce chart dans un cluster, avec son historique de révisions."
+Que fait <code>helm template</code> ?,"Il affiche les manifestes YAML générés à partir du chart et des values, sans rien déployer. Utile pour vérifier avant <code>helm install</code>."
+Comment revenir en arrière avec Helm ?,<code>helm rollback &lt;release&gt; &lt;révision&gt;</code> remet la release à une révision précédente de son historique.
+Quelle est la commande clé de chaque outil ?,"<code>terraform apply</code>, <code>ansible-playbook</code>, <code>docker build</code> / <code>docker run</code>, <code>docker compose up</code>, <code>kubectl apply</code>, <code>helm install</code>."
+Quel fichier typique pour chaque outil ?,Terraform : <code>main.tf</code>. Ansible : <code>playbook.yml</code>. Docker : <code>Dockerfile</code>. Compose : <code>compose.yaml</code>. Kubernetes : manifestes YAML. Helm : <code>Chart.yaml</code> et <code>values.yaml</code>.
+Que signifie IaC ?,"Infrastructure as Code : décrire l'infrastructure (machines, réseaux, services) dans des fichiers versionnés plutôt que de la créer à la main. Terraform en est l'exemple typique."
+Que signifie k8s ?,"Abréviation de Kubernetes : « k », puis les 8 lettres « ubernete », puis « s »."
+Que signifie HCL ?,HashiCorp Configuration Language : le langage des fichiers <code>.tf</code> de Terraform.
+Que signifie VPC ?,"Virtual Private Cloud : un réseau privé virtuel isolé chez un fournisseur cloud, dans lequel Terraform crée les machines."
+Que signifie YAML ?,"YAML Ain't Markup Language : un format de données lisible, utilisé par Compose, les manifestes Kubernetes, les playbooks Ansible et <code>values.yaml</code> de Helm."
+Qu'est-ce que le state de Terraform ?,Le fichier d'état qui mémorise ce que Terraform a déjà créé. Il lui permet de calculer l'écart entre le code et la réalité lors de <code>terraform plan</code> et <code>terraform apply</code>.
+Que veut dire qu'un playbook Ansible est idempotent ?,"Le relancer ne change rien si la machine est déjà dans l'état décrit. Ansible agit par SSH, sans agent installé sur les machines."
+Citez deux chevauchements entre ces outils.,"Terraform a des providers <code>helm</code> et <code>kubernetes</code> : il peut créer le cluster puis y déployer des releases. Ansible peut appeler Docker, Compose ou <code>kubectl</code>, mais on l'utilise alors comme simple script."
+"Quels outils sont déclaratifs, c'est-à-dire décrivent un état désiré ?","Terraform, Compose, Kubernetes et Helm. Ansible décrit aussi un état, avec des tâches idempotentes."
+"Lequel de ces outils Orion utilise-t-il déjà, et où ?","Seulement Docker : le <code>Dockerfile</code> a trois cibles (<code>front</code>, <code>back</code>, <code>standalone</code>). Il n'y a encore ni Compose, ni manifeste k8s, ni chart Helm, ni Terraform, ni Ansible."
+"Que fait la cible <code>standalone</code> du <code>Dockerfile</code> d'Orion, et que ferait Compose à sa place ?","Elle met Caddy et Java dans un seul conteneur, lancés par <code>supervisord</code> (<code>misc/docker/supervisor.ini</code>). Avec Compose ou Kubernetes, on lancerait deux conteneurs séparés, un par cible <code>front</code> et <code>back</code>."
+Que prévoit le plan de la partie 2 pour le déploiement d'Orion ?,"Un déploiement automatisé en trois temps : Docker, puis Kubernetes + Helm, puis Terraform + Ansible. En local : Docker et Minikube. Rollback par <code>helm rollback</code> (<code>docs/livrables/02_normalisation_plan_ci.md</code>)."
