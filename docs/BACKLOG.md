@@ -83,7 +83,15 @@ la cible au moment de la migration si une version plus récente est sortie.
   - Duplication (1,7 %): 14 lignes dupliquées dans chacun de `Organization.java` et `Person.java`, à examiner.
   - Code smells (9): labels de formulaire (`Web:S6853`, 6), opération asynchrone dans un constructeur
     (`typescript:S7059`, 1), `Number.parseInt` à préférer à `parseInt` (`typescript:S7773`, 2).
-  - À faire de préférence après la migration d'Angular, pour ne pas corriger deux fois du code touché par `ng update`.
+  - À faire de préférence après la migration d'Angular, pour ne pas corriger deux fois du code touché par `ng update`
+    (migration faite, cf. « Fait »).
+  - Lots, dans l'ordre décidé (une branche `front/…` par lot, tests qui échouent d'abord):
+    1. promesses non gérées (`typescript:S9383`, 16): le lot le plus gros, et il touche la logique des composants
+    2. accessibilité et petites corrections: labels de formulaire (`Web:InputWithoutLabelCheck` ×7, `Web:S6853` ×6),
+       `<th>` du tableau (`Web:S5256`), `Number.parseInt` (`S7773` ×2), opération asynchrone dans le constructeur (`S7059`)
+    3. couverture de tests (le gate Sonar de `main` était en échec pour `new_coverage` = 0 %, à relire sur l'analyse
+       de `main` après la PR #14) et duplication `Organization.java` / `Person.java`
+  - Le jalon `v0.1.0` (tag et cliché Sonar dans `docs/quality/`) vient après ces trois lots.
 - [ ] ci: améliorer la précision de l'analyse Java de Sonar (`sonar.java.libraries`)
   - Constat: le scan signale `Missing 'sonar.java.libraries'` et des types non résolus, car le scanner générique
     (choisi pour garder un seul projet Sonar) ne connaît pas le classpath Gradle, contrairement au plugin
