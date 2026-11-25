@@ -51,8 +51,8 @@ statique pour ne pas introduire de mauvaises pratiques Java.
    recommandé.
 
 Sources principales : documentation GitLab CI et GitHub Actions, documentation Trivy, documentation
-SonarQube / SonarQube Cloud, documentation Docker et BuildKit, documentation Harbor, documentation
-Kubernetes, Helm, Terraform et Ansible, OWASP Top 10.
+SonarQube / SonarQube Cloud, documentation Docker et BuildKit, documentation Harbor, documentation Sonatype Nexus Repository,
+documentation GitHub Packages, documentation Kubernetes, Helm, Terraform et Ansible, OWASP Top 10.
 
 ## 2.2 Technologies évaluées
 
@@ -88,13 +88,17 @@ Kubernetes, Helm, Terraform et Ansible, OWASP Top 10.
   mauvaises pratiques). Les avertissements `FromAsCasing` observés au build Docker sont du même ordre.
 - **Cas d'usage** : job CI rapide, exécuté avant les tests.
 
-### 2.2.4 Registres d'images : Docker Hub, GHCR, GitLab Container Registry, Harbor
+### 2.2.4 Registres d'images : Docker Hub, GHCR, GitLab Container Registry, Harbor, Nexus
 
-- **Description** : dépôts d'images OCI. Harbor est open source et auto-hébergeable ; les autres sont des
-  services hébergés.
+- **Description** : dépôts d'images OCI. Harbor et Nexus (Sonatype) sont auto-hébergeables (Nexus gère aussi les
+  artefacts de build, pas seulement les images) ; les autres sont des services hébergés.
 - **Catégorisation** : registre.
-- **Fonctionnalités clés (Harbor)** : contrôle d'accès par projet, scan de vulnérabilités intégré
-  (Trivy), signature, réplication, quotas, politiques de rétention.
+- **Fonctionnalités clés** : Harbor analyse les vulnérabilités des images avec Trivy, à condition de l'activer
+  à l'installation (option `--with-trivy`) [1]. Nexus Repository propose des dépôts Docker hébergés et proxy ;
+  sa page des éditions réserve la quarantaine automatique des logiciels malveillants et les politiques
+  d'admission (âge, CVSS, risque) aux éditions Pro+ et Enterprise [2]. GHCR s'authentifie avec le
+  `GITHUB_TOKEN` d'un workflow (permissions `contents: read` et `packages: write`) [3] et son usage est
+  gratuit pour les paquets publics [4].
 - **Cas d'usage** : stockage des images livrées aux Ops, promotion d'une image testée vers
   l'environnement de démonstration.
 
@@ -106,7 +110,7 @@ Kubernetes, Helm, Terraform et Ansible, OWASP Top 10.
   environnements, registre de conteneurs intégré, modèles réutilisables.
 - **Cas d'usage** : pipeline à chaque push et à chaque PR/MR.
 - **Contexte Orion** : le dépôt contient le `.gitlab-ci.yml` d'origine et le workflow GitHub Actions qui le
-  remplace (voir 2.3.5).
+  remplace (voir 2.3.5). Les projets précédents s'appuient déjà sur GitHub.
 
 ### 2.2.6 Docker Compose, Kubernetes, Helm, Minikube
 
@@ -148,14 +152,71 @@ entièrement (ESLint et hadolint tournent en quelques secondes, avant les tests)
 
 ### 2.3.3 Registre d'images
 
-| Comparé à | Docker Hub | GHCR / GitLab Registry | Harbor |
-|---|---|---|---|
-| **Docker Hub** | – | **Avantage vs Docker Hub** : intégré à la plateforme CI, authentification par le jeton du pipeline. **Inconvénient** : toujours externe. | **Avantages** : interne, contrôle d'accès, scan, rétention. **Inconvénients** : un service de plus à héberger et à mettre à jour. |
-| **GHCR / GitLab Registry** | **Avantage vs GHCR** : très répandu. **Inconvénients** : quotas de téléchargement, dépendance externe (point soulevé par les Ops). | – | **Avantages** : interne, scan natif. **Inconvénients** : exploitation à charge des Ops. |
-| **Harbor** | **Avantage vs Harbor** : aucune exploitation. **Inconvénients** : externe. | **Avantage vs Harbor** : aucune exploitation, démarrage immédiat. **Inconvénient** : externe. | – |
+| Comparé à | Docker Hub | GHCR / GitLab Registry | Harbor | Nexus |
+|---|---|---|---|---|
+| **Docker Hub** | – | **Avantage vs Docker Hub** : intégré à la plateforme CI, authentification par le jeton du pipeline. **Inconvénient** : toujours externe. | **Avantages** : interne, contrôle d'accès, scan, rétention. **Inconvénients** : un service de plus à héberger et à mettre à jour. | **Avantages** : interne, gère aussi les artefacts de build. **Inconvénients** : un service de plus à héberger ; l'édition gratuite est limitée à 40 000 composants et 100 000 requêtes par jour [2]. |
+| **GHCR / GitLab Registry** | **Avantage vs GHCR** : très répandu. **Inconvénients** : quotas de téléchargement, dépendance externe (point soulevé par les Ops). | – | **Avantages** : interne, scan natif. **Inconvénients** : exploitation à charge des Ops. | **Avantages** : interne, gère aussi les artefacts de build. **Inconvénients** : exploitation à charge des Ops, injoignable par des runners hébergés. |
+| **Harbor** | **Avantage vs Harbor** : aucune exploitation. **Inconvénients** : externe. | **Avantage vs Harbor** : aucune exploitation, démarrage immédiat. **Inconvénient** : externe. | – | **Avantage vs Harbor** : gère aussi les artefacts de build. **Inconvénients** : quarantaine et politiques d'admission réservées aux éditions payantes [2], exploitation équivalente. |
+| **Nexus** | **Avantage vs Nexus** : aucune exploitation. **Inconvénients** : externe. | **Avantage vs Nexus** : aucune exploitation, joignable par les runners hébergés, démarrage immédiat. **Inconvénient** : externe. | **Avantages vs Nexus** : orienté images, scan par Trivy intégré [1]. **Inconvénient** : ne gère pas les artefacts de build. | – |
 
-**Choix : registre de la plateforme CI (GHCR ou GitLab Registry) à court terme**, car il permet de livrer
-rapidement ; **Harbor à confirmer avec les Ops** pour répondre à leur demande de registre interne.
+**Choix : GHCR (GitHub Container Registry).** Il prolonge le choix de GitHub et GitHub Actions, dans la
+continuité des projets précédents, pour garder un environnement cohérent (GitHub, GitHub Actions, GHCR).
+Harbor et Nexus sont écartés pour Orion, pour les raisons suivantes.
+
+**Pourquoi un registre local (Harbor, Nexus) ne convient pas à une CI hébergée.**
+
+1. **Les runners doivent atteindre le registre.** Le pipeline GitHub Actions s'exécute sur des runners
+   hébergés par la plateforme, sur Internet. Pour pousser une image (étape release) et la relire (scan Trivy
+   de l'image, déploiement), ils doivent joindre le registre. Un registre dans le réseau d'Orion est
+   injoignable depuis ces runners.
+2. **Les contourner annule l'intérêt de la CI hébergée.** Il faut soit exposer le registre sur Internet
+   (surface d'attaque à sécuriser, certificats, filtrage), soit installer des runners auto-hébergés dans le
+   réseau d'Orion. Dans ce second cas, l'équipe doit patcher, surveiller et sauvegarder ces machines, donc
+   exploiter à la fois les runners et le registre. Le problème est identique avec GitLab CI et ses runners
+   partagés.
+3. **Charge d'exploitation disproportionnée.** Harbor et Nexus sont des services de plus à installer, mettre à jour,
+   sauvegarder et superviser. Les deux Ops
+   assurent déjà le déploiement ; ce temps est précisément celui que l'automatisation doit libérer (objectif
+   O2). Une panne du registre bloquerait aussi la CI et les livraisons (risque R6).
+4. **Les fonctions qui justifient Harbor sont déjà couvertes ailleurs.** Le scan de vulnérabilités de Harbor
+   repose sur Trivy [1], que la CI exécute déjà avant la publication (recommandation 1) ; l'accès en
+   écriture se règle par les permissions du workflow et le jeton du pipeline [3]. Un seul environnement de
+   démonstration n'a pas besoin d'un registre multi-sites.
+5. **Nexus apporte peu ici.** Il gère les artefacts de build et les images [2], alors que les dépendances
+   d'Orion sont déjà verrouillées (lockfile Gradle, `package-lock.json`) et que le besoin porte uniquement
+   sur des images. Son édition gratuite est plafonnée (40 000 composants, 100 000 requêtes par jour) et les
+   contrôles de sécurité avancés sont réservés aux éditions payantes [2].
+
+**Pourquoi GHCR convient.**
+
+- Authentification par le jeton du pipeline (`GITHUB_TOKEN`), sans secret à gérer en plus [3].
+- Aucune infrastructure à exploiter ; démarrage immédiat, ce qui permet de livrer dès la semaine 2.
+- Image rattachée au dépôt et à la version (tag SemVer), donc traçabilité entre commit, release et image.
+- Le serveur de démonstration n'a besoin que d'un accès **sortant** vers `ghcr.io`, plus simple à autoriser
+  qu'un accès entrant depuis Internet.
+- Gratuit pour les paquets publics ; le stockage et la bande passante du Container registry sont
+  actuellement gratuits, GitHub s'engageant à prévenir un mois avant tout changement [4]. Un accès par
+  `GITHUB_TOKEN` depuis un workflow est gratuit [4].
+
+**Limites assumées de GHCR** : dépendance à un service externe (risque R6, atténué par la livraison manuelle
+de secours et la conservation de l'image construite comme artefact de la CI), politique de nettoyage des
+anciennes versions à vérifier et à planifier dans la CI (non sourcée à ce stade), tarification du Container
+registry susceptible d'évoluer [4] ; le scan est assuré par Trivy dans la CI. **La demande des
+Ops d'un registre « interne » est donc traitée par le besoin sous-jacent** (images scannées avant
+transmission, versions traçables) **et non par l'hébergement.** Un registre local redeviendrait pertinent si
+Orion passait à des runners auto-hébergés, ou si une exigence réglementaire imposait que les images ne
+quittent pas son réseau ; à ré-évaluer à ce moment-là.
+
+**Références de cette section** (consultées le 24/11/2026) :
+
+1. Harbor, *Vulnerability Scanning* : <https://goharbor.io/docs/edge/administration/vulnerability-scanning/>
+2. Sonatype, *Nexus Repository Tiers and Feature Availability* :
+   <https://help.sonatype.com/en/nexus-repository-tiers-and-feature-availability.html> (les limites de
+   l'édition communautaire sont à recouper sur la page en ligne : tableau lu via un résumé automatique)
+3. GitHub Docs, *Publishing and installing a package with GitHub Actions* :
+   <https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions>
+4. GitHub Docs, *GitHub Packages billing* :
+   <https://docs.github.com/en/billing/concepts/product-billing/github-packages>
 
 ### 2.3.4 Orchestration
 
@@ -173,9 +234,12 @@ rapidement ; **Harbor à confirmer avec les Ops** pour répondre à leur demande
 | **GitLab CI** | – | **Avantages de GitHub Actions vs GitLab CI** : dépôt déjà hébergé sur GitHub ; large catalogue d'actions ; runners hébergés prêts à l'emploi. **Inconvénients** : actions tierces à épingler par SHA pour la sécurité de la chaîne d'approvisionnement. |
 | **GitHub Actions** | **Avantages de GitLab CI vs GitHub Actions** : plateforme unique (code, CI, registre, environnements) ; **imposé par le sujet** (livrable : lien GitLab public). **Inconvénients** : un dépôt de plus à synchroniser si le code reste sur GitHub. | – |
 
-**Choix actuel : GitHub Actions** (le dépôt de travail est sur GitHub, le workflow est validé et épinglé).
-**Point ouvert** : le livrable doit être un dépôt GitLab public. Deux options : miroir du dépôt vers GitLab
-avec le `.gitlab-ci.yml` maintenu, ou bascule complète. Cette décision est à arbitrer avant la livraison.
+**Choix : GitHub Actions**, dans la continuité des projets précédents : le dépôt, la CI et le registre
+(GHCR, voir 2.3.3) restent sur un environnement cohérent (GitHub, GitHub Actions, GHCR), déjà connu de
+l'équipe. Le workflow est validé et ses actions sont épinglées par SHA.
+**Point de vigilance** : le sujet évoque un lien GitLab public pour le livrable. À confirmer avec le mentor
+que le dépôt GitHub public est accepté ; à défaut, un miroir vers GitLab avec le `.gitlab-ci.yml` maintenu
+reste possible (voir risque R2 du plan de CI).
 
 # 3. Audit des processus de développement
 
@@ -307,8 +371,8 @@ livraison. Le processus Ops est extrêmement limité et entièrement manuel.
 
 ### 4.2.6 Déploiement automatisé : registre, Kubernetes, Helm, Terraform, Ansible
 
-- **Description** : mettre en place un registre d'images (Harbor à confirmer, sinon registre de la
-  plateforme), orchestrer avec Kubernetes et Helm, créer l'infrastructure avec Terraform, la configurer
+- **Description** : mettre en place un registre d'images (GHCR, registre de la plateforme CI ; Harbor et Nexus
+  écartés, voir 2.3.3), orchestrer avec Kubernetes et Helm, créer l'infrastructure avec Terraform, la configurer
   avec Ansible (déjà maîtrisé par les Ops).
 - **Raisonnement** : libérer les Ops du déploiement manuel pour qu'ils se consacrent aux vérifications et aux
   processus ; rendre le déploiement et le rollback reproductibles.
@@ -337,7 +401,7 @@ Le calendrier part de la semaine du 23/11/2026. La colonne « État » reflète 
 | **S1** (23–27/11) | P1 | Automatisation de la CI et livraison automatique de l'image aux Ops (reprise rapide en cas de défaut urgent). | CI de tests + build **en place** (GitHub Actions) ; publication d'image à faire. |
 | S1 | P2 | Analyse statique du back (SonarQube) en mode non bloquant ; ajout de Trivy et lint. | SonarQube en place ; Trivy et lint à faire. |
 | **S2** (30/11–04/12) | P3 | Automatiser toutes les opérations (dont sécurité) jusqu'au déploiement, avec **déclenchement manuel de secours**. | À faire. |
-| S2 | P4 | Registre d'images (Harbor à confirmer, sinon registre de la plateforme). | À faire. |
+| S2 | P4 | Registre d'images : GHCR (voir 2.3.3). | À faire. |
 | **S3** (07–11/12) | P5 | Versionnement automatique de la livraison à la fusion d'une PR. | À faire. |
 
 Cas particulier : le passage du Quality Gate SonarQube en mode **bloquant** est prévu en S3, une fois les
