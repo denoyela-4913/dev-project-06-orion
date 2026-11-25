@@ -16,8 +16,6 @@ Résumé de la conversation (pas la transcription: le dépôt est public).
   Base: `main` du dépôt `origin`, pas celle d'OpenClassrooms (fork): passer `--repo` à `gh pr create`.
   Titre: `ci: run sonar between tests and build`. Ne pas fusionner sans accord de l'utilisateur.
 - Sur la PR, vérifier: les builds attendent `sonar`; `learning/` absent de l'analyse; Quality Gate; durée du run.
-- Fichiers non commités: ceux de la session distante ont été fournis en archive à l'utilisateur. La copie locale
-  peut différer: comparer avant d'écraser.
 - Proposé à l'utilisateur, **pas encore décidé**: contrôles sur les branches de dev, une branche `ci/…` par ajout,
   non bloquants au début: ESLint (`angular-eslint`, `no-floating-promises`), puis `diff-cover` (couverture du code
   nouveau par rapport à `origin/main`, demande la couverture dans `test-front`), Trivy, hadolint et ShellCheck,
@@ -42,15 +40,16 @@ Résumé de la conversation (pas la transcription: le dépôt est public).
   illimité en plan OSS. Plan de l'organisation non vérifié. Projet Sonar en visibilité publique.
 - Le dépôt GitHub est public mais **pas open source au sens d'une licence**: aucun fichier de licence trouvé;
   c'est un fork d'un dépôt OpenClassrooms qui n'en affiche pas non plus.
-- Aussi non commité (présent dans le dossier de travail avant cette branche): livrables 01 et 02,
-  `schema_pipeline_ci_cd.png`, `scripts/build-livrables.sh`. `docs/inputs/` (sujet et mails): non suivi,
-  déconseillé dans un dépôt public.
+- Livrables 01 et 02, `schema_pipeline_ci_cd.png`, `scripts/build-livrables.sh` et `docs/inputs/` (sujet, mails,
+  modèles): commités sur cette branche (`8b1eed9`), ils font donc partie de la même PR. L'utilisateur a décidé de
+  garder `docs/inputs/` dans le dépôt (26/11). Fichiers `*:Zone.Identifier` retirés et ignorés (`.gitignore`).
+- CI de `8b1eed9` en échec (run 45718448702): `429 Too Many Requests` de Maven Central dans `test-back`.
 - À mettre à jour dans les livrables: gate en échec sur deux conditions (et non la seule couverture), durée de
   référence (112 s sans `sonar`, 127 s avec, mesure `v0.0.2`), ordre tests → Sonar → build (texte et schéma).
 
 ## Prochaine étape (ordre décidé)
 
-0. Terminer `ci/sonar-before-build` (PR) et commiter les livrables sur une branche `docs/…`.
+0. Terminer `ci/sonar-before-build` (PR).
    Puis examiner les 3 vulnérabilités CORS du back (`java:S5122`), absentes du cliché `v0.0.2`.
 1. Issues Sonar du front, une branche `front/…` par lot:
    1. promesses non gérées `typescript:S9383` (16)
