@@ -14,10 +14,15 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 - Sonar sur `main` (analyse du 24/11): couverture 42,2 % (lignes: back 62,7 %, front 42,1 %, `learning/` 0 %),
   21 bugs, 15 code smells, 5 vulnérabilités. Gate ERROR: `new_coverage` 30,8 % (seuil 80 %) et note de sécurité
   du code nouveau à 3 (cause probable: les 2 vulnérabilités de `learning/anki_csv.py`).
-- **En cours, branche `ci/sonar-before-build`, non commité**: exclusion de `learning/**` dans Sonar, et ordre
-  tests → `sonar` → build (gate non bloquant; un échec technique du scan bloque le build). YAML relu par un
-  parseur seulement: à valider par la CI (push de branche: `sonar` sauté, les builds doivent tourner; PR:
-  les builds doivent attendre `sonar`). L'effet de l'exclusion se lira sur l'analyse de la PR.
+- **En cours, branche `ci/sonar-before-build`, commitée et poussée (`c00734e`), pas de PR**: exclusion de
+  `learning/**` dans Sonar, et ordre tests → `sonar` → build (gate non bloquant; un échec technique du scan bloque
+  le build). Run de push n° 79 réussi en 2 min 01, les deux builds exécutés (`sonar` à 0 s: sauté d'après la
+  condition, statut du job non affiché sur la page publique). Reste à valider sur la PR: les builds attendent
+  `sonar`, effet de l'exclusion, durée. La PR #16 avait un gate ERROR avec 2 vulnérabilités et 4 code smells.
+- Sonar sur branche de dev: d'après la documentation, impossible en plan Free (analyse de branche sur `main` seule);
+  illimité en plan OSS. Plan de l'organisation non vérifié. Projet Sonar en visibilité publique.
+- Le dépôt GitHub est public mais **pas open source au sens d'une licence**: aucun fichier de licence trouvé;
+  c'est un fork d'un dépôt OpenClassrooms qui n'en affiche pas non plus.
 - Aussi non commité (présent dans le dossier de travail avant cette branche): livrables 01 et 02,
   `schema_pipeline_ci_cd.png`, `scripts/build-livrables.sh`. `docs/inputs/` (sujet et mails): non suivi,
   déconseillé dans un dépôt public.
@@ -26,7 +31,7 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 
 ## Prochaine étape (ordre décidé)
 
-0. Terminer `ci/sonar-before-build` (commits, CI, PR) et commiter les livrables sur une branche `docs/…`.
+0. Terminer `ci/sonar-before-build` (PR) et commiter les livrables sur une branche `docs/…`.
    Puis examiner les 3 vulnérabilités CORS du back (`java:S5122`), absentes du cliché `v0.0.2`.
 1. Issues Sonar du front, une branche `front/…` par lot:
    1. promesses non gérées `typescript:S9383` (16)
