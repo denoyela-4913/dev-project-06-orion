@@ -81,8 +81,8 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
 - Fréquence d'intégration : au moins une PR par jour de travail sur une fonctionnalité ; branches de moins de
   quelques jours.
 - Critère de réussite : tous les jobs obligatoires verts (lint, tests, build, scans).
-- Outil : GitHub Actions (workflow validé) ; équivalent GitLab CI maintenu pour la livraison (voir 3.5, risque
-  R2).
+- Outil : GitHub Actions (workflow validé), dans la continuité des projets précédents : environnement cohérent
+  GitHub, GitHub Actions, GHCR (voir 3.5, risque R2 pour le lien GitLab attendu par le sujet).
 - Durée de référence mesurée (sans cache) : environ **108 s** par run (min 99 s, max 116 s).
 
 ## 2.6 Tests
@@ -168,9 +168,9 @@ déclencher manuellement une livraison en cas de panne de l'automatisation.
 | Ressource | Détail |
 |---|---|
 | Personnel | 4 Dev, 2 Ops (un DevOps pour la mise en place) |
-| Plateforme CI | GitHub Actions ; dépôt GitLab public à fournir (voir risque R2) |
+| Plateforme CI | GitHub Actions (continuité des projets précédents) ; lien GitLab du sujet : voir risque R2 |
 | Qualité | SonarQube Cloud (compte et jeton), Trivy (open source) |
-| Registre | registre de la plateforme CI ; Harbor à confirmer |
+| Registre | GHCR (registre de la plateforme CI) ; Harbor et Nexus écartés (runners hébergés, voir Modèle 1 §2.3.3) |
 | Environnement | environnement de démonstration ; local : Docker, Minikube |
 | Budget | principalement du temps ; services gratuits (Free Tier) |
 
@@ -191,11 +191,11 @@ Dans un fonctionnement normal (ressources disponibles, sans blocage).
 | # | Risque | Probabilité | Mesure d'atténuation |
 |---|---|---|---|
 | R1 | Équipe Dev peu expérimentée en Java : sous-estimation des corrections | Haute | Sonar non bloquant d'abord ; revue systématique ; formation courte ; pair programming avec un Ops/senior |
-| R2 | Le sujet exige GitLab CI alors que le dépôt de travail est sur GitHub | Haute | Maintenir un `.gitlab-ci.yml` équivalent et un miroir GitLab public ; décision à prendre avant la livraison |
+| R2 | Le sujet évoque un lien GitLab public alors que le choix assumé est GitHub (dépôt, Actions, GHCR) | Moyenne | Faire confirmer par le mentor que le dépôt GitHub public est accepté ; sinon, miroir GitLab avec un `.gitlab-ci.yml` équivalent |
 | R3 | Couverture de tests faible (37,1 %) : Quality Gate difficile à tenir | Moyenne | Seuil de 80 % sur le **code nouveau** seulement ; ajout de tests à chaque correctif |
 | R4 | Faux positifs Trivy qui bloquent la CI | Moyenne | Fichier d'exceptions justifiées (`.trivyignore`) ; bloquer seulement les CVE corrigeables |
 | R5 | Panne de l'automatisation lors d'une livraison urgente | Moyenne | Livraison manuelle de secours documentée |
-| R6 | Dépendance à un service externe (Sonar, registre) | Moyenne | Jetons en secrets ; Harbor à moyen terme ; mesure de disponibilité |
+| R6 | Dépendance à un service externe (Sonar, registre) | Moyenne | Jetons en secrets ; image conservée comme artefact de la CI ; livraison manuelle de secours ; mesure de disponibilité |
 | R7 | Savoir de sécurité concentré chez 2 Ops | Moyenne | Partage via la CI et la documentation ; relecture croisée |
 
 # 4. Conclusion
@@ -214,25 +214,8 @@ processus automatisé, répétable et mesurable.
 - Mettre en œuvre la partie 2 : Docker, Kubernetes, Helm, Terraform, Ansible, monitoring, métriques DORA.
 - Réviser ce document à chaque jalon.
 
-# Annexe : schéma initial du pipeline cible
+# Annexe : schéma du pipeline cible
 
-À reproduire dans draw.io pour la version finale.
+Vert : fait ; orange : à faire ; rouge : secours et rollback. Source modifiable : `schema_pipeline_ci_cd.drawio`.
 
-```
-push / pull request
-        |
-   [ lint ]  ESLint | Checkstyle/SpotBugs | hadolint
-        |
-   [ test ]  test-front (Karma)  |  test-back (JUnit)
-        |
-   [ build ] build-front | build-back | docker build (3 cibles)
-        |
-   [ scan ]  SonarQube (+ couverture) | Trivy (deps, Dockerfile, images)
-        |   -- gate non bloquant -> bloquant (v0.1.0)
-        |
-   merge sur main --> [ release ]  version SemVer + tag + image dans le registre
-        |
-   [ deploy démo ] Helm / Ansible  --> [ test de déploiement ] --> [ notification ]
-        |
-   échec --> rollback automatique (helm rollback)  |  livraison manuelle de secours
-```
+![Pipeline CI/CD cible d'Orion](schema_pipeline_ci_cd.png){width=9.4in}
