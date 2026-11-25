@@ -2,6 +2,12 @@
 
 ## À faire
 
+- [ ] ci: transmettre les rapports de couverture et les classes Java des jobs de tests au job `sonar` (artefacts)
+  - Constat: les builds attendent maintenant `sonar`, qui relance les tests; `build-back` (`./gradlew build`)
+    les relance aussi.
+  - Pré-requis: mesurer la durée des runs avec l'ordre tests → Sonar → build (référence `v0.0.2`: 127 s avec
+    `sonar` en parallèle; estimation avec l'ordre en série: près de 4 min, non mesurée).
+  - À faire: `test-front` avec `--code-coverage`, actions `upload-artifact` / `download-artifact` épinglées par SHA.
 - [ ] ci: ajouter le cache npm et Gradle (`cache:` de `setup-node` / `setup-java`)
   - Pré-requis: mesurer les durées de run sans cache (`gh run view`), puis avec cache.
   - Mesure sans cache (premier run, 18/11/2026): test-back ~48 s, test-front ~59 s, build-front ~45 s,
