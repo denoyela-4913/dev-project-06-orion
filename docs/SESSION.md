@@ -3,7 +3,26 @@
 Fichier de passage de relais entre sessions (Claude CLI, Claude dans VS Code). À mettre à jour à la fin de chaque
 lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `docs/BACKLOG.md`.
 
-**Dernière mise à jour: 25/11/2026**
+**Dernière mise à jour: 26/11/2026**
+
+## Reprise en local (relais de la session distante du 25-26/11/2026)
+
+Résumé de la conversation (pas la transcription: le dépôt est public).
+
+- Pour reprendre: `git fetch origin && git switch ci/sonar-before-build && git pull --ff-only`. Les modifications
+  locales non commitées peuvent gêner le changement de branche: les examiner avant, sans les écraser.
+- **PR de `ci/sonar-before-build`: à ouvrir** (la session distante n'avait pas d'outil GitHub, même après connexion
+  du compte; `claude rc` ne permettait pas de la relier à l'ordinateur). Vérifier d'abord la CI du dernier commit.
+  Base: `main` du dépôt `origin`, pas celle d'OpenClassrooms (fork): passer `--repo` à `gh pr create`.
+  Titre: `ci: run sonar between tests and build`. Ne pas fusionner sans accord de l'utilisateur.
+- Sur la PR, vérifier: les builds attendent `sonar`; `learning/` absent de l'analyse; Quality Gate; durée du run.
+- Fichiers non commités: ceux de la session distante ont été fournis en archive à l'utilisateur. La copie locale
+  peut différer: comparer avant d'écraser.
+- Proposé à l'utilisateur, **pas encore décidé**: contrôles sur les branches de dev, une branche `ci/…` par ajout,
+  non bloquants au début: ESLint (`angular-eslint`, `no-floating-promises`), puis `diff-cover` (couverture du code
+  nouveau par rapport à `origin/main`, demande la couverture dans `test-front`), Trivy, hadolint et ShellCheck,
+  puis SpotBugs. SonarQube n'exécute pas les tests: il analyse le code et importe la couverture. Ces outils
+  n'ont pas été essayés sur le dépôt.
 
 ## Où on en est
 
@@ -14,7 +33,7 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 - Sonar sur `main` (analyse du 24/11): couverture 42,2 % (lignes: back 62,7 %, front 42,1 %, `learning/` 0 %),
   21 bugs, 15 code smells, 5 vulnérabilités. Gate ERROR: `new_coverage` 30,8 % (seuil 80 %) et note de sécurité
   du code nouveau à 3 (cause probable: les 2 vulnérabilités de `learning/anki_csv.py`).
-- **En cours, branche `ci/sonar-before-build`, commitée et poussée (`c00734e`), pas de PR**: exclusion de
+- **En cours, branche `ci/sonar-before-build`, commitée et poussée, PR à ouvrir**: exclusion de
   `learning/**` dans Sonar, et ordre tests → `sonar` → build (gate non bloquant; un échec technique du scan bloque
   le build). Run de push n° 79 réussi en 2 min 01, les deux builds exécutés (`sonar` à 0 s: sauté d'après la
   condition, statut du job non affiché sur la page publique). Reste à valider sur la PR: les builds attendent
