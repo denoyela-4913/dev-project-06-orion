@@ -72,10 +72,23 @@ jobs:
       - run: ./gradlew test
 
   # --- Stage "build" --------------------------------------------------------
-  # GitLab : "stages: test, build" exécute le build seulement si tous les tests
-  # passent. GitHub n'a pas de stages : "needs" reproduit cette dépendance.
+  # Ordre des stages : tests, puis analyse Sonar (job `sonar`, plus bas), puis build. GitHub n'a pas de
+  # stages : "needs" reproduit ces dépendances (GitLab : "stages: test, build").
+  # - Le Quality Gate n'est PAS bloquant pour l'instant : le scan n'attend pas son résultat
+  #   (pas de `sonar.qualitygate.wait=true`), car le gate de `main` est en échec. À activer quand il sera vert.
+  # - Un scan en échec technique (SonarCloud indisponible, jeton invalide) bloque en revanche le build :
+  #   choix assumé pour garder une règle simple.
+  # - `sonar` ne tourne que sur les PR et `main` : sur les autres branches il est sauté, et le build doit
+  #   quand même s'exécuter.
   build-front:
-    needs: [test-front, test-back]
+    needs: [test-front, test-back, sonar]
+    # Cf. « Ordre des stages » ci-dessus: build si les deux tests ont réussi et si `sonar` a réussi ou a été
+    # sauté. `!cancelled()` est nécessaire: sans fonction de statut, GitHub saute aussi un job dont un
+    # `needs` a été sauté.
+    if: >-
+      !cancelled() &&
+      needs.test-front.result == 'success' && needs.test-back.result == 'success' &&
+      (needs.sonar.result == 'success' || needs.sonar.result == 'skipped')
     runs-on: ubuntu-26.04 # cf. justification dans test-front
     defaults:
       run:
@@ -92,7 +105,14 @@ jobs:
       - run: npm run build -- --optimization
 
   build-back:
-    needs: [test-front, test-back]
+    needs: [test-front, test-back, sonar]
+    # Cf. « Ordre des stages » ci-dessus: build si les deux tests ont réussi et si `sonar` a réussi ou a été
+    # sauté. `!cancelled()` est nécessaire: sans fonction de statut, GitHub saute aussi un job dont un
+    # `needs` a été sauté.
+    if: >-
+      !cancelled() &&
+      needs.test-front.result == 'success' && needs.test-back.result == 'success' &&
+      (needs.sonar.result == 'success' || needs.sonar.result == 'skipped')
     runs-on: ubuntu-26.04 # cf. justification dans test-front
     defaults:
       run:
@@ -109,6 +129,8 @@ jobs:
   # Remplace l'analyse automatique de SonarQube Cloud par un scan lancé ici, ce qui permet d'envoyer la
   # couverture de tests (JaCoCo pour le back, lcov pour le front). Configuration dans sonar-project.properties.
   sonar:
+    # Après les tests : inutile d'analyser un code dont les tests échouent.
+    needs: [test-front, test-back]
     # Seulement sur les PR et sur main, comme l'analyse automatique précédente: pas d'analyse des autres
     # branches (non garanti par le plan gratuit). Les PR venant d'un fork n'ont pas accès au secret
     # SONAR_TOKEN: elles sont exclues pour ne pas échouer systématiquement.
