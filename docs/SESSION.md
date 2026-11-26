@@ -14,9 +14,7 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
   `origin/main`, demande la couverture dans `test-front`), Trivy, hadolint et ShellCheck, puis SpotBugs. SonarQube
   n'exécute pas les tests: il analyse le code et importe la couverture. Ces outils n'ont pas été essayés sur le dépôt.
 - **Pas encore décidé**: rendre les Quality Gates bloquants (`sonar.qualitygate.wait=true`, un par projet Sonar), dans
-  une branche `ci/…`.
-  Le gate de `main` est maintenant vert; le commentaire de `ci.yml` qui justifie le gate non bloquant par son
-  échec est à corriger.
+  une branche `ci/…`. Le gate de `main` est vert.
 
 ## Où on en est
 
@@ -96,14 +94,12 @@ Les trois lots d'issues Sonar du front sont terminés.
 
 1. Jalon `v0.1.0`: créer le tag, attendre la CI de `main`, lancer `scripts/sonar-export-release.sh v0.1.0` (un
    cliché par projet dans `docs/quality/`).
-2. Seuils de couverture en mode bloquant, par une PR dédiée (tâche au backlog): la condition est remplie, le job
-   `coverage` de `main` le signale (run 45902475261). Vérifier qu'aucune autre session ne s'en occupe.
-3. Puis le reste de `docs/BACKLOG.md`: cache npm, `sonar.java.libraries`, 2 `java:S6813`
+2. Puis le reste de `docs/BACKLOG.md`: cache npm, `sonar.java.libraries`, 2 `java:S6813`
    (`InitialDataFixture.java`), scan de sécurité dans la CI, étude nginx, maintenance de
    `ro.polak:spring-boot-data-fixtures`.
 
 Seuils de couverture (décidé le 26/11): 80 % pour le front et pour le back, tout le code et code nouveau (job
-`coverage` de la CI, non bloquant pour l'instant). Sonar ne compte pas les templates HTML.
+`coverage` de la CI), **bloquants** depuis le 26/11 (front 97,5 %, back 93,9 % au passage). Sonar ne compte pas les templates HTML.
 
 ## Questions ouvertes
 
