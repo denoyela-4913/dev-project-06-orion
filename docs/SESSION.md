@@ -36,7 +36,12 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 - Livrables 01 et 02, `schema_pipeline_ci_cd.png`, `scripts/build-livrables.sh` et `docs/inputs/` (sujet, mails,
   modèles) sont dans `main`. L'utilisateur a décidé de garder `docs/inputs/` dans le dépôt (26/11). Fichiers
   `*:Zone.Identifier` retirés et ignorés (`.gitignore`).
-- Incident passager: `429 Too Many Requests` de Maven Central dans `test-back` (run 45718448702).
+- `429 Too Many Requests` de Maven Central, vu deux fois: `test-back` (run 45718448702) et `build-back` sur `main`
+  après la PR #18 (run 45772345591). Le cache Gradle (backlog) pourrait limiter les téléchargements (non mesuré).
+- **PR #19** (`ci/sonar-reuse-test-artifacts`): `sonar` réutilise les résultats des jobs de tests (artefacts).
+  Mesures Sonar identiques sur PR, durée 201 s (détail dans le backlog). **Ne pas fusionner sans le go de
+  l'utilisateur.** Après fusion: comparer l'analyse complète de `main` (avant: 21 bugs, 11 code smells,
+  3 vulnérabilités, couverture 47,1 %), car la PR ne compare que la couverture et le code modifié.
 - Dépôt fork: passer `--repo` (dépôt d'`origin`) à `gh pr create`, pour ne pas viser le dépôt d'OpenClassrooms.
 - À mettre à jour dans les livrables: état du gate (vert sur `main` depuis le 26/11), durées de référence
   (112 s sans `sonar`, 127 s avec, mesure `v0.0.2`; puis les mesures ci-dessus), ordre tests → Sonar → build
@@ -44,8 +49,7 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 
 ## Prochaine étape (ordre décidé)
 
-0. Backlog: transmettre les rapports de couverture et les classes Java des jobs de tests au job `sonar` (artefacts),
-   dans une branche `ci/…`. Fusion de cette PR seulement après accord de l'utilisateur.
+0. Fusionner la PR #19 (après le go) et vérifier `main`.
    Puis examiner les 3 vulnérabilités CORS du back (`java:S5122`), absentes du cliché `v0.0.2`.
 1. Issues Sonar du front, une branche `front/…` par lot:
    1. promesses non gérées `typescript:S9383` (16)
