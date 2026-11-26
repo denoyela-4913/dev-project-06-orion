@@ -22,7 +22,8 @@
             "tsConfig": "tsconfig.app.json",
             "assets": [
               "src/favicon.png",
-              "src/assets"
+              "src/assets",
+              { "glob": "config.js", "input": "src", "output": "/" }
             ],
             "styles": [
               "src/bulma.scss",
