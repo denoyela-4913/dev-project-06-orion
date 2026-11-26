@@ -51,7 +51,7 @@ fetch -X DELETE -H "Origin: $base" "$base/api/persons/$id" >/dev/null || fail "s
 pass "création puis suppression d'une personne"
 
 # Contrôle inverse: une origine étrangère doit rester refusée.
-status=$(curl "${curl_options[@]/--fail/--no-fail}" -o /dev/null -w '%{http_code}' -H 'Origin: http://origine-etrangere.invalid' \
+status=$(curl "${curl_options[@]/--fail/--no-fail}" -o /dev/null -w '%{http_code}' -H 'Origin: https://origine-etrangere.invalid' \
   -H 'Content-Type: application/json' -d '{"firstName":"Intrus"}' "$base/api/persons")
 [[ "$status" = 403 ]] || fail "une écriture d'une origine étrangère n'est pas refusée (code $status)"
 pass "une origine étrangère est refusée"
