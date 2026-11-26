@@ -380,6 +380,42 @@ jobs:
         if: failure()
         run: docker ps -a --format '{{.Names}}' | xargs -r -n1 docker logs --tail 100
 
+  # Tests de bout en bout : un vrai navigateur (Chromium, image Playwright épinglée par digest) parcourt
+  # l'application construite par ce run, lancée avec Compose : création, modification, suppression, liens entre
+  # personnes et organisations (clavier compris), saisie refusée et API indisponible (e2e/tests/).
+  e2e:
+    needs: [images]
+    if: ${{ !cancelled() && needs.images.result == 'success' }}
+    runs-on: ubuntu-26.04 # cf. justification dans test-front
+    env:
+      BACK_IMAGE: microcrm-back:ci
+      FRONT_IMAGE: microcrm-front:ci
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: image-front
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: image-back
+      - run: |
+          docker load -i image-front.tar.gz
+          docker load -i image-back.tar.gz
+      - run: scripts/compose.sh dev up -d --no-build --wait --wait-timeout 180
+      - run: scripts/e2e.sh http://localhost:4280
+      - name: Journaux de l'application en cas d'échec
+        if: failure()
+        run: scripts/compose.sh dev logs --tail 100
+      # Rapport et traces Playwright pour diagnostiquer un échec sans le reproduire.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: e2e-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 7
+
   # --- Stage "scan" ---------------------------------------------------------
   # Trivy sur les trois images construites par `images` (celles qui seront publiées) et sur le dépôt
   # (dépendances, secrets, configurations). Bloquant sur une vulnérabilité critique ou haute qui a un correctif.
@@ -410,12 +446,12 @@ jobs:
   # GitHub crée le tag, avec les notes et le chart Helm. Le tag vient en dernier : il n'existe que pour une
   # version complète. En cas d'envoi interrompu, relancer le job avec la variable FORCE du script.
   release:
-    needs: [build-front, build-back, images, compose-test, scan, infra-check]
+    needs: [build-front, build-back, images, compose-test, e2e, scan, infra-check]
     if: >-
       !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
       needs.build-front.result == 'success' && needs.build-back.result == 'success' &&
       needs.images.result == 'success' && needs.compose-test.result == 'success' &&
-      needs.scan.result == 'success' && needs.infra-check.result == 'success'
+      needs.scan.result == 'success' && needs.infra-check.result == 'success' && needs.e2e.result == 'success'
     runs-on: ubuntu-26.04 # cf. justification dans test-front
     # Seul job qui peut écrire dans le dépôt et le registre.
     permissions:
@@ -492,7 +528,7 @@ jobs:
   # Quand le run vient de publier une version, ses images sont relues depuis GHCR : cela prouve que ce qui est
   # publié se déploie. Sinon (PR, ou `main` sans nouvelle version), les images du run sont chargées telles quelles.
   deploy-demo:
-    needs: [images, compose-test, scan, infra-check, release]
+    needs: [images, compose-test, e2e, scan, infra-check, release]
     # `release` est sauté hors de `main` : le déploiement s'exécute quand même. Son échec, lui, l'arrête.
     # Sur les PR et `main` seulement, comme Sonar : c'est le job le plus long (plus de 6 minutes), et la CI d'une
     # branche de dev, qui précède toujours sa PR, n'a pas à le faire une première fois.
@@ -500,7 +536,7 @@ jobs:
       !cancelled() &&
       (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') &&
       needs.images.result == 'success' && needs.compose-test.result == 'success' &&
-      needs.scan.result == 'success' && needs.infra-check.result == 'success' &&
+      needs.scan.result == 'success' && needs.infra-check.result == 'success' && needs.e2e.result == 'success' &&
       (needs.release.result == 'success' || needs.release.result == 'skipped')
     runs-on: ubuntu-26.04 # cf. justification dans test-front
     timeout-minutes: 20
