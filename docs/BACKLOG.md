@@ -2,12 +2,6 @@
 
 ## À faire
 
-- [ ] ci: transmettre les rapports de couverture et les classes Java des jobs de tests au job `sonar` (artefacts)
-  - Constat: les builds attendent maintenant `sonar`, qui relance les tests; `build-back` (`./gradlew build`)
-    les relance aussi.
-  - Mesures avant changement (26/11/2026, ordre en série): PR 246 s (run 45719775318), `main` 295 s
-    (run 45767726242, dont `sonar` 171 s). Référence `v0.0.2`: 127 s avec `sonar` en parallèle.
-  - À faire: `test-front` avec `--code-coverage`, actions `upload-artifact` / `download-artifact` épinglées par SHA.
 - [ ] ci: ajouter le cache npm et Gradle (`cache:` de `setup-node` / `setup-java`)
   - Pré-requis: mesurer les durées de run sans cache (`gh run view`), puis avec cache.
   - Mesure sans cache (premier run, 18/11/2026): test-back ~48 s, test-front ~59 s, build-front ~45 s,
@@ -187,3 +181,9 @@ la cible au moment de la migration si une version plus récente est sortie.
   `beforeSave` de Spring Data REST, sinon l'API répondait 500 au lieu de 400 pour une valeur invalide. Un email vide
   reste accepté (champ facultatif). Tests: 3 côté front, 3 côté back (dont un test HTTP qui échoue sans la
   configuration). Test manuel de l'API: invalide 400 avec le détail, valide 201, vide 201
+- [x] ci: le job `sonar` ne relance plus les tests, il récupère la couverture et les classes Java des jobs de tests
+  par artefacts (PR #19). Il garde `npm ci` (types lus par l'analyse TypeScript) et n'utilise plus `setup-java`.
+  Mêmes mesures Sonar sur PR qu'avant (191 lignes à couvrir, 93 non couvertes, couverture 48,2 %). Durée sur un
+  run de PR: 201 s (run 45772862781) contre 246 s et 280 s avec l'ancien pipeline (runs 45719775318 et
+  45771763791), `sonar` 91 s contre 132 s et 168 s. Un seul run mesuré, et la durée varie d'un run à l'autre.
+  Reste: `build-back` (`./gradlew build`) relance les tests du back
