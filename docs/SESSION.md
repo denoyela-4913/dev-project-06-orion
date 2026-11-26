@@ -47,7 +47,13 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
   backlog. Vérifié avec curl sur le jar, pas dans un navigateur. Analyse de `main` (run 45809708667, 181 s): gate
   OK, 0 vulnérabilité (3 avant), 0 hotspot, 21 bugs, 11 code smells, couverture 50,4 % (47,1 % avant), duplication
   1,5 %. Commande Gradle avec cache sur ce run: 25 s (`test-back`) et 20 s (`build-back`).
-- L'API n'a pas d'authentification (CORS n'est pas un contrôle d'accès): tâche ajoutée au backlog, non décidée.
+- L'API n'a pas d'authentification (CORS n'est pas un contrôle d'accès): tâche ajoutée au backlog, non décidée
+  (PR #23).
+- Branche `front/handle-promises` (26/11): lot 1 du front, promesses non gérées, détail dans le backlog. Les échecs
+  d'enregistrement, de suppression, d'ajout et de retrait sont vérifiés par les tests seulement. À vérifier sur
+  l'analyse de `main` après fusion: les 13 `typescript:S9383` doivent disparaître.
+- Karma: problèmes et pistes de remplacement documentés dans `docs/KARMA.md` (rien de décidé). Défauts d'affichage
+  et de navigation relevés pendant le lot 1: ajoutés au backlog, priorité non décidée.
 - `back/bin/main/application.properties` est suivi par git et s'est trouvé modifié localement (probablement par
   l'IDE, non vérifié): restauré sans être commité. Retrait du suivi non décidé.
 - Dépôt fork: passer `--repo` (dépôt d'`origin`) à `gh pr create`, pour ne pas viser le dépôt d'OpenClassrooms.
@@ -58,12 +64,12 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 ## Prochaine étape (ordre décidé)
 
 1. Issues Sonar du front, une branche `front/…` par lot:
-   1. promesses non gérées `typescript:S9383` (13 sur `main` au 26/11)
-   2. labels de formulaire (`Web:InputWithoutLabelCheck` ×7, `Web:S6853` ×6), `<th>` du tableau (`Web:S5256`),
+   1. promesses non gérées `typescript:S9383`: fait (fermeture à confirmer sur `main`)
+   2. **prochain lot**: labels de formulaire (`Web:InputWithoutLabelCheck` ×7, `Web:S6853` ×6), `<th>` du tableau (`Web:S5256`),
       `Number.parseInt` (`S7773` ×2), opération asynchrone dans le constructeur (`S7059`)
    3. tests pour monter la couverture; duplication `Organization.java` / `Person.java`
 2. Jalon `v0.1.0`: tag + cliché Sonar dans `docs/quality/` (reporté après les corrections du front).
-3. Puis le reste de `docs/BACKLOG.md`: remplacement de Karma, migration `@angular/build`, cache npm,
+3. Puis le reste de `docs/BACKLOG.md`: remplacement de Karma (`docs/KARMA.md`), migration `@angular/build`, cache npm,
    `sonar.java.libraries`, 2 `java:S6813` (`InitialDataFixture.java`), scan de sécurité dans la CI, étude nginx, maintenance de `ro.polak:spring-boot-data-fixtures`.
 
 ## Questions ouvertes
