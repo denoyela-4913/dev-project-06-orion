@@ -18,7 +18,8 @@ public class SpringDataRestCustomization implements RepositoryRestConfigurer {
     public SpringDataRestCustomization(LocalValidatorFactoryBean validator,
             @Value("${app.cors.allowed-origins}") String[] allowedOrigins) {
         this.validator = validator;
-        this.allowedOrigins = allowedOrigins;
+        // Copie: le tableau reçu reste modifiable par l'appelant (SpotBugs EI_EXPOSE_REP2).
+        this.allowedOrigins = allowedOrigins.clone();
     }
 
     // Applique les contraintes Bean Validation (@Email, ...) avant la création et l'enregistrement: une valeur
