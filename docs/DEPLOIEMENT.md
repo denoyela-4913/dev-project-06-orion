@@ -127,12 +127,32 @@ découpé en deux modules et un dossier par environnement, chacun avec son état
 Essai en local (minikube, 27/11/2026) : `apply` de staging, pods prêts et test de déploiement réussi (hors écriture,
 qui a révélé le défaut d'origine corrigé dans le Caddyfile).
 
-## 6. Dans la CI
+## 6. Releases
+
+Sur `main`, le job `release` publie une version quand les commits depuis le dernier tag le justifient
+(`scripts/release.py`, tests dans `scripts/test_release.py`) :
+
+| Commits depuis le dernier tag | Version |
+|---|---|
+| `type!:` ou `BREAKING CHANGE:` | majeure (la mineure avant 1.0.0) |
+| `feat` | mineure |
+| `fix`, `perf`, `build` | correctif |
+| seulement `docs`, `ci`, `test`, `chore`, `style`, `refactor` | pas de release |
+
+Il publie sur GHCR `ghcr.io/<propriétaire>/<dépôt>/microcrm-{front,back,standalone}:X.Y.Z` (les images testées et
+scannées dans le même run, sans reconstruction ; pas d'étiquette `latest`), puis crée la release GitHub : tag
+`vX.Y.Z`, notes générées depuis les commits et paquet du chart Helm. Pour connaître la prochaine version sans rien
+publier : `python3 scripts/release.py --notes /tmp/notes.md`.
+
+Si l'envoi s'interrompt, relancer le job : à partir de la deuxième tentative, les images déjà envoyées sont
+remplacées. Un nouveau paquet GHCR peut être privé par défaut : sa visibilité se règle dans GitHub (backlog).
+
+## 7. Dans la CI
 
 Le job `images` construit les trois cibles et les transmet par artefact ; `compose-test` lance les trois
 environnements Compose et le test de déploiement.
 
-## 7. Limites connues
+## 8. Limites connues
 
 - La base est HSQLDB, interne au back : **une seule instance** du back, et une courte coupure à chaque mise à jour
   quand les données sont conservées. Une base externe (PostgreSQL) est en attente de décision (backlog).
