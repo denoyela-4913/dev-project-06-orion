@@ -76,31 +76,9 @@ la cible au moment de la migration si une version plus récente est sortie.
     `setcap cap_net_bind_service`, nginx pourrait passer sur des ports élevés (le mappage `-p 80:<port>` du
     README suffit à garder les mêmes URL).
   - À faire avec la mise à jour d'Alpine, pour n'installer qu'une fois le paquet nginx de la version cible.
-- [ ] sonar: traiter les issues de l'état initial (39 avec le scan CI: 24 bugs, 9 code smells, 6 vulnérabilités)
-  - Sources: `docs/quality/sonar-ci-scan-baseline/sonar-main-issues.json` (scan CI, 39 issues, à utiliser) et
-    `docs/quality/0.0.1-initial-state/sonar-main-issues.json` (analyse automatique, 35 issues). L'écart de 4 issues
-    vient d'une analyse plus précise (cf. `docs/quality/sonar-ci-scan-baseline/README.md`), pas d'un changement de code.
-  - Vulnérabilités du `Dockerfile` (`S6505`, `S8543`, `S6471`): traitées, cf. « Fait ». À confirmer sur l'analyse de `main`.
-  - `back/build.gradle` (`S8569`): traité, cf. « Fait » (`gradle.lockfile`). À confirmer sur l'analyse Sonar de `main`.
-  - `front/src/index.html` (`S5725`): traité, cf. « Fait » (Bulma installé via npm).
-  - Bugs du front (24): promesses non gérées (`typescript:S9383`, 16, dont 4 sur `router.navigate(...)` visibles
-    seulement avec le scan CI), champs de formulaire sans label (`Web:InputWithoutLabelCheck`, 7), tableau sans
-    en-têtes `<th>` (`Web:S5256`, 1).
-  - Duplication (1,7 %): 14 lignes dupliquées dans chacun de `Organization.java` et `Person.java`, à examiner.
-  - Code smells (9): labels de formulaire (`Web:S6853`, 6), opération asynchrone dans un constructeur
-    (`typescript:S7059`, 1), `Number.parseInt` à préférer à `parseInt` (`typescript:S7773`, 2).
-  - À faire de préférence après la migration d'Angular, pour ne pas corriger deux fois du code touché par `ng update`
-    (migration faite, cf. « Fait »).
-  - Au 26/11, `main` a aussi 2 code smells `java:S6813` (injection par champ, `InitialDataFixture.java` lignes 14
-    et 17), hors de ces lots: préférer l'injection par constructeur.
-  - Lots, dans l'ordre décidé (une branche `front/…` par lot, tests qui échouent d'abord):
-    1. promesses non gérées (`typescript:S9383`, 16 au départ, 13 sur `main` avant le lot): fait, cf. « Fait ».
-       Fermeture des issues à confirmer sur l'analyse de `main`
-    2. accessibilité et petites corrections: labels de formulaire (`Web:InputWithoutLabelCheck` ×7, `Web:S6853` ×6),
-       `<th>` du tableau (`Web:S5256`), `Number.parseInt` (`S7773` ×2), opération asynchrone dans le constructeur (`S7059`)
-    3. couverture de tests (le gate Sonar de `main` était en échec pour `new_coverage` = 0 %, à relire sur l'analyse
-       de `main` après la PR #14) et duplication `Organization.java` / `Person.java`
-  - Le jalon `v0.1.0` (tag et cliché Sonar dans `docs/quality/`) vient après ces trois lots.
+- [ ] back: corriger les 2 code smells `java:S6813` (injection par champ, `InitialDataFixture.java` lignes 14 et 17)
+  - Préférer l'injection par constructeur. Ce sont les seules issues ouvertes sur les trois projets Sonar au 26/11
+    (`main` à `9614697`).
 - [ ] ci: améliorer la précision de l'analyse Java de Sonar (`sonar.java.libraries`)
   - Constat: le scan signale `Missing 'sonar.java.libraries'` et des types non résolus, car le scanner générique
     (choisi pour garder un seul projet Sonar) ne connaît pas le classpath Gradle, contrairement au plugin
@@ -109,7 +87,7 @@ la cible au moment de la migration si une version plus récente est sortie.
   - À faire après la migration de Spring Boot (le classpath change), et à comparer au nombre d'issues Java actuel.
 - [ ] front: corriger les défauts d'affichage et de navigation relevés pendant le lot des promesses (26/11)
   - Une correction par commit, avec un test qui échoue d'abord. Aucun n'est signalé par les issues Sonar traitées
-    dans les lots ci-dessus. Priorité non décidée.
+    dans les trois lots d'issues Sonar du front (cf. « Fait »). Priorité non décidée.
   - Vu à l'écran (front lancé sans le back):
     - tableau de bord: après un échec de chargement, « No person yet » et « No organization yet » s'affichent sous
       les messages d'erreur, comme si les listes étaient vides;
@@ -141,6 +119,7 @@ la cible au moment de la migration si une version plus récente est sortie.
 - [ ] ci: passer les seuils de couverture en mode bloquant, par une PR dédiée (décidé le 26/11)
   - Condition d'ouverture: le front ET le back atteignent 80 % sur tout leur code (le job `coverage` le signale par
     un avertissement). Au 26/11: front 78,1 %, back 67,8 %.
+    **Condition remplie** après la PR #39 (job `coverage` du run 45902475261 sur `main`).
   - Changement: `COVERAGE_BLOCKING: "true"` dans le job `coverage` de `ci.yml`, et commentaires à jour (`ci.yml`,
     `docs/SESSION.md`). Les 4 taux deviennent bloquants: tout le code et code nouveau, pour le front et le back.
   - La CI de cette PR tourne déjà en mode bloquant: elle doit être verte.
@@ -261,3 +240,17 @@ la cible au moment de la migration si une version plus récente est sortie.
   atteignent 80 %; le passage en bloquant sera une PR dédiée (cf. « À faire »). Même formule que Sonar (lignes et
   branches, sources TypeScript et Java; templates HTML non comptés). Au 26/11: front 78,1 %, back 67,8 %
   (valeurs tronquées). Le Quality Gate Sonar reste inchangé et non bloquant
+- [x] sonar: issues de l'état initial traitées, sauf les 2 `java:S6813` apparues ensuite (cf. « À faire »). Référence:
+  `docs/quality/sonar-ci-scan-baseline/sonar-main-issues.json` (39 issues). Sur `main` à `9614697`: 0 bug,
+  0 vulnérabilité, 0 % de duplication dans les trois projets
+  - Lot 1, promesses non gérées: cf. l'entrée « front: promesses non gérées ».
+  - Lot 2 (PR #30): `id` et `label for` sur les champs (`Web:InputWithoutLabelCheck`, `Web:S6853`), label et
+    `thead` masqués visuellement (`is-sr-only`, `Web:S5256`), `Number.parseInt` (`S7773`), chargement des
+    organisations dans `ngOnInit` (`S7059`). Analyse de `main` après la PR (projet unique): 0 bug, 2 code smells,
+    couverture 75,6 %, duplication 1,3 %
+  - Lot 3, duplication (PR #32): identifiant et horodatages communs dans `AuditedEntity` (`@MappedSuperclass`),
+    après des tests de caractérisation des entités et du JSON de l'API (30 tests back verts)
+  - Lot 3, couverture (PR #37 et #39): `main.ts`, `app.config.ts` et `app.routes.ts` exclus de la mesure (aucune
+    logique propre; même liste dans `angular.json` et `front/sonar-project.properties`, ils restent analysés), puis
+    tests des appels HTTP des deux services (50 tests front verts). Couverture du projet front: 79,4 % après les
+    exclusions, 97,6 % après les tests
