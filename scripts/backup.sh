@@ -7,7 +7,7 @@
 # Paramètres: BACKUP_DIR (défaut ./backups). Sans volume (données en mémoire), le script le dit et réussit.
 set -euo pipefail
 
-[ $# -ge 1 ] || { echo "Usage: $0 <espace de noms> [release]" >&2; exit 2; }
+[[ $# -ge 1 ]] || { echo "Usage: $0 <espace de noms> [release]" >&2; exit 2; }
 namespace=$1
 release=${2:-microcrm}
 here="$(cd "$(dirname "$0")" && pwd)"

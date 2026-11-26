@@ -5,7 +5,7 @@
 # Paramètres: LOCAL_PORT (défaut 18080), SMOKE_TIMEOUT (cf. smoke_test.sh).
 set -euo pipefail
 
-[ $# -ge 1 ] || { echo "Usage: $0 <espace de noms> [release]" >&2; exit 2; }
+[[ $# -ge 1 ]] || { echo "Usage: $0 <espace de noms> [release]" >&2; exit 2; }
 namespace=$1
 release=${2:-microcrm}
 port=${LOCAL_PORT:-18080}
