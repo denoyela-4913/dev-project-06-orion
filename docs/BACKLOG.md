@@ -156,8 +156,6 @@ la cible au moment de la migration si une version plus récente est sortie.
     dates et tableau CORS corrigés par des copies (test qui échoue sans elles), liste JPA et bean injecté exclus avec
     justification (`back/config/spotbugs/exclude.xml`). Choix « bloquant » fait pendant le mandat de nuit,
     réversible (`ignoreFailures`).
-- [x] ci/back: Checkstyle et SpotBugs (cf. l'entrée plus bas)
-  - Fait le 26/11: cf. l'entrée ci-dessous.
 - [x] ci: seuils de couverture en mode bloquant, par une PR dédiée (26/11)
   - `COVERAGE_BLOCKING: "true"` dans le job `coverage`. Les 4 taux sont bloquants: tout le code et code nouveau, pour
     le front et le back. Au passage: front 97,5 % (242/248), back 93,9 % (77/82).
