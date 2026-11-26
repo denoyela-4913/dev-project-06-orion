@@ -104,23 +104,67 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  # --- Seuils de couverture -------------------------------------------------
+  # 80 % pour le front et pour le back, sur tout le code et sur le code nouveau (scripts/coverage_gate.py, à
+  # partir des rapports des jobs de tests). Contrôle propre à Orion : le Quality Gate Sonar n'a qu'un taux sur
+  # le code nouveau, commun aux deux parties, et `sonar` ne tourne pas sur les branches de dev.
+  # NON BLOQUANT tant que le front et le back n'ont pas tous deux atteint 80 % : un taux insuffisant ne fait
+  # qu'un avertissement. Ensuite, passer COVERAGE_BLOCKING à "true" (le job le rappelle) ; un taux sous le
+  # seuil fera alors échouer ce job et empêchera les builds. Le passage est manuel : un blocage automatique
+  # selon les taux du run se désactiverait dès qu'un taux repasserait sous le seuil.
+  # Un rapport manquant ou un test du script en échec font échouer le job dans les deux modes.
+  coverage:
+    needs: [test-front, test-back]
+    runs-on: ubuntu-26.04 # cf. justification dans test-front
+    env:
+      COVERAGE_BLOCKING: "false"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Historique complet : la comparaison avec la base a besoin de l'ancêtre commun.
+          fetch-depth: 0
+      # Tests du script avant de s'y fier. Python 3 est fourni par le runner, sans dépendance à installer.
+      - run: python3 -m unittest discover -s scripts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: analysis-back
+          path: back/build
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage-front
+          path: front/coverage/microcrm
+      - name: Vérifier les seuils de couverture
+        env:
+          # Code nouveau : sur une PR, depuis la branche visée ; sur une autre branche, depuis `main` ; sur
+          # `main`, les commits du push. Passé par l'environnement : aucune valeur n'est insérée dans le script.
+          BASE: >-
+            ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref)
+            || (github.ref == 'refs/heads/main' && github.event.before || 'origin/main') }}
+        run: |
+          options=(--base "$BASE")
+          if [ "$COVERAGE_BLOCKING" = "true" ]; then options+=(--blocking); fi
+          python3 scripts/coverage_gate.py "${options[@]}"
+
   # --- Stage "build" --------------------------------------------------------
   # Ordre des stages : tests, puis analyse Sonar (job `sonar`, plus bas), puis build. GitHub n'a pas de
   # stages : "needs" reproduit ces dépendances (GitLab : "stages: test, build").
-  # - Le Quality Gate n'est PAS bloquant pour l'instant : le scan n'attend pas son résultat
-  #   (pas de `sonar.qualitygate.wait=true`), car le gate de `main` est en échec. À activer quand il sera vert.
+  # - Le Quality Gate Sonar n'est PAS bloquant pour l'instant : le scan n'attend pas son résultat
+  #   (pas de `sonar.qualitygate.wait=true`). Décision du 26/11 : non bloquant tant que le front et le back
+  #   n'ont pas atteint les seuils de couverture (cf. job `coverage`).
+  # - Le build attend aussi `coverage`, qui ne peut échouer sur un taux qu'une fois rendu bloquant.
   # - Un scan en échec technique (SonarCloud indisponible, jeton invalide) bloque en revanche le build :
   #   choix assumé pour garder une règle simple.
   # - `sonar` ne tourne que sur les PR et `main` : sur les autres branches il est sauté, et le build doit
   #   quand même s'exécuter.
   build-front:
-    needs: [test-front, test-back, sonar]
+    needs: [test-front, test-back, coverage, sonar]
     # Cf. « Ordre des stages » ci-dessus: build si les deux tests ont réussi et si `sonar` a réussi ou a été
     # sauté. `!cancelled()` est nécessaire: sans fonction de statut, GitHub saute aussi un job dont un
     # `needs` a été sauté.
     if: >-
       !cancelled() &&
       needs.test-front.result == 'success' && needs.test-back.result == 'success' &&
+      needs.coverage.result == 'success' &&
       (needs.sonar.result == 'success' || needs.sonar.result == 'skipped')
     runs-on: ubuntu-26.04 # cf. justification dans test-front
     defaults:
@@ -138,13 +182,14 @@ jobs:
       - run: npm run build -- --optimization
 
   build-back:
-    needs: [test-front, test-back, sonar]
+    needs: [test-front, test-back, coverage, sonar]
     # Cf. « Ordre des stages » ci-dessus: build si les deux tests ont réussi et si `sonar` a réussi ou a été
     # sauté. `!cancelled()` est nécessaire: sans fonction de statut, GitHub saute aussi un job dont un
     # `needs` a été sauté.
     if: >-
       !cancelled() &&
       needs.test-front.result == 'success' && needs.test-back.result == 'success' &&
+      needs.coverage.result == 'success' &&
       (needs.sonar.result == 'success' || needs.sonar.result == 'skipped')
     runs-on: ubuntu-26.04 # cf. justification dans test-front
     defaults:
