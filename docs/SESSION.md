@@ -61,9 +61,10 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 - `back/bin/main/application.properties` est suivi par git et s'est trouvé modifié localement (probablement par
   l'IDE, non vérifié): restauré sans être commité. Retrait du suivi non décidé.
 - Dépôt fork: passer `--repo` (dépôt d'`origin`) à `gh pr create`, pour ne pas viser le dépôt d'OpenClassrooms.
-- À mettre à jour dans les livrables: état du gate (vert sur `main` depuis le 26/11), durées de référence
-  (112 s sans `sonar`, 127 s avec, mesure `v0.0.2`; puis les mesures ci-dessus), ordre tests → Sonar → build
-  (texte et schéma).
+- Livrables mis à jour le 26/11 (branche `docs/livrables-quality-gates`): ordre tests → Sonar → build, durées
+  (127 s à `v0.0.2`, 181 s avec l'ordre actuel), gate vert sur `main`, schéma en 7 stages. Nouveau: un Quality Gate
+  par partie (front/back) proposé, non décidé (tâche au backlog). Restent à mettre à jour après la migration Vitest:
+  mentions de Karma (Modèle 2, §1.3 et §2.6, et schéma).
 
 ## Prochaine étape (ordre décidé)
 
