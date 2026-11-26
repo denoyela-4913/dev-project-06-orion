@@ -86,7 +86,8 @@ documentation GitHub Packages, documentation Kubernetes, Helm, Terraform et Ansi
 - **Fonctionnalités clés** : ESLint (avec `angular-eslint`) pour TypeScript et templates Angular ;
   Checkstyle (style) et SpotBugs (bugs) pour Java ; hadolint pour les Dockerfile (versions non épinglées,
   mauvaises pratiques). Les avertissements `FromAsCasing` observés au build Docker sont du même ordre.
-- **Cas d'usage** : job CI rapide, exécuté avant les tests.
+- **Cas d'usage** : ESLint et hadolint dans un job CI rapide, exécuté avant les tests. Checkstyle et SpotBugs
+  sont exécutés par le build Gradle du back (`./gradlew build`), car ils s'appuient sur le code compilé.
 
 ### 2.2.4 Registres d'images : Docker Hub, GHCR, GitLab Container Registry, Harbor, Nexus
 
@@ -339,10 +340,16 @@ livraison. Le processus Ops est extrêmement limité et entièrement manuel.
 
 ### 4.2.3 Intégrer les vérifications lint dans la CI
 
-- **Description** : lancer ESLint (front), Checkstyle/SpotBugs (back) et hadolint (Dockerfile).
+- **Description** : lancer ESLint (front) et hadolint (Dockerfile) dans un job `lint`, et Checkstyle/SpotBugs
+  (back) par le build Gradle.
 - **Raisonnement** : détecter rapidement les problèmes de syntaxe, de style et certaines failles de sécurité
-  avant même les tests ; les avertissements `FromAsCasing` au build Docker en sont un exemple.
-- **Implémentation** : job `lint` en première étape (feedback en moins d'une minute).
+  avant même les tests (pour ESLint et hadolint) ; les avertissements `FromAsCasing` au build Docker en sont un exemple.
+- **Implémentation** : job `lint` en première étape, limité à ESLint et hadolint (feedback en moins d'une
+  minute) ; plugins Gradle Checkstyle et SpotBugs, rattachés à `check`, donc lancés par `./gradlew build` dans le
+  job `build-back`. Gradle compile avant ces analyses ([plugin
+  Checkstyle](https://docs.gradle.org/current/userguide/checkstyle_plugin.html), [SpotBugs avec
+  Gradle](https://spotbugs.readthedocs.io/en/stable/gradle.html)) : les placer avant les tests obligerait à
+  compiler une fois de plus.
 - **Impacts** : code plus lisible et plus maintenable ; échecs rapides et peu coûteux.
 
 ### 4.2.4 Épingler et mettre à jour les briques (version + digest SHA)
