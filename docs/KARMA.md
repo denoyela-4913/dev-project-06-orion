@@ -4,10 +4,10 @@
 
 ## Conclusion
 
-**Le projet peut passer à Vitest: aucun obstacle bloquant n'a été trouvé, et Vitest est le choix recommandé.**
-La migration n'est **pas encore faite** dans le dépôt. Elle a été essayée dans une copie jetable du front: les
-36 tests passent, le build de production et l'image Docker du front se construisent, `npm start` répond. La CI et
-l'import de la couverture dans Sonar restent à vérifier sur une vraie branche.
+**Décision (26/11): le front passe à Vitest.** La règle de versions retenue est celle de Gradle: dernière mineure
+de la dernière majeure, mise à jour régulièrement. Migration faite le même jour sur la branche
+`front/migrate-to-vitest` (cf. « Migration réalisée » en fin de document). L'analyse ci-dessous est celle qui a
+précédé la décision, menée sur un essai dans une copie jetable du front.
 
 ## Pourquoi quitter Karma
 
@@ -50,7 +50,7 @@ les correctifs courants vont à la dernière mineure (5.1), les correctifs impor
 mineure précédente et à la dernière mineure de la majeure précédente (5.0 et 4.1). On propose la même règle que
 pour Gradle: **viser la dernière mineure de la dernière majeure (5.1.x au 26/11) et la mettre à jour
 régulièrement**. Vitest 5.0.0 date du 03/09/2026: une nouvelle majeure demandera une montée de version. Karma ne
-satisfait pas non plus cette règle, et il est déprécié.
+satisfait pas non plus cette règle, et il est déprécié. **Règle acceptée le 26/11.**
 
 ## Pourquoi Vitest est acceptable
 
@@ -106,7 +106,8 @@ compilation propre au projet, pour économiser l'adaptation de 2 fichiers. Rése
 expérimentale, pas de LTS, DOM simulé. Si les tests devaient vérifier le rendu, ajouter le mode navigateur de
 Vitest.
 
-**Quand**: proposition, après le lot 2 des issues Sonar du front et **avant le lot 3**, qui ajoutera des tests.
+**Quand**: avant les lots 2 et 3 des issues Sonar du front (décidé le 26/11). Les lots n'en dépendent pas, et
+chaque test écrit sous Karma aurait pu être à convertir.
 
 ## Migration
 
@@ -145,3 +146,22 @@ sans Karma ni `@angular-devkit/build-angular` (`@angular/build` 22.3.0):
 | Build de production | 814 kB, comme avant |
 | `npm start` | réponse HTTP 200, ni avertissement ni erreur dans le journal (pages non vues dans un navigateur) |
 | `docker build --target front` | réussi (image non lancée) |
+
+## Migration réalisée (branche `front/migrate-to-vitest`)
+
+Écarts avec l'essai:
+
+- les 2 fichiers de tests ont été convertis **à la main**, sans le schéma, pour ne pas réindenter le reste:
+  `error-handling.spec.ts` (49 lignes ajoutées, 45 supprimées) et `person-details.component.spec.ts` (3 et 3);
+- ajout de `src/test-setup.ts` (`vi.restoreAllMocks()` après chaque test), exclu de Sonar. L'essai n'avait pas vu
+  ce point: Jasmine retirait les espions après chaque test; Vitest remet leurs appels à zéro mais les laisse en
+  place. Une sonde de 2 tests échoue sans ce fichier et réussit avec;
+- le verrou passe de 1014 à **555** paquets (530 dans l'essai); `@angular/build` passe de 22.2.8 à 22.3.0.
+
+Vérifié en local: 36 tests sur 36 (3 runs); sur les anciens composants, 36 exécutés et 18 en échec; build de
+production 814 kB; `npm ci` sans avertissement de dépréciation, 0 vulnérabilité; `karma`, `inflight`, `rimraf`,
+`glob` et `@angular-devkit/build-angular` absents de l'arbre (`npm ls`); les 3 images Docker se construisent, et
+`standalone` sert l'API et le front en HTTPS (réponses 200). Au commit des builders, `npm start` répond 200.
+`ng extract-i18n` demande `@angular/localize`, absent du projet: non utilisable ici.
+
+CI et Sonar: cf. la PR et `SESSION.md`. Non vérifié: mode `watch` de `ng test`, pages dans un navigateur.

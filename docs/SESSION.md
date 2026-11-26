@@ -56,7 +56,9 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 - Couverture au même moment (Sonar): front 70,4 %, back 67,9 %. Envoyée à Sonar, mais ne bloque pas la CI: aucun
   seuil local trouvé, le scan n'attend pas le Quality Gate (80 % sur le code nouveau), et `main` n'est pas protégée.
   Exclusions de couverture envisagées (`karma.conf.js`, fichiers de démarrage): non décidées.
-- Karma → Vitest: analyse et justification dans `docs/KARMA.md`, Vitest recommandé, migration pas encore faite.
+- Karma → Vitest (décidé le 26/11, versions suivies comme pour Gradle): migration sur la branche
+  `front/migrate-to-vitest`, avec les builders `@angular/build`; justification et vérifications dans
+  `docs/KARMA.md`. À vérifier sur l'analyse de `main` après fusion: couverture (les templates HTML sont comptés).
 - Défauts d'affichage et de navigation relevés pendant le lot 1: ajoutés au backlog, priorité non décidée.
 - `back/bin/main/application.properties` est suivi par git et s'est trouvé modifié localement (probablement par
   l'IDE, non vérifié): restauré sans être commité. Retrait du suivi non décidé.
@@ -67,14 +69,15 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 
 ## Prochaine étape (ordre décidé)
 
+La migration vers Vitest passe avant les lots restants (décidé le 26/11).
+
 1. Issues Sonar du front, une branche `front/…` par lot:
    1. promesses non gérées `typescript:S9383`: fait (fermeture à confirmer sur `main`)
    2. **prochain lot**: labels de formulaire (`Web:InputWithoutLabelCheck` ×7, `Web:S6853` ×6), `<th>` du tableau (`Web:S5256`),
       `Number.parseInt` (`S7773` ×2), opération asynchrone dans le constructeur (`S7059`)
    3. tests pour monter la couverture; duplication `Organization.java` / `Person.java`
 2. Jalon `v0.1.0`: tag + cliché Sonar dans `docs/quality/` (reporté après les corrections du front).
-3. Puis le reste de `docs/BACKLOG.md`: Vitest et builders `@angular/build` (`docs/KARMA.md`;
-   proposé avant le lot 3, non décidé), cache npm,
+3. Puis le reste de `docs/BACKLOG.md`: cache npm,
    `sonar.java.libraries`, 2 `java:S6813` (`InitialDataFixture.java`), scan de sécurité dans la CI, étude nginx, maintenance de `ro.polak:spring-boot-data-fixtures`.
 
 ## Questions ouvertes

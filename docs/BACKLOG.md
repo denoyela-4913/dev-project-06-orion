@@ -116,16 +116,7 @@ la cible au moment de la migration si une version plus récente est sortie.
       clic sur le bord du bouton, ou son activation au clavier, n'appelle pas `addSelectedOrganization()`. Le
       bouton est aussi dans le formulaire sans `type="button"`;
     - page d'une personne: le message « Phone must be a valid phone number. » attend une erreur `tel` qu'aucun
-      validateur ne produit;
-    - `angular.json`, cible `test`: les assets citent `src/favicon.ico`, absent (le fichier est `src/favicon.png`).
-- [ ] front: remplacer Karma (déprécié) par Vitest, avec les builders `@angular/build`
-  - Analyse, justification, coût, autres pistes et étapes: `docs/KARMA.md`. Vitest recommandé, aucun obstacle
-    bloquant trouvé (essai dans une copie le 26/11, 36 tests sur 36 avec Vitest 5.1.2).
-  - Regroupe la migration des builders `@angular-devkit/build-angular` (dépréciés) vers `@angular/build`: le
-    lanceur Vitest l'exige.
-  - À accepter: Vitest n'a pas de LTS; règle proposée comme pour Gradle (dernière mineure, mise à jour régulière).
-  - Quand (proposition, non décidée): après le lot 2 des issues Sonar du front et avant le lot 3.
-  - À vérifier sur la branche: CI, import du lcov dans Sonar, Quality Gate, bundle (budget 850 kB), `npm start`.
+      validateur ne produit.
 - [ ] sécurité: auditer le back et les images, puis scanner dans la CI
   - Back (Gradle) et images Docker n'ont pas encore été analysés.
   - Ajouter un scan de vulnérabilités dans la CI une fois les mises à jour faites, pour ne pas les réintroduire.
@@ -225,3 +216,7 @@ la cible au moment de la migration si une version plus récente est sortie.
   l'action réussit mais pas la navigation ou le rechargement, le message le dit. Tests
   `error-handling.spec.ts`: les 18 tests d'erreur échouent sur l'ancien code; 36 tests sur 36 ensuite. Bundle de
   production 814 kB. Vérifié dans Chromium sans interface, back arrêté, pour les erreurs de chargement seulement
+- [x] front: Karma (déprécié) remplacé par Vitest 5 avec `jsdom`, et builders `@angular-devkit/build-angular`
+  migrés vers `@angular/build`. Justification, coût et vérifications: `docs/KARMA.md`. Pas de LTS pour Vitest:
+  même règle que Gradle (dernière mineure, mise à jour régulière). `front/src/test-setup.ts` restaure les espions
+  après chaque test. L'asset de test `favicon.ico`, absent, a disparu avec l'ancienne cible `test`
