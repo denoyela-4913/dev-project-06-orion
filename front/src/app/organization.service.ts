@@ -1,14 +1,14 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { Person } from './person.service';
 import { HttpClient } from '@angular/common/http';
+import { HalCollection } from './hal';
 import { API_BASE_URL } from './config';
 
 @Injectable({ providedIn: 'root' })
 export class OrganizationService {
+  private client = inject(HttpClient);
 
-  constructor(private client: HttpClient) {
-  }
 
   async fetchById(id: number) {
     const response = await this.client.get(`${API_BASE_URL}/organizations/${id}`)
@@ -20,15 +20,14 @@ export class OrganizationService {
 
   async fetchAll() {
     const response = await this.client.get(`${API_BASE_URL}/organizations`)
-    const result = await firstValueFrom(response) as any
-    return result["_embedded"].organizations as Organization[]
+    const result = await firstValueFrom(response) as HalCollection<'organizations', Organization>
+    return result._embedded.organizations
   }
 
   async fetchOrganizationPersons(id: number) {
     const response = await this.client.get(`${API_BASE_URL}/organizations/${id}/persons`)
-    const result = await firstValueFrom(response) as any
-    const persons = result["_embedded"].persons as Person[]
-    return persons
+    const result = await firstValueFrom(response) as HalCollection<'persons', Person>
+    return result._embedded.persons
   }
 
   async deleteById(id: number) {

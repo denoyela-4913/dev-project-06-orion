@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Person, PersonService } from '../person.service';
@@ -13,6 +13,11 @@ import { Organization, OrganizationService } from '../organization.service';
     styleUrl: './organization-details.component.css'
 })
 export class OrganizationDetailsComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+  private personService = inject(PersonService);
+  private organizationService = inject(OrganizationService);
+  private router = inject(Router);
+
   org: Organization = {
     id: undefined as (number | undefined),
     name: '',
@@ -23,9 +28,6 @@ export class OrganizationDetailsComponent implements OnInit {
 
   isNew: boolean = false;
   errors: string[] = [];
-
-  constructor(private route: ActivatedRoute, private personService: PersonService, private organizationService: OrganizationService, private router: Router) {
-  }
 
   ngOnInit(): void {
     const routeParams = this.route.snapshot.paramMap;
