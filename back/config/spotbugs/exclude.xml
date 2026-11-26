@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter xmlns="https://github.com/spotbugs/filter/3.0.0">
+  <!-- Chaque exclusion est ciblée et justifiée : pas d'exclusion globale d'un motif. -->
+
+  <!-- Liste d'une association JPA : Hibernate suit les changements de cette instance précise, et Spring Data REST
+       la modifie pour ajouter ou retirer un lien. Rendre des copies casserait l'enregistrement des liens. -->
+  <Match>
+    <Class name="com.openclassroom.devops.orion.microcrm.Organization"/>
+    <Field name="persons"/>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+  </Match>
+
+  <!-- Bean Spring injecté par le constructeur : il est partagé par conception et ne peut pas être copié. -->
+  <Match>
+    <Class name="com.openclassroom.devops.orion.microcrm.SpringDataRestCustomization"/>
+    <Field name="validator"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+</FindBugsFilter>

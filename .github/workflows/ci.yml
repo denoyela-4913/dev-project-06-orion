@@ -213,8 +213,8 @@ jobs:
             back/gradle.lockfile
             back/gradle/wrapper/gradle-wrapper.properties
           cache-jdk: false
-      # `build` et non `assemble` (décision du 26/11) : `build` lance `check`, auquel les plugins Checkstyle et
-      # SpotBugs, pas encore ajoutés, rattachent leurs tâches. Ils s'exécuteront donc ici, sur le code compilé,
+      # `build` et non `assemble` (décision du 26/11) : `build` lance `check`, auquel Checkstyle et SpotBugs sont
+      # rattachés (cf. back/build.gradle, bloquants avec zéro écart). Ils s'exécutent ici, sur le code compilé,
       # et non dans le job de lint (ESLint et hadolint seulement). Coût accepté : les tests, déjà exécutés par
       # `test-back`, tournent une seconde fois.
       - run: ./gradlew build
