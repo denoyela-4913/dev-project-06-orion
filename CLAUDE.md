@@ -31,6 +31,7 @@ cd front && npm ci --ignore-scripts && npm start
 # Tests
 cd back && ./gradlew clean build
 cd front && npx ng test --watch=false --coverage      # Vitest avec jsdom, sans navigateur
+python3 -m unittest discover -s scripts && python3 scripts/coverage_gate.py --base origin/main   # après les tests
 cd front && npm run build -- --optimization     # budget de bundle: avertissement à 850 kB (actuel ~814 kB)
 ```
 

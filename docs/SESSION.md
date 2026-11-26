@@ -58,7 +58,7 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
   Exclusions de couverture envisagées (`karma.conf.js`, fichiers de démarrage): non décidées.
 - Karma → Vitest (décidé le 26/11, versions suivies comme pour Gradle): migration sur la branche
   `front/migrate-to-vitest`, avec les builders `@angular/build`; justification et vérifications dans
-  `docs/KARMA.md`. À vérifier sur l'analyse de `main` après fusion: couverture (les templates HTML sont comptés).
+  `docs/KARMA.md`. PR #26 fusionnée (`0566d3a`): gate OK, couverture 75,8 % (69,6 % avant).
 - Défauts d'affichage et de navigation relevés pendant le lot 1: ajoutés au backlog, priorité non décidée.
 - `back/bin/main/application.properties` est suivi par git et s'est trouvé modifié localement (probablement par
   l'IDE, non vérifié): restauré sans être commité. Retrait du suivi non décidé.
@@ -72,8 +72,13 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 
 La migration vers Vitest passe avant les lots restants (décidé le 26/11).
 
+Seuils de couverture (décidé le 26/11): 80 % pour le front et pour le back, tout le code et code nouveau, non
+bloquants tant que les deux parties ne les ont pas atteints (job `coverage` de la CI). Le passage en bloquant sera
+une PR dédiée (tâche au backlog).
+Sonar ne compte pas les templates HTML (vérifié sur `main` après la PR #26: front 78,5 %, back 67,9 %).
+
 1. Issues Sonar du front, une branche `front/…` par lot:
-   1. promesses non gérées `typescript:S9383`: fait (fermeture à confirmer sur `main`)
+   1. promesses non gérées `typescript:S9383`: fait
    2. **prochain lot**: labels de formulaire (`Web:InputWithoutLabelCheck` ×7, `Web:S6853` ×6), `<th>` du tableau (`Web:S5256`),
       `Number.parseInt` (`S7773` ×2), opération asynchrone dans le constructeur (`S7059`)
    3. tests pour monter la couverture; duplication `Organization.java` / `Person.java`

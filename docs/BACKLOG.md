@@ -141,8 +141,18 @@ la cible au moment de la migration si une version plus récente est sortie.
     recommandée par Sonar), plus un plancher de couverture globale (condition « code global » dans un gate personnalisé, copie de
     « Sonar way »; seuil fixe à relever à la main). État au 26/11:
     front 70,4 %, back 67,9 %.
+  - Seuils décidés le 26/11 (80 % par partie, tout le code et code nouveau), appliqués par le job `coverage` de la
+    CI (cf. « Fait »), sans second projet Sonar. Les deux gates Sonar restent une proposition. Les livrables
+    (Modèle 2, §2.6 et risque R3) disent encore « à fixer »: à aligner.
   - À faire avec le passage du gate en bloquant (`sonar.qualitygate.wait=true`); changera l'historique Sonar
     (nouveaux projets): garder les clichés `docs/quality/` comme référence.
+- [ ] ci: passer les seuils de couverture en mode bloquant, par une PR dédiée (décidé le 26/11)
+  - Condition d'ouverture: le front ET le back atteignent 80 % sur tout leur code (le job `coverage` le signale par
+    un avertissement). Au 26/11: front 78,1 %, back 67,8 %.
+  - Changement: `COVERAGE_BLOCKING: "true"` dans le job `coverage` de `ci.yml`, et commentaires à jour (`ci.yml`,
+    `docs/SESSION.md`). Les 4 taux deviennent bloquants: tout le code et code nouveau, pour le front et le back.
+  - La CI de cette PR tourne déjà en mode bloquant: elle doit être verte.
+  - Le Quality Gate Sonar n'est pas concerné (`sonar.qualitygate.wait`, protection de `main`: non décidés).
 
 ## Fait
 
@@ -232,3 +242,8 @@ la cible au moment de la migration si une version plus récente est sortie.
   migrés vers `@angular/build`. Justification, coût et vérifications: `docs/KARMA.md`. Pas de LTS pour Vitest:
   même règle que Gradle (dernière mineure, mise à jour régulière). `front/src/test-setup.ts` restaure les espions
   après chaque test. L'asset de test `favicon.ico`, absent, a disparu avec l'ancienne cible `test`
+- [x] ci: seuils de couverture à 80 % pour le front et pour le back, sur tout le code et sur le code nouveau (job
+  `coverage`, `scripts/coverage_gate.py`, décision du 26/11). Non bloquant jusqu'à ce que front et back
+  atteignent 80 %; le passage en bloquant sera une PR dédiée (cf. « À faire »). Même formule que Sonar (lignes et
+  branches, sources TypeScript et Java; templates HTML non comptés). Au 26/11: front 78,1 %, back 67,8 %
+  (valeurs tronquées). Le Quality Gate Sonar reste inchangé et non bloquant
