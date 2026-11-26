@@ -106,18 +106,18 @@ jobs:
 
   # --- Seuils de couverture -------------------------------------------------
   # 80 % pour le front et pour le back, sur tout le code et sur le code nouveau (scripts/coverage_gate.py, à
-  # partir des rapports des jobs de tests). Contrôle propre à Orion : le Quality Gate Sonar n'a qu'un taux sur
-  # le code nouveau, commun aux deux parties, et Sonar ne tourne pas sur les branches de dev.
-  # NON BLOQUANT tant que le front et le back n'ont pas tous deux atteint 80 % : un taux insuffisant ne fait
-  # qu'un avertissement. Ensuite, passer COVERAGE_BLOCKING à "true" (le job le rappelle) ; un taux sous le
-  # seuil fera alors échouer ce job et empêchera les builds. Le passage est manuel : un blocage automatique
-  # selon les taux du run se désactiverait dès qu'un taux repasserait sous le seuil.
-  # Un rapport manquant ou un test du script en échec font échouer le job dans les deux modes.
+  # partir des rapports des jobs de tests). Contrôle propre à Orion, en plus des Quality Gates Sonar : il porte
+  # aussi sur tout le code (le gate par défaut de Sonar ne contrôle que le code nouveau) et il tourne sur les
+  # branches de dev, où Sonar ne tourne pas.
+  # BLOQUANT depuis le 26/11/2026 (le front et le back ont dépassé 80 % sur tout leur code) : un taux sous le
+  # seuil fait échouer ce job et empêche les builds. Le réglage est écrit ici et non déduit des taux du run : un
+  # blocage automatique se désactiverait dès qu'un taux repasserait sous le seuil.
+  # Un rapport manquant ou un test du script en échec font aussi échouer le job.
   coverage:
     needs: [test-front, test-back]
     runs-on: ubuntu-26.04 # cf. justification dans test-front
     env:
-      COVERAGE_BLOCKING: "false"
+      COVERAGE_BLOCKING: "true"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -149,9 +149,8 @@ jobs:
   # Ordre des stages : tests, puis analyse Sonar (jobs `sonar-front`, `sonar-back` et `sonar-infra`, plus bas), puis build. GitHub n'a pas de
   # stages : "needs" reproduit ces dépendances (GitLab : "stages: test, build").
   # - Le Quality Gate Sonar n'est PAS bloquant pour l'instant : le scan n'attend pas son résultat
-  #   (pas de `sonar.qualitygate.wait=true`). Décision du 26/11 : non bloquant tant que le front et le back
-  #   n'ont pas atteint les seuils de couverture (cf. job `coverage`).
-  # - Le build attend aussi `coverage`, qui ne peut échouer sur un taux qu'une fois rendu bloquant.
+  #   (pas de `sonar.qualitygate.wait=true`) ; le rendre bloquant n'est pas encore décidé.
+  # - Le build attend aussi `coverage`, qui échoue si un taux de couverture est sous le seuil.
   # - Un scan en échec technique (SonarCloud indisponible, jeton invalide) bloque en revanche le build :
   #   choix assumé pour garder une règle simple.
   # - Les jobs Sonar ne tournent que sur les PR et `main` : sur les autres branches ils sont sautés, et le build doit
