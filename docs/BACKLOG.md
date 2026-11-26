@@ -85,8 +85,10 @@ la cible au moment de la migration si une version plus récente est sortie.
     (`typescript:S7059`, 1), `Number.parseInt` à préférer à `parseInt` (`typescript:S7773`, 2).
   - À faire de préférence après la migration d'Angular, pour ne pas corriger deux fois du code touché par `ng update`
     (migration faite, cf. « Fait »).
+  - Au 26/11, `main` a aussi 2 code smells `java:S6813` (injection par champ, `InitialDataFixture.java` lignes 14
+    et 17), hors de ces lots: préférer l'injection par constructeur.
   - Lots, dans l'ordre décidé (une branche `front/…` par lot, tests qui échouent d'abord):
-    1. promesses non gérées (`typescript:S9383`, 16): le lot le plus gros, et il touche la logique des composants
+    1. promesses non gérées (`typescript:S9383`, 13 restantes sur `main` au 26/11, 16 au départ): le lot le plus gros, et il touche la logique des composants
     2. accessibilité et petites corrections: labels de formulaire (`Web:InputWithoutLabelCheck` ×7, `Web:S6853` ×6),
        `<th>` du tableau (`Web:S5256`), `Number.parseInt` (`S7773` ×2), opération asynchrone dans le constructeur (`S7059`)
     3. couverture de tests (le gate Sonar de `main` était en échec pour `new_coverage` = 0 %, à relire sur l'analyse
