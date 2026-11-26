@@ -73,12 +73,58 @@ Pour lancer des images déjà construites : `FRONT_IMAGE=… BACK_IMAGE=… scri
 l'application, réglage `/api`, lecture de l'API, puis création et suppression d'une personne avec l'en-tête
 `Origin` d'un navigateur (détecte un réglage CORS faux). `SMOKE_INSECURE=1` accepte le certificat interne.
 
-## 4. Dans la CI
+## 4. Kubernetes avec Helm
+
+Chart : `deploy/helm/microcrm/`. Une valeur commune (`values.yaml`) et un fichier par environnement.
+
+| | dev | staging | production |
+|---|---|---|---|
+| Instances front / back | 1 / 1 | 2 / 1 | 3 / 1 |
+| Données | en mémoire | volume 1 Gi | volume 5 Gi |
+| Ingress et TLS | non | non | oui (domaine à fixer) |
+| NetworkPolicy (back joignable du front seul) | non | oui | oui |
+
+Tous les pods tournent sans root, système de fichiers en lecture seule, sans capacité Linux. Seule exception :
+le front garde `NET_BIND_SERVICE`, que porte le binaire de Caddy (Trivy le signale en « moyenne », `KSV-0022`).
+Le chart est compatible avec le niveau `restricted` des normes de sécurité des pods.
+
+Les images viennent d'un registre donné par `images.repositoryPrefix` (jamais écrit en dur dans le dépôt).
+
+### Déployer, vérifier, revenir en arrière
+
+Prérequis : `kubectl` et `helm` (3 ou 4), le contexte `kubectl` pointant sur le cluster.
+
+```bash
+scripts/deploy.sh staging 0.1.0 --set images.repositoryPrefix=ghcr.io/<propriétaire>/<dépôt>/
+```
+
+`deploy.sh` enchaîne : sauvegarde des données (si une version tourne avec un volume), `helm upgrade --install`
+(annulé par Helm si les pods ne deviennent pas prêts), test de déploiement par port-forward, et `helm rollback`
+si ce test échoue. Il ne dépend pas de la CI : c'est la **livraison manuelle de secours**.
+
+| Script | Rôle |
+|---|---|
+| `scripts/verify_deployment.sh <espace>` | test de déploiement d'une release installée |
+| `scripts/rollback.sh <espace> [release] [révision]` | retour arrière puis vérification |
+| `scripts/backup.sh <espace> [release]` | sauvegarde à froid du volume dans `backups/` (coupure d'une à deux minutes) |
+| `CONFIRM=oui scripts/restore.sh <archive> <espace>` | **remplace** les données par l'archive |
+
+Un retour arrière ne touche pas aux données : si une version a modifié le schéma, restaurer la sauvegarde. Les
+sauvegardes contiennent des données personnelles : elles sont créées lisibles par leur seul propriétaire,
+ignorées par git, et restent sur la machine qui les lance (stockage distant et planification : backlog).
+
+### Essais faits en local (minikube, 27/11/2026)
+
+Installation puis mise à jour avec sauvegarde ; restauration (les données reviennent à l'état sauvegardé) ; version
+dont l'image n'existe pas (annulée par Helm, service et données intacts) ; version qui démarre mais échoue au test
+(retour arrière automatique puis vérification). Ces essais utilisaient Helm 3.22 ; la CI utilise Helm 4.
+
+## 5. Dans la CI
 
 Le job `images` construit les trois cibles et les transmet par artefact ; `compose-test` lance les trois
 environnements Compose et le test de déploiement.
 
-## 5. Limites connues
+## 6. Limites connues
 
 - La base est HSQLDB, interne au back : **une seule instance** du back, et une courte coupure à chaque mise à jour
   quand les données sont conservées. Une base externe (PostgreSQL) est en attente de décision (backlog).
