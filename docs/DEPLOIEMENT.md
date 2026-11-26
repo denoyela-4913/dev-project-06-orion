@@ -147,12 +147,51 @@ publier : `python3 scripts/release.py` (écrit `release-notes.md`, ignoré par g
 Si l'envoi s'interrompt, relancer le job : à partir de la deuxième tentative, les images déjà envoyées sont
 remplacées. Un nouveau paquet GHCR peut être privé par défaut : sa visibilité se règle dans GitHub (backlog).
 
-## 7. Dans la CI
+## 7. Déploiement de démonstration
 
-Le job `images` construit les trois cibles et les transmet par artefact ; `compose-test` lance les trois
-environnements Compose et le test de déploiement.
+Le job `deploy-demo` crée un cluster **kind** dans le runner et lance `scripts/deploy_demo.sh` : pour dev, staging
+puis production, `terraform apply`, test de déploiement par port-forward, puis `terraform destroy`. Sur staging,
+`scripts/test_recovery.sh` éprouve en plus la sauvegarde et la restauration, l'annulation d'une version qui ne
+démarre pas et le retour arrière d'une version qui échoue au test. Après une release, les images sont relues
+depuis GHCR.
 
-## 8. Limites connues
+**Ce que cela prouve, et ses limites** : le chart, le code Terraform, les images et les procédures de secours
+fonctionnent sur un vrai cluster Kubernetes. Mais ce cluster est **jetable** : il n'y a pas d'environnement de
+démonstration permanent, ni de domaine, de certificat public ou de stockage durable. Le choix d'un hébergement
+est en attente (backlog).
+
+Rejouer en local sur un cluster de test (les images doivent y être chargées) :
+
+```bash
+KUBE_CONTEXT=<contexte de test> scripts/deploy_demo.sh <version> [préfixe de registre]
+```
+
+### Notification
+
+Le job `notify` écrit le résultat dans le résumé du run. Sur `main`, il ajoute un commentaire au commit (GitHub
+prévient les personnes abonnées) et appelle le webhook du secret `NOTIFY_WEBHOOK_URL` s'il existe (format
+`{"text": …}`). Un workflow en échec déclenche en plus la notification habituelle de GitHub.
+
+### Livraison manuelle de secours
+
+| Situation | Que faire |
+|---|---|
+| L'automatisation n'a pas livré, GitHub Actions fonctionne | onglet *Actions*, workflow **Livraison manuelle de secours** : version `X.Y.Z`, cocher *publish* pour construire, scanner et publier |
+| GitHub Actions est indisponible | depuis un poste : construire les trois images (étiquette `ci`), `scripts/trivy.sh image …`, `docker login ghcr.io`, `scripts/publish_images.sh ghcr.io/<propriétaire>/<dépôt>/ X.Y.Z`, puis `scripts/deploy.sh <env> X.Y.Z --set images.repositoryPrefix=…` |
+
+## 8. Dans la CI
+
+| Étape du schéma | Jobs |
+|---|---|
+| 1. lint | `lint` |
+| 2. test et couverture | `test-front`, `test-back`, et `infra-check` (chart, scripts, Terraform) |
+| 3. qualité | `sonar-front`, `sonar-back`, `sonar-infra`, `coverage` |
+| 4. build | `build-front`, `build-back` (avec Checkstyle et SpotBugs), `images`, `compose-test` |
+| 5. scan | `scan` ; rescan hebdomadaire : workflow *Scan de sécurité* |
+| 6. release (`main`) | `release` |
+| 7. déploiement de démonstration | `deploy-demo`, `notify` |
+
+## 9. Limites connues
 
 - La base est HSQLDB, interne au back : **une seule instance** du back, et une courte coupure à chaque mise à jour
   quand les données sont conservées. Une base externe (PostgreSQL) est en attente de décision (backlog).
