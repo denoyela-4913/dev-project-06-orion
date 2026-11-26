@@ -1,5 +1,8 @@
 """Tests de coverage_gate.py. Lancement: python3 -m unittest discover -s scripts"""
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
 
 import coverage_gate as gate
 
@@ -68,6 +71,34 @@ class ReportTests(unittest.TestCase):
 
         # Ligne 2: couverte, avec une branche sur deux. Ligne 4: non couverte. Ligne 99: non exécutable.
         self.assertEqual(gate.totals(report, {'front/src/app/a.ts': {2, 4, 99}}), (2, 4))
+
+
+class BaseReferenceTests(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.repository = Path(directory.name)
+        identity = ['-c', 'user.name=test', '-c', 'user.email=test@localhost', '-c', 'commit.gpgsign=false']
+        self.git('init', '-q')
+        self.git(*identity, 'commit', '-q', '--allow-empty', '-m', 'base')
+        (self.repository / 'a.txt').write_text('new\n')
+        self.git('add', 'a.txt')
+        self.git(*identity, 'commit', '-q', '-m', 'change')
+
+    def git(self, *arguments):
+        subprocess.run(['git', *arguments], cwd=self.repository, check=True, capture_output=True)
+
+    def test_a_git_reference_gives_the_diff(self):
+        self.assertEqual(gate.added_lines(gate.read_diff('HEAD~1', cwd=self.repository)), {'a.txt': {1}})
+
+    def test_a_base_that_looks_like_an_option_is_rejected(self):
+        # `--output` ferait écrire un fichier par git.
+        before = sorted(path.name for path in self.repository.iterdir())
+
+        with self.assertRaises(subprocess.CalledProcessError):
+            gate.read_diff('--output=written-by-git', cwd=self.repository)
+
+        self.assertEqual(sorted(path.name for path in self.repository.iterdir()), before)
 
 
 class VerdictTests(unittest.TestCase):

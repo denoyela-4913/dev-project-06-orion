@@ -73,6 +73,27 @@ def added_lines(diff):
     return result
 
 
+def git(*arguments, cwd=None):
+    return subprocess.run(['git', *arguments], cwd=cwd, check=True, capture_output=True, text=True).stdout
+
+
+def resolve_commit(reference, cwd=None):
+    """Empreinte du commit désigné. `--end-of-options`: une valeur commençant par « - » n'est pas lue comme une
+    option de git (Sonar S8705)."""
+    commit = git('rev-parse', '--verify', '--end-of-options', f'{reference}^{{commit}}', cwd=cwd).strip()
+    if not re.fullmatch(r'[0-9a-f]{40,64}', commit):
+        raise ValueError(f'Référence git inattendue: {reference!r}')
+    return commit
+
+
+def read_diff(base, cwd=None):
+    # `base...HEAD`: depuis l'ancêtre commun, sans les changements arrivés depuis sur la base. Seule l'empreinte,
+    # vérifiée, est transmise à `git diff`, jamais la valeur reçue.
+    commit = resolve_commit(base, cwd=cwd)
+    return git('-c', 'core.quotepath=off', 'diff', '--unified=0', '--no-color', '--no-ext-diff',
+               '--src-prefix=a/', '--dst-prefix=b/', f'{commit}...HEAD', cwd=cwd)
+
+
 def totals(report, only=None):
     """(couverts, à couvrir), sur tout le rapport ou sur les seules lignes de `only`."""
     covered = total = 0
@@ -131,12 +152,7 @@ def main(argv=None):
     }
     new = None
     if args.base:
-        # `base...HEAD`: depuis l'ancêtre commun, sans les changements arrivés depuis sur la base.
-        diff = subprocess.run(
-            ['git', '-c', 'core.quotepath=off', 'diff', '--unified=0', '--no-color', '--no-ext-diff',
-             '--src-prefix=a/', '--dst-prefix=b/', f'{args.base}...HEAD'],
-            check=True, capture_output=True, text=True).stdout
-        new = added_lines(diff)
+        new = added_lines(read_diff(args.base))
 
     results = []
     for part, report in reports.items():
