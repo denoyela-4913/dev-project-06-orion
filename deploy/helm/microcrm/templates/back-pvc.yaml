@@ -1,0 +1,19 @@
+{{- if .Values.back.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "microcrm.fullname" . }}-data
+  labels:
+    {{- include "microcrm.labels" . | nindent 4 }}
+  annotations:
+    # Les données survivent à `helm uninstall` : leur suppression est un geste volontaire.
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- with .Values.back.persistence.storageClassName }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.back.persistence.size }}
+{{- end }}

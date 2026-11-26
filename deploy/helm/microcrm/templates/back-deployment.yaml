@@ -1,0 +1,93 @@
+{{- if gt (int .Values.back.replicas) 1 }}
+{{- fail "back.replicas doit rester à 1 : la base HSQLDB est interne au processus (cf. values.yaml)." }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "microcrm.fullname" . }}-back
+  labels:
+    {{- include "microcrm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: back
+spec:
+  replicas: {{ .Values.back.replicas }}
+  revisionHistoryLimit: 5
+  strategy:
+    {{- if .Values.back.persistence.enabled }}
+    # HSQLDB sur fichier n'accepte qu'un processus : l'ancien pod doit s'arrêter avant le nouveau (coupure
+    # courte à chaque mise à jour).
+    type: Recreate
+    {{- else }}
+    type: RollingUpdate
+    {{- end }}
+  selector:
+    matchLabels:
+      {{- include "microcrm.selectorLabels" (dict "root" . "component" "back") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "microcrm.selectorLabels" (dict "root" . "component" "back") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- include "microcrm.podSecurityContext" . | nindent 8 }}
+      containers:
+        - name: back
+          image: {{ include "microcrm.image" (dict "root" . "name" .Values.images.back) | quote }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          env:
+            - name: APP_CORS_ALLOWED_ORIGINS
+              value: {{ .Values.publicUrl | quote }}
+            {{- if .Values.back.persistence.enabled }}
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:hsqldb:file:/data/microcrm;shutdown=true;hsqldb.write_delay=false"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: sa
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: update
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+          # Démarrage lent de Spring : la sonde de démarrage laisse jusqu'à 150 s avant les deux autres.
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.back.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- if .Values.back.persistence.enabled }}
+            - name: data
+              mountPath: /data
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.back.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "microcrm.fullname" . }}-data
+        {{- end }}

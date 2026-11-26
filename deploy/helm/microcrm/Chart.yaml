@@ -1,0 +1,9 @@
+apiVersion: v2
+name: microcrm
+description: MicroCRM (front Angular servi par Caddy, back Spring Boot)
+type: application
+# Version du chart, à augmenter quand ses gabarits changent. La version de l'application (appVersion) est celle
+# de la release : la CI la fixe à la publication (`helm package --app-version`).
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.30.0-0"

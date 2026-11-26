@@ -1,0 +1,8 @@
+# Staging : comme la production, en plus petit : données conservées, deux instances du front.
+publicUrl: http://localhost:8080
+back:
+  persistence:
+    enabled: true
+    size: 1Gi
+front:
+  replicas: 2

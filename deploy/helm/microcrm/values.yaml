@@ -1,0 +1,60 @@
+# Valeurs communes. Chaque environnement les complète : values-dev.yaml, values-staging.yaml,
+# values-production.yaml.
+
+images:
+  # Préfixe du registre, avec le « / » final (ex. ghcr.io/<propriétaire>/<dépôt>/). Vide : images locales.
+  # Jamais écrit en dur ici : la CI et les scripts le calculent à partir du dépôt.
+  repositoryPrefix: ""
+  back: microcrm-back
+  front: microcrm-front
+  # Version des images. Vide : appVersion du chart.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# Origine publique du front, telle que le navigateur la voit. Elle est autorisée par le CORS du back : sans
+# elle, les écritures sont refusées quand le TLS s'arrête à l'ingress.
+publicUrl: http://localhost:8080
+
+back:
+  # Une seule instance : la base HSQLDB est interne au processus (en mémoire ou sur fichier). Plusieurs
+  # instances auraient des données différentes. Passer à une base externe avant d'augmenter ce nombre.
+  replicas: 1
+  persistence:
+    # false : base en mémoire, données de démonstration rechargées à chaque démarrage.
+    enabled: false
+    size: 1Gi
+    storageClassName: ""
+  resources:
+    requests:
+      cpu: 100m
+      memory: 384Mi
+    limits:
+      memory: 768Mi
+
+front:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  host: ""
+  annotations: {}
+  # Nom du Secret TLS ; vide : pas de TLS sur l'ingress.
+  tlsSecretName: ""
+
+# Limite le trafic entrant du back aux pods du front (appliquée seulement si le réseau du cluster gère les
+# NetworkPolicy).
+networkPolicy:
+  enabled: true
