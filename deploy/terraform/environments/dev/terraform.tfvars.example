@@ -1,0 +1,11 @@
+# Copier en terraform.tfvars (ignoré par git) et adapter. Aucun secret ici.
+image_tag               = "0.1.0"
+image_repository_prefix = "ghcr.io/<propriétaire>/<dépôt>/"
+
+# Cluster visé (par défaut : contexte courant de ~/.kube/config).
+# kubeconfig_path = "~/.kube/config"
+# kube_context    = "mon-cluster-dev"
+
+# Domaine servi par l'ingress et origine publique ; sans eux, accès par port-forward.
+# ingress_host = "microcrm.example.com"
+# public_url   = "https://microcrm.example.com"
