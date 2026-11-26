@@ -1,0 +1,8 @@
+MicroCRM {{ .Values.images.tag | default .Chart.AppVersion }} est installé sous le nom « {{ .Release.Name }} ».
+
+Accès sans ingress :
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "microcrm.fullname" . }}-front 8080:{{ .Values.service.port }}
+  puis http://localhost:8080
+
+Test de déploiement : scripts/smoke_test.sh http://localhost:8080
+Retour arrière      : helm -n {{ .Release.Namespace }} rollback {{ .Release.Name }}

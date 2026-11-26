@@ -1,0 +1,14 @@
+{{- if gt (int .Values.front.replicas) 1 }}
+# Pendant une maintenance du cluster, au moins une instance du front reste disponible.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "microcrm.fullname" . }}-front
+  labels:
+    {{- include "microcrm.labels" . | nindent 4 }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "microcrm.selectorLabels" (dict "root" . "component" "front") | nindent 6 }}
+{{- end }}

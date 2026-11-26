@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "microcrm.fullname" . }}-front
+  labels:
+    {{- include "microcrm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: front
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "microcrm.selectorLabels" (dict "root" . "component" "front") | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
