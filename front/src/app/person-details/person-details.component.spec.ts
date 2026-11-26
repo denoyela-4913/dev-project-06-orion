@@ -139,4 +139,16 @@ describe('IndividualDetailsComponent', () => {
       expect(table.querySelector('th')).not.toBeNull();
     }
   });
+
+  // Sonar typescript:S7059: pas d'appel asynchrone dans le constructeur, on charge dans ngOnInit.
+  it('should load the organizations in ngOnInit and not in the constructor', () => {
+    const organizationService = TestBed.inject(OrganizationService);
+    const fetchAll = vi.spyOn(organizationService, 'fetchAll').mockResolvedValue([]);
+
+    const created = TestBed.createComponent(PersonDetailsComponent);
+    expect(fetchAll).not.toHaveBeenCalled();
+
+    created.detectChanges();
+    expect(fetchAll).toHaveBeenCalledTimes(1);
+  });
 });
