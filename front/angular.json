@@ -80,6 +80,13 @@
             "setupFiles": [
               "src/test-setup.ts"
             ],
+            "coverageInclude": [
+              "src/**/*.ts"
+            ],
+            "coverageExclude": [
+              "src/**/*.spec.ts",
+              "src/test-setup.ts"
+            ],
             "coverageReporters": [
               "html",
               "text-summary",
