@@ -11,7 +11,7 @@ base=${1:?Usage: $0 <URL du front>}
 base=${base%/}
 timeout=${SMOKE_TIMEOUT:-120}
 curl_options=(--silent --show-error --fail --max-time 10)
-if [ "${SMOKE_INSECURE:-0}" = 1 ]; then curl_options+=(--insecure); fi
+if [[ "${SMOKE_INSECURE:-0}" = 1 ]]; then curl_options+=(--insecure); fi
 
 fetch() { curl "${curl_options[@]}" "$@"; }
 fail() { echo "ÉCHEC: $*" >&2; exit 1; }
@@ -19,7 +19,7 @@ pass() { echo "OK: $*"; }
 
 deadline=$((SECONDS + timeout))
 until fetch "$base/api/actuator/health/readiness" >/dev/null 2>&1; do
-  [ "$SECONDS" -lt "$deadline" ] || fail "l'application ne répond pas après ${timeout}s ($base)"
+  [[ "$SECONDS" -lt "$deadline" ]] || fail "l'application ne répond pas après ${timeout}s ($base)"
   sleep 3
 done
 pass "le back est prêt"
@@ -46,7 +46,7 @@ created=$(fetch -H "Origin: $base" -H 'Content-Type: application/json' \
   -d '{"firstName":"Smoke","lastName":"Test","email":"smoke@example.net"}' "$base/api/persons") ||
   fail "création d'une personne (vérifier APP_CORS_ALLOWED_ORIGINS)"
 id=$(sed -n 's/.*"id" *: *\([0-9][0-9]*\).*/\1/p' <<<"$created" | head -n 1)
-[ -n "$id" ] || fail "identifiant absent de la réponse de création"
+[[ -n "$id" ]] || fail "identifiant absent de la réponse de création"
 fetch -X DELETE -H "Origin: $base" "$base/api/persons/$id" >/dev/null || fail "suppression de la personne $id"
 pass "création puis suppression d'une personne"
 

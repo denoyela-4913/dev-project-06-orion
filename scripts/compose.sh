@@ -8,7 +8,7 @@
 set -euo pipefail
 
 usage() { echo "Usage: $0 <dev|staging|production> <commande compose...>" >&2; exit 2; }
-[ $# -ge 2 ] || usage
+[[ $# -ge 2 ]] || usage
 env_name=$1
 shift
 
