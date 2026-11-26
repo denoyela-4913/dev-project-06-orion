@@ -81,6 +81,19 @@ jobs:
           # version 21 = celle de build.gradle (sourceCompatibility = '21'), LTS jusqu'en 12/2029.
           distribution: temurin
           java-version: 21
+          # Cache des dépendances Gradle et de la distribution du wrapper: évite de tout retélécharger à chaque
+          # job, et limite l'exposition aux « 429 Too Many Requests » de Maven Central (sans la supprimer: un
+          # cache absent ou périmé impose de télécharger).
+          cache: gradle
+          # Fichiers qui forment la clé du cache. Liste explicite car le choix par défaut ignore
+          # gradle.lockfile (`**/*.gradle*` ne le couvre pas): le cache ne suivrait pas une mise à jour du verrou.
+          cache-dependency-path: |
+            back/build.gradle
+            back/settings.gradle
+            back/gradle.lockfile
+            back/gradle/wrapper/gradle-wrapper.properties
+          # Activé d'office avec `cache`: désactivé pour limiter ce changement aux dépendances Gradle.
+          cache-jdk: false
       - run: ./gradlew test
       # Pour le job `sonar` : classes compilées (sonar.java.binaries et sonar.java.test.binaries) et rapport
       # JaCoCo. La racine de l'artefact est le dossier commun aux deux chemins, back/build.
@@ -146,6 +159,15 @@ jobs:
         with:
           distribution: temurin # cf. justification dans test-back
           java-version: 21
+          # Mêmes réglages et même clé que test-back, qui s'exécute avant (cf. justification dans test-back):
+          # ce job réutilise son cache, y compris dans le run qui vient de le créer.
+          cache: gradle
+          cache-dependency-path: |
+            back/build.gradle
+            back/settings.gradle
+            back/gradle.lockfile
+            back/gradle/wrapper/gradle-wrapper.properties
+          cache-jdk: false
       - run: ./gradlew build
 
   # --- Analyse de qualité ---------------------------------------------------
