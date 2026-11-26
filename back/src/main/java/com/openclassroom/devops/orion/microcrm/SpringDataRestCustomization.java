@@ -1,5 +1,6 @@
 package com.openclassroom.devops.orion.microcrm;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.rest.core.config.RepositoryRestConfiguration;
 import org.springframework.data.rest.core.event.ValidatingRepositoryEventListener;
@@ -12,8 +13,12 @@ public class SpringDataRestCustomization implements RepositoryRestConfigurer {
 
     private final LocalValidatorFactoryBean validator;
 
-    public SpringDataRestCustomization(LocalValidatorFactoryBean validator) {
+    private final String[] allowedOrigins;
+
+    public SpringDataRestCustomization(LocalValidatorFactoryBean validator,
+            @Value("${app.cors.allowed-origins}") String[] allowedOrigins) {
         this.validator = validator;
+        this.allowedOrigins = allowedOrigins;
     }
 
     // Applique les contraintes Bean Validation (@Email, ...) avant la création et l'enregistrement: une valeur
@@ -27,9 +32,11 @@ public class SpringDataRestCustomization implements RepositoryRestConfigurer {
     @Override
     public void configureRepositoryRestConfiguration(RepositoryRestConfiguration config, CorsRegistry cors) {
         config.exposeIdsFor(Person.class, Organization.class);
+        // Seule configuration CORS de l'API (pas de @CrossOrigin sur les dépôts, qui autoriserait toutes les
+        // origines, Sonar S5122). PUT est requis: le front s'en sert pour modifier personnes et organisations.
         cors.addMapping("/**")
-                .allowedOrigins("*")
-                .allowedMethods("GET", "POST", "PATCH", "DELETE")
+                .allowedOrigins(allowedOrigins)
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE")
                 .exposedHeaders("Access-Control-Allow-Origin")
                 .allowCredentials(false).maxAge(3600);
         RepositoryRestConfigurer.super.configureRepositoryRestConfiguration(config, cors);
