@@ -118,12 +118,21 @@ Installation puis mise à jour avec sauvegarde ; restauration (les données revi
 dont l'image n'existe pas (annulée par Helm, service et données intacts) ; version qui démarre mais échoue au test
 (retour arrière automatique puis vérification). Ces essais utilisaient Helm 3.22 ; la CI utilise Helm 4.
 
-## 5. Dans la CI
+## 5. Terraform
+
+Terraform prépare l'environnement (espace de noms au niveau `restricted`, quota) puis y installe le chart. Code
+découpé en deux modules et un dossier par environnement, chacun avec son état : voir
+[`deploy/terraform/README.md`](../deploy/terraform/README.md).
+
+Essai en local (minikube, 27/11/2026) : `apply` de staging, pods prêts et test de déploiement réussi (hors écriture,
+qui a révélé le défaut d'origine corrigé dans le Caddyfile).
+
+## 6. Dans la CI
 
 Le job `images` construit les trois cibles et les transmet par artefact ; `compose-test` lance les trois
 environnements Compose et le test de déploiement.
 
-## 6. Limites connues
+## 7. Limites connues
 
 - La base est HSQLDB, interne au back : **une seule instance** du back, et une courte coupure à chaque mise à jour
   quand les données sont conservées. Une base externe (PostgreSQL) est en attente de décision (backlog).
