@@ -27,6 +27,11 @@
 hs_err_pid*
 replay_pid*
 
+### IDE ###
+# Sortie de compilation de l'IDE (Eclipse, extension Java de VS Code): classes et copie des ressources de
+# src/. Gradle, lui, écrit dans build/. Ancré sur back/ (`/bin/`) pour ne pas ignorer un paquet source « bin ».
+/bin/
+
 ### Gradle ###
 .gradle
 **/build/
