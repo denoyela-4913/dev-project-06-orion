@@ -19,11 +19,11 @@ on:
 jobs:
   # --- Stage "test" ---------------------------------------------------------
   test-front:
-    # GitLab : image cypress/browsers (apporte Chrome). Ici le runner fournit déjà Google Chrome :
-    # pas besoin d'image dédiée.
+    # GitLab : image cypress/browsers (apporte Chrome). Ici les tests tournent avec Vitest dans Node, avec un
+    # DOM simulé (jsdom) : aucun navigateur n'est nécessaire (cf. docs/KARMA.md).
     # `ubuntu-26.04` au lieu de `ubuntu-latest` : le label « latest » change de version sans
     # modification du dépôt (GitHub l'a fait migrer vers 26.04). Version fixe = builds reproductibles ;
-    # 26.04 est celle sur laquelle la CI a été validée (Chrome présent), et c'est une version LTS.
+    # 26.04 est celle sur laquelle la CI a été validée, et c'est une version LTS.
     runs-on: ubuntu-26.04
     # Remplace les "cd front" de GitLab, sans répéter la commande à chaque step.
     defaults:
@@ -49,12 +49,9 @@ jobs:
       # GitLab : `npx @angular/cli test`. `npm test` exécute le script "test" de package.json
       # (`ng test`) avec l'Angular CLI déjà installé par `npm ci` : la version est celle du
       # package-lock.json et rien n'est téléchargé à la volée (règles Sonar S6505 et S8543).
-      # `--code-coverage` : produit le rapport lcov que le job `sonar` récupère, sans relancer les tests.
-      - run: npm test -- --no-watch --no-progress --code-coverage --browsers=ChromeHeadlessNoSandbox
-        env:
-          # GitLab : /opt/google/chrome/chrome (chemin propre à l'image Cypress).
-          # Sur le runner GitHub, Chrome est installé à /usr/bin/google-chrome (confirmé au premier run).
-          CHROME_BIN: /usr/bin/google-chrome
+      # `--coverage` : produit le rapport lcov que le job `sonar` récupère, sans relancer les tests.
+      # `--watch=false` : un seul passage, sans dépendre de la détection de l'environnement de CI.
+      - run: npm test -- --watch=false --coverage
       # Transmet la couverture au job `sonar` : chaque job a sa propre machine, rien n'est partagé sinon.
       # Envoyé aussi sur les branches sans `sonar` : un envoi cassé se voit dès le run de push.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

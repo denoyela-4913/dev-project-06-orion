@@ -73,9 +73,9 @@ describe('IndividualDetailsComponent', () => {
       personService = TestBed.inject(PersonService);
       // Appel d'API qui ne se termine que quand le test le décide.
       const pending = new Promise<void>(resolve => (finishLink = resolve));
-      spyOn(organizationService, 'addPerson').and.returnValue(pending);
-      spyOn(organizationService, 'removePerson').and.returnValue(pending);
-      spyOn(personService, 'fetchById').and.resolveTo({ ...component.person, id: 2, organizations: [org] });
+      vi.spyOn(organizationService, 'addPerson').mockReturnValue(pending);
+      vi.spyOn(organizationService, 'removePerson').mockReturnValue(pending);
+      vi.spyOn(personService, 'fetchById').mockResolvedValue({ ...component.person, id: 2, organizations: [org] });
       component.person.id = 2;
     });
 
