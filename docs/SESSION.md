@@ -43,8 +43,13 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 - `429 Too Many Requests` de Maven Central, vu trois fois: runs 45718448702, 45772345591 et 45806595627 (premier
   run du cache, encore vide; la relance a réussi). Cache Gradle ajouté (PR #21): limite les téléchargements, sans
   supprimer le risque quand le cache est vide ou périmé.
-- CORS du back corrigé (branche `back/restrict-cors-origins`), détail dans le backlog. À vérifier sur l'analyse de
-  `main` après fusion: les 3 vulnérabilités `java:S5122` doivent disparaître.
+- PR #22 fusionnée en rebase le 26/11 (`becf10b`): CORS du back limité aux origines du front, détail dans le
+  backlog. Vérifié avec curl sur le jar, pas dans un navigateur. Analyse de `main` (run 45809708667, 181 s): gate
+  OK, 0 vulnérabilité (3 avant), 0 hotspot, 21 bugs, 11 code smells, couverture 50,4 % (47,1 % avant), duplication
+  1,5 %. Commande Gradle avec cache sur ce run: 25 s (`test-back`) et 20 s (`build-back`).
+- L'API n'a pas d'authentification (CORS n'est pas un contrôle d'accès): tâche ajoutée au backlog, non décidée.
+- `back/bin/main/application.properties` est suivi par git et s'est trouvé modifié localement (probablement par
+  l'IDE, non vérifié): restauré sans être commité. Retrait du suivi non décidé.
 - Dépôt fork: passer `--repo` (dépôt d'`origin`) à `gh pr create`, pour ne pas viser le dépôt d'OpenClassrooms.
 - À mettre à jour dans les livrables: état du gate (vert sur `main` depuis le 26/11), durées de référence
   (112 s sans `sonar`, 127 s avec, mesure `v0.0.2`; puis les mesures ci-dessus), ordre tests → Sonar → build
