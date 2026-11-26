@@ -118,28 +118,14 @@ la cible au moment de la migration si une version plus récente est sortie.
     - page d'une personne: le message « Phone must be a valid phone number. » attend une erreur `tel` qu'aucun
       validateur ne produit;
     - `angular.json`, cible `test`: les assets citent `src/favicon.ico`, absent (le fichier est `src/favicon.png`).
-- [ ] front: remplacer Karma (déprécié) comme lanceur de tests
-  - Détail des problèmes, pistes, étapes et points à vérifier: `docs/KARMA.md`.
-  - 26/11: sur des promesses rejetées non traitées, le run s'est arrêté à 26 tests sur 36 (déconnexion, pas de
-    ligne `TOTAL`, code de sortie 1). Cause de la déconnexion non analysée, non propre à Karma à ce stade.
-  - Constat: `npm ci` affiche des `npm warn deprecated` pour `inflight@1.0.6`, `rimraf@3.0.2` et `glob@7.2.3`. Ils
-    viennent tous de `karma@6.4.4` (`npm ls inflight rimraf glob`), donc des tests seulement, pas de l'application
-    livrée. `npm audit`: 0 vulnérabilité.
-  - Karma 6.4.4 est la dernière version publiée et le projet est déprécié: seules les failles critiques restent
-    traitées, et Angular le dit toujours pris en charge (sources dans `docs/KARMA.md`).
-    Forcer des versions récentes avec `overrides` n'est pas testé par Karma, donc écarté.
-  - Pistes: Vitest (lanceur par défaut des nouveaux projets Angular, migration d'un projet existant déclarée
-    expérimentale), Jest, Web Test Runner, jasmine-browser-runner, ou garder Karma.
-    À comparer avant de choisir, et à mesurer (temps de CI).
-  - À faire après les corrections de bugs et d'issues Sonar du front, pour ne pas mélanger les changements. Les tests
-    écrits pour ces corrections devront être migrés, d'où l'intérêt de limiter leur nombre de dépendances à Karma.
-- [ ] front: migrer les builders `@angular-devkit/build-angular` vers `@angular/build` (dépréciés)
-  - Constat: `npm start` affiche que `@angular-devkit/build-angular:dev-server` est déprécié (support Webpack
-    d'Angular) au profit de `@angular/build:dev-server`. `front/angular.json` utilise ce paquet pour `application`
-    (déjà esbuild), `dev-server`, `extract-i18n` et `karma`.
-  - Piste: `ng update` propose une migration vers `@angular/build`. À vérifier après la tâche Karma, car le builder
-    `karma` en dépend aussi: les deux se traitent mieux ensemble.
-  - À contrôler: taille du bundle (budget 850 kB), `npm start`, build de production et CI.
+- [ ] front: remplacer Karma (déprécié) par Vitest, avec les builders `@angular/build`
+  - Analyse, justification, coût, autres pistes et étapes: `docs/KARMA.md`. Vitest recommandé, aucun obstacle
+    bloquant trouvé (essai dans une copie le 26/11, 36 tests sur 36 avec Vitest 5.1.2).
+  - Regroupe la migration des builders `@angular-devkit/build-angular` (dépréciés) vers `@angular/build`: le
+    lanceur Vitest l'exige.
+  - À accepter: Vitest n'a pas de LTS; règle proposée comme pour Gradle (dernière mineure, mise à jour régulière).
+  - Quand (proposition, non décidée): après le lot 2 des issues Sonar du front et avant le lot 3.
+  - À vérifier sur la branche: CI, import du lcov dans Sonar, Quality Gate, bundle (budget 850 kB), `npm start`.
 - [ ] sécurité: auditer le back et les images, puis scanner dans la CI
   - Back (Gradle) et images Docker n'ont pas encore été analysés.
   - Ajouter un scan de vulnérabilités dans la CI une fois les mises à jour faites, pour ne pas les réintroduire.
