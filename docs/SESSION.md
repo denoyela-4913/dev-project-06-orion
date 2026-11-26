@@ -36,12 +36,11 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 - Livrables 01 et 02, `schema_pipeline_ci_cd.png`, `scripts/build-livrables.sh` et `docs/inputs/` (sujet, mails,
   modèles) sont dans `main`. L'utilisateur a décidé de garder `docs/inputs/` dans le dépôt (26/11). Fichiers
   `*:Zone.Identifier` retirés et ignorés (`.gitignore`).
-- `429 Too Many Requests` de Maven Central, vu deux fois: `test-back` (run 45718448702) et `build-back` sur `main`
-  après la PR #18 (run 45772345591). Le cache Gradle (backlog) pourrait limiter les téléchargements (non mesuré).
-- PR #19 fusionnée en rebase le 26/11 (`770a887`): `sonar` réutilise les résultats des jobs de tests (artefacts).
-  Analyse complète de `main` (run 45780226856): gate OK, 21 bugs, 11 code smells, 3 vulnérabilités, couverture
-  47,1 %, duplication 1,5 %, soit les mêmes totaux qu'avant (issues non comparées une par une). Durée du run: 200 s
-  (`sonar` 83 s), contre 295 s après la PR #17.
+- `429 Too Many Requests` de Maven Central, vu trois fois: runs 45718448702, 45772345591 et 45806595627 (premier
+  run du cache, encore vide; la relance a réussi). Cache Gradle ajouté (PR #21): limite les téléchargements, sans
+  supprimer le risque quand le cache est vide ou périmé.
+- CORS du back corrigé (branche `back/restrict-cors-origins`), détail dans le backlog. À vérifier sur l'analyse de
+  `main` après fusion: les 3 vulnérabilités `java:S5122` doivent disparaître.
 - Dépôt fork: passer `--repo` (dépôt d'`origin`) à `gh pr create`, pour ne pas viser le dépôt d'OpenClassrooms.
 - À mettre à jour dans les livrables: état du gate (vert sur `main` depuis le 26/11), durées de référence
   (112 s sans `sonar`, 127 s avec, mesure `v0.0.2`; puis les mesures ci-dessus), ordre tests → Sonar → build
@@ -49,15 +48,13 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 
 ## Prochaine étape (ordre décidé)
 
-0. Dans cet ordre (demande de l'utilisateur, 26/11): cache Gradle dans la CI, puis les 3 vulnérabilités CORS du
-   back (`java:S5122`), absentes du cliché `v0.0.2`.
 1. Issues Sonar du front, une branche `front/…` par lot:
    1. promesses non gérées `typescript:S9383` (13 sur `main` au 26/11)
    2. labels de formulaire (`Web:InputWithoutLabelCheck` ×7, `Web:S6853` ×6), `<th>` du tableau (`Web:S5256`),
       `Number.parseInt` (`S7773` ×2), opération asynchrone dans le constructeur (`S7059`)
    3. tests pour monter la couverture; duplication `Organization.java` / `Person.java`
 2. Jalon `v0.1.0`: tag + cliché Sonar dans `docs/quality/` (reporté après les corrections du front).
-3. Puis le reste de `docs/BACKLOG.md`: remplacement de Karma, migration `@angular/build`, cache npm/Gradle,
+3. Puis le reste de `docs/BACKLOG.md`: remplacement de Karma, migration `@angular/build`, cache npm,
    `sonar.java.libraries`, 2 `java:S6813` (`InitialDataFixture.java`), scan de sécurité dans la CI, étude nginx, maintenance de `ro.polak:spring-boot-data-fixtures`.
 
 ## Questions ouvertes

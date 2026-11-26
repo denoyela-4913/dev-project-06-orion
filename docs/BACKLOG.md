@@ -2,7 +2,7 @@
 
 ## À faire
 
-- [ ] ci: ajouter le cache npm et Gradle (`cache:` de `setup-node` / `setup-java`)
+- [ ] ci: ajouter le cache npm (`cache:` de `setup-node`; le cache Gradle est fait, cf. « Fait »)
   - Pré-requis: mesurer les durées de run sans cache (`gh run view`), puis avec cache.
   - Mesure sans cache (premier run, 18/11/2026): test-back ~48 s, test-front ~59 s, build-front ~45 s,
     build-back ~45 s, soit environ 2 min au total.
@@ -189,3 +189,13 @@ la cible au moment de la migration si une version plus récente est sortie.
   run de PR: 201 s (run 45772862781) contre 246 s et 280 s avec l'ancien pipeline (runs 45719775318 et
   45771763791), `sonar` 91 s contre 132 s et 168 s. Un seul run mesuré, et la durée varie d'un run à l'autre.
   Reste: `build-back` (`./gradlew build`) relance les tests du back
+- [x] ci: cache Gradle de `setup-java` dans `test-back` et `build-back` (PR #21). Fichiers de la clé listés (le choix
+  par défaut ignore `gradle.lockfile`), cache du JDK désactivé. Commande Gradle sans cache sur 7 runs: 34 à 55 s
+  (`test-back`) et 41 à 54 s (`build-back`); avec cache restauré dans `build-back`: 28 s et 30 s (runs 45806595627
+  et 45807484510). Durée totale du premier run de `main` avec cache: 201 s (200 s au run précédent)
+- [x] back: CORS limité aux origines du front (`java:S5122` ×3). Une seule configuration (plus de `@CrossOrigin`),
+  origines dans `app.cors.allowed-origins` (`APP_CORS_ALLOWED_ORIGINS`), par défaut `http://localhost:4200` et
+  `https://localhost`. `PUT` ajouté aux méthodes: le front l'utilise et il ne passait que grâce à `@CrossOrigin`.
+  Tests `CorsTests`; vérifié sur le jar avec curl. Limite: CORS n'est pas un contrôle d'accès, l'API n'a pas
+  d'authentification. Une autre adresse du front (ex. `http://127.0.0.1:4200`, autre port) doit être déclarée
+
