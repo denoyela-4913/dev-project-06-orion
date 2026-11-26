@@ -5,7 +5,7 @@
 # Paramètres: CONFIRM=oui est exigé, car les données actuelles du volume sont effacées.
 set -euo pipefail
 
-[ $# -ge 2 ] || { echo "Usage: CONFIRM=oui $0 <archive> <espace de noms> [release]" >&2; exit 2; }
+[[ $# -ge 2 ]] || { echo "Usage: CONFIRM=oui $0 <archive> <espace de noms> [release]" >&2; exit 2; }
 archive=$1
 namespace=$2
 release=${3:-microcrm}
@@ -14,7 +14,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/lib_volume.sh"
 
 tar -tzf "$archive" >/dev/null || { echo "Archive illisible: $archive" >&2; exit 1; }
-[ "${CONFIRM:-}" = oui ] || { echo "Les données actuelles seront effacées: relancer avec CONFIRM=oui." >&2; exit 1; }
+[[ "${CONFIRM:-}" = oui ]] || { echo "Les données actuelles seront effacées: relancer avec CONFIRM=oui." >&2; exit 1; }
 has_data_volume || { echo "Aucun volume de données pour « $release » ($namespace)." >&2; exit 1; }
 
 with_volume_pod # définit volume_pod (lib_volume.sh)

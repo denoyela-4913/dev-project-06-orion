@@ -12,7 +12,7 @@
 set -euo pipefail
 
 usage() { echo "Usage: $0 <dev|staging|production> <version> [options helm...]" >&2; exit 2; }
-[ $# -ge 2 ] || usage
+[[ $# -ge 2 ]] || usage
 env_name=$1
 version=$2
 shift 2
@@ -28,7 +28,7 @@ timeout=${DEPLOY_TIMEOUT:-5m}
 previous=$(helm list -n "$namespace" --filter "^${release}\$" --deployed -o json 2>/dev/null |
   python3 -c 'import json,sys; r=json.load(sys.stdin); print(r[0]["revision"] if r else "")' || true)
 
-if [ -n "$previous" ] && [ "${SKIP_BACKUP:-0}" != 1 ]; then
+if [[ -n "$previous" ]] && [[ "${SKIP_BACKUP:-0}" != 1 ]]; then
   "$here/backup.sh" "$namespace" "$release"
 fi
 
@@ -48,7 +48,7 @@ helm upgrade --install "$release" "$chart" \
 
 if ! "$here/verify_deployment.sh" "$namespace" "$release"; then
   echo "Le test de déploiement a échoué." >&2
-  if [ -n "$previous" ]; then
+  if [[ -n "$previous" ]]; then
     "$here/rollback.sh" "$namespace" "$release" "$previous"
   else
     echo "Première installation: aucune version à restaurer, la release est laissée pour le diagnostic." >&2

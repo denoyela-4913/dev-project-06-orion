@@ -5,7 +5,7 @@
 # Les données ne sont pas modifiées par un retour arrière: pour les restaurer, scripts/restore.sh.
 set -euo pipefail
 
-[ $# -ge 1 ] || { echo "Usage: $0 <espace de noms> [release] [révision]" >&2; exit 2; }
+[[ $# -ge 1 ]] || { echo "Usage: $0 <espace de noms> [release] [révision]" >&2; exit 2; }
 namespace=$1
 release=${2:-microcrm}
 revision=${3:-0}
