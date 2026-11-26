@@ -37,13 +37,13 @@ COPY --from=front-build /src/dist/microcrm/browser /app/front
 COPY misc/docker/Caddyfile /app/Caddyfile
 
 # Utilisateur non privilégié (Sonar S6471), uid fixe pour que les stages soient cohérents.
-# `setcap cap_net_bind_service`: autorise Caddy à ouvrir les ports 80 et 443 sans être root, ce qui garde
-# les ports et les commandes `docker run` du README inchangés. Le répertoire personnel (`/home/app`)
+# Aucune capacité Linux sur le binaire de Caddy: Docker (20.10 et suivants) laisse un processus non root ouvrir
+# les ports 80 et 443 dans un conteneur, et Kubernetes l'utilise sur le port 8080. Les ports et les commandes
+# `docker run` du README restent inchangés (sauf avec `--network host`, où les ports < 1024 sont refusés).
+# Le répertoire personnel (`/home/app`)
 # reçoit les données de Caddy (autorité de certification interne). Ses deux dossiers sont créés ici avec le bon
 # propriétaire : un volume neuf monté dessus (Compose) en hérite, sinon il appartiendrait à root.
-RUN apk add --no-cache 'caddy=~2.11' 'libcap-utils=~2.78' \
-    && setcap cap_net_bind_service=+ep /usr/sbin/caddy \
-    && apk del libcap-utils \
+RUN apk add --no-cache 'caddy=~2.11' \
     && adduser -D -u 10001 app \
     && install -d -o 10001 -g 10001 /home/app/.local/share/caddy /home/app/.config/caddy
 
@@ -85,8 +85,8 @@ COPY --from=front / /
 COPY --from=back / /
 COPY misc/docker/supervisor.ini /app/supervisor.ini
 
-# `COPY --from=front / /` puis `--from=back / /` copient aussi `/etc/passwd` et les droits de fichier (dont
-# la capacité de Caddy): l'utilisateur `app` (uid 10001) existe donc déjà, la ligne `getent` ne le recrée
+# `COPY --from=front / /` puis `--from=back / /` copient aussi `/etc/passwd` et les droits de fichier:
+# l'utilisateur `app` (uid 10001) existe donc déjà, la ligne `getent` ne le recrée
 # que si ces copies changent. supervisord et ses deux programmes tournent sous cet utilisateur.
 RUN apk add --no-cache 'supervisor=~4.3' \
     && (getent passwd app >/dev/null || adduser -D -u 10001 app)

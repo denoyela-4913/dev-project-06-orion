@@ -37,9 +37,6 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: [ALL]
-              # Le binaire de Caddy porte cette capacité (Dockerfile) : sans elle dans les droits permis, le
-              # noyau refuse de l'exécuter, même pour écouter sur 8080.
-              add: [NET_BIND_SERVICE]
           env:
             # HTTP seul : le TLS est porté par l'ingress.
             - name: SITE_ADDRESS

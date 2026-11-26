@@ -84,9 +84,8 @@ Chart : `deploy/helm/microcrm/`. Une valeur commune (`values.yaml`) et un fichie
 | Ingress et TLS | non | non | oui (domaine à fixer) |
 | NetworkPolicy (back joignable du front seul) | non | oui | oui |
 
-Tous les pods tournent sans root, système de fichiers en lecture seule, sans capacité Linux. Seule exception :
-le front garde `NET_BIND_SERVICE`, que porte le binaire de Caddy (Trivy le signale en « moyenne », `KSV-0022`).
-Le chart est compatible avec le niveau `restricted` des normes de sécurité des pods.
+Tous les pods tournent sans root, système de fichiers en lecture seule, sans aucune capacité Linux, avec un
+stockage temporaire borné. Le chart est compatible avec le niveau `restricted` des normes de sécurité des pods.
 
 Les images viennent d'un registre donné par `images.repositoryPrefix` (jamais écrit en dur dans le dépôt).
 
