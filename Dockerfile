@@ -39,11 +39,13 @@ COPY misc/docker/Caddyfile /app/Caddyfile
 # Utilisateur non privilégié (Sonar S6471), uid fixe pour que les stages soient cohérents.
 # `setcap cap_net_bind_service`: autorise Caddy à ouvrir les ports 80 et 443 sans être root, ce qui garde
 # les ports et les commandes `docker run` du README inchangés. Le répertoire personnel (`/home/app`)
-# reçoit les données de Caddy (autorité de certification interne).
+# reçoit les données de Caddy (autorité de certification interne). Ses deux dossiers sont créés ici avec le bon
+# propriétaire : un volume neuf monté dessus (Compose) en hérite, sinon il appartiendrait à root.
 RUN apk add --no-cache 'caddy=~2.11' 'libcap-utils=~2.78' \
     && setcap cap_net_bind_service=+ep /usr/sbin/caddy \
     && apk del libcap-utils \
-    && adduser -D -u 10001 app
+    && adduser -D -u 10001 app \
+    && install -d -o 10001 -g 10001 /home/app/.local/share/caddy /home/app/.config/caddy
 
 WORKDIR /app
 
@@ -60,12 +62,15 @@ FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5
 COPY --from=back-build /src/build/libs/microcrm-0.0.1-SNAPSHOT.jar /app/back/microcrm-0.0.1-SNAPSHOT.jar
 
 RUN apk add --no-cache 'openjdk21-jre-headless=~21' \
-    && adduser -D -u 10001 app
+    && adduser -D -u 10001 app \
+    && install -d -o 10001 -g 10001 /data
 
 WORKDIR /app
 
 EXPOSE 8080
 
+# `/data`: emplacement des données quand la base HSQLDB est configurée sur fichier (Compose et Helm en staging et
+# en production). Par défaut la base reste en mémoire.
 USER 10001
 
 CMD ["java", "-jar", "/app/back/microcrm-0.0.1-SNAPSHOT.jar"]

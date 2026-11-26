@@ -4,9 +4,33 @@
 	skip_install_trust
 }
 
-* {
-	root * /app/front
+# SITE_ADDRESS (adresse écoutée): `*` par défaut, soit HTTPS sur 443 avec le certificat interne de Caddy et
+# redirection depuis le port 80. Derrière un ingress qui porte déjà le TLS: `:8080` (HTTP seul).
+{$SITE_ADDRESS:*} {
+	# Compression de toutes les réponses.
 	encode gzip
-	try_files {path} /index.html
-	file_server
+
+	# Santé du serveur de fichiers, pour Kubernetes et Compose.
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# Réglages lus par le front au démarrage: API_BASE_URL (adresse de l'API vue par le navigateur).
+	handle /config.js {
+		header Content-Type "text/javascript; charset=utf-8"
+		header Cache-Control "no-store"
+		respond `window.MICROCRM_CONFIG = {"apiBaseUrl": "{$API_BASE_URL:http://localhost:8080}"};`
+	}
+
+	# API derrière la même origine que le front (API_BASE_URL=/api): le back n'a pas besoin d'être publié.
+	# API_UPSTREAM: hôte et port du back vus par Caddy.
+	handle_path /api/* {
+		reverse_proxy {$API_UPSTREAM:localhost:8080}
+	}
+
+	handle {
+		root * /app/front
+		try_files {path} /index.html
+		file_server
+	}
 }
