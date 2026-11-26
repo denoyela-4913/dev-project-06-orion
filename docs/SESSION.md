@@ -49,11 +49,15 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
   1,5 %. Commande Gradle avec cache sur ce run: 25 s (`test-back`) et 20 s (`build-back`).
 - L'API n'a pas d'authentification (CORS n'est pas un contrôle d'accès): tâche ajoutée au backlog, non décidée
   (PR #23).
-- Branche `front/handle-promises` (26/11): lot 1 du front, promesses non gérées, détail dans le backlog. Les échecs
-  d'enregistrement, de suppression, d'ajout et de retrait sont vérifiés par les tests seulement. À vérifier sur
-  l'analyse de `main` après fusion: les 13 `typescript:S9383` doivent disparaître.
-- Karma: problèmes et pistes de remplacement documentés dans `docs/KARMA.md` (rien de décidé). Défauts d'affichage
-  et de navigation relevés pendant le lot 1: ajoutés au backlog, priorité non décidée.
+- PR #24 fusionnée en rebase le 26/11 (`86b9306`): lot 1 du front, promesses non gérées, détail dans le backlog.
+  Les échecs d'enregistrement, de suppression, d'ajout et de retrait sont vérifiés par les tests seulement.
+  Analyse de `main` (run 45853142065): gate OK, 0 `typescript:S9383` (13 avant), 8 bugs (21 avant), 11 code
+  smells, 0 vulnérabilité, couverture 69,6 % (50,4 % avant), duplication 1,4 %.
+- Couverture au même moment (Sonar): front 70,4 %, back 67,9 %. Envoyée à Sonar, mais ne bloque pas la CI: aucun
+  seuil local trouvé, le scan n'attend pas le Quality Gate (80 % sur le code nouveau), et `main` n'est pas protégée.
+  Exclusions de couverture envisagées (`karma.conf.js`, fichiers de démarrage): non décidées.
+- Karma → Vitest: analyse et justification dans `docs/KARMA.md`, Vitest recommandé, migration pas encore faite.
+- Défauts d'affichage et de navigation relevés pendant le lot 1: ajoutés au backlog, priorité non décidée.
 - `back/bin/main/application.properties` est suivi par git et s'est trouvé modifié localement (probablement par
   l'IDE, non vérifié): restauré sans être commité. Retrait du suivi non décidé.
 - Dépôt fork: passer `--repo` (dépôt d'`origin`) à `gh pr create`, pour ne pas viser le dépôt d'OpenClassrooms.
@@ -69,7 +73,8 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
       `Number.parseInt` (`S7773` ×2), opération asynchrone dans le constructeur (`S7059`)
    3. tests pour monter la couverture; duplication `Organization.java` / `Person.java`
 2. Jalon `v0.1.0`: tag + cliché Sonar dans `docs/quality/` (reporté après les corrections du front).
-3. Puis le reste de `docs/BACKLOG.md`: remplacement de Karma (`docs/KARMA.md`), migration `@angular/build`, cache npm,
+3. Puis le reste de `docs/BACKLOG.md`: Vitest et builders `@angular/build` (`docs/KARMA.md`;
+   proposé avant le lot 3, non décidé), cache npm,
    `sonar.java.libraries`, 2 `java:S6813` (`InitialDataFixture.java`), scan de sécurité dans la CI, étude nginx, maintenance de `ro.polak:spring-boot-data-fixtures`.
 
 ## Questions ouvertes
