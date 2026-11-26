@@ -119,6 +119,17 @@ la cible au moment de la migration si une version plus récente est sortie.
 - [ ] sécurité: auditer le back et les images, puis scanner dans la CI
   - Back (Gradle) et images Docker n'ont pas encore été analysés.
   - Ajouter un scan de vulnérabilités dans la CI une fois les mises à jour faites, pour ne pas les réintroduire.
+- [ ] sécurité: CORS n'est pas un contrôle d'accès, protéger l'API (portée et solution non décidées)
+  - Constat (26/11): aucune dépendance ni configuration de sécurité dans le back. Spring Data REST expose les
+    personnes et les organisations (`PersonRepository`, `OrganizationRepository`), lecture et écriture, sur le port
+    8080, que le README publie avec `docker run -p 8080:8080`. Les données comprennent des informations
+    personnelles (dont l'email).
+  - La restriction des origines (cf. « Fait ») ne concerne que les navigateurs: elle empêche une page d'une autre
+    origine de lire les réponses de l'API ou d'envoyer les requêtes soumises au preflight. `curl`, un script ou un
+    autre serveur ne sont pas concernés.
+  - À décider: besoin réel pour ce projet, puis solution (authentification avec Spring Security, ou accès à l'API
+    limité au niveau réseau ou proxy). Une authentification demande aussi des changements dans le front.
+  - Une correction devra avoir des tests qui échouent d'abord (requête sans identification refusée).
 
 ## Fait
 
