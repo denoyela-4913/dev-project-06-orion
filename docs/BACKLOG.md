@@ -132,6 +132,18 @@ la cible au moment de la migration si une version plus récente est sortie.
     limité au niveau réseau ou proxy). Une authentification demande aussi des changements dans le front.
   - Une correction devra avoir des tests qui échouent d'abord (requête sans identification refusée).
 
+- [ ] ci: un Quality Gate Sonar par partie (front et back), proposition non décidée
+  - Demande de l'utilisateur (26/11): un gate pour le front et un pour le back. SonarQube Cloud applique un gate par
+    projet: il faut deux projets Sonar pour le même dépôt (support des monorepos), deux scans avec chacun son
+    rapport de couverture. Reste à décider où rattacher le Dockerfile, les workflows et les scripts, et à vérifier
+    la limite de projets du plan.
+  - Conditions proposées par partie: couverture ≥ 80 % et 0 nouvelle vulnérabilité sur le code nouveau (approche
+    recommandée par Sonar), plus un plancher de couverture globale (condition « code global » dans un gate personnalisé, copie de
+    « Sonar way »; seuil fixe à relever à la main). État au 26/11:
+    front 70,4 %, back 67,9 %.
+  - À faire avec le passage du gate en bloquant (`sonar.qualitygate.wait=true`); changera l'historique Sonar
+    (nouveaux projets): garder les clichés `docs/quality/` comme référence.
+
 ## Fait
 
 - [x] ci: workflow GitHub Actions équivalent à `.gitlab-ci.yml` (PR #1)
