@@ -247,6 +247,84 @@ jobs:
       # `test-back`, tournent une seconde fois.
       - run: ./gradlew build
 
+  # Les trois images du Dockerfile, construites avec les mêmes conditions que les builds applicatifs. Chacune est
+  # transmise aux jobs suivants par artefact : ce qui est testé, scanné puis publié est la même image, pas une
+  # reconstruction. Commande `docker` du runner, sans action tierce. Pas de cache de couches pour l'instant.
+  images:
+    needs: [test-front, test-back, coverage, sonar-front, sonar-back, sonar-infra]
+    if: >-
+      !cancelled() &&
+      needs.test-front.result == 'success' && needs.test-back.result == 'success' &&
+      needs.coverage.result == 'success' &&
+      (needs.sonar-front.result == 'success' || needs.sonar-front.result == 'skipped') &&
+      (needs.sonar-back.result == 'success' || needs.sonar-back.result == 'skipped') &&
+      (needs.sonar-infra.result == 'success' || needs.sonar-infra.result == 'skipped')
+    runs-on: ubuntu-26.04 # cf. justification dans test-front
+    strategy:
+      # Une cible en échec n'interrompt pas les autres : on voit tout ce qui casse en un run.
+      fail-fast: false
+      matrix:
+        target: [front, back, standalone]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Construire l'image
+        env:
+          TARGET: ${{ matrix.target }}
+        run: docker build --target "$TARGET" -t "microcrm-$TARGET:ci" .
+      - name: Exporter l'image
+        env:
+          TARGET: ${{ matrix.target }}
+        run: docker save "microcrm-$TARGET:ci" | gzip > "image-$TARGET.tar.gz"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-${{ matrix.target }}
+          path: image-${{ matrix.target }}.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+          # Déjà compressée par gzip.
+          compression-level: 0
+
+  # Test de déploiement des images avec Docker Compose, dans les trois environnements : santé, application,
+  # API à travers le front, écriture avec l'origine du navigateur (scripts/smoke_test.sh).
+  compose-test:
+    needs: [images]
+    # `!cancelled()` : sans fonction de statut, ce job serait sauté quand un job plus haut a été sauté (Sonar sur
+    # une branche de dev), même si `images` a réussi.
+    if: ${{ !cancelled() && needs.images.result == 'success' }}
+    runs-on: ubuntu-26.04 # cf. justification dans test-front
+    env:
+      BACK_IMAGE: microcrm-back:ci
+      FRONT_IMAGE: microcrm-front:ci
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: image-front
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: image-back
+      - run: |
+          docker load -i image-front.tar.gz
+          docker load -i image-back.tar.gz
+      - name: Environnement dev
+        run: |
+          scripts/compose.sh dev up -d --no-build --wait --wait-timeout 180
+          scripts/smoke_test.sh http://localhost:4280
+          scripts/compose.sh dev down -v
+      - name: Environnement staging
+        run: |
+          scripts/compose.sh staging up -d --no-build --wait --wait-timeout 180
+          scripts/smoke_test.sh http://localhost:4281
+          scripts/compose.sh staging down -v
+      - name: Environnement production (HTTPS, certificat interne)
+        run: |
+          scripts/compose.sh production up -d --no-build --wait --wait-timeout 180
+          SMOKE_INSECURE=1 scripts/smoke_test.sh https://localhost
+          scripts/compose.sh production down -v
+      - name: Journaux en cas d'échec
+        if: failure()
+        run: docker ps -a --format '{{.Names}}' | xargs -r -n1 docker logs --tail 100
+
   # --- Analyse de qualité ---------------------------------------------------
   # Trois projets SonarQube Cloud pour le même dépôt (support des monorepos), un scan par projet, en parallèle :
   # - `sonar-front` : front Angular, avec la couverture lcov du job `test-front` ;
