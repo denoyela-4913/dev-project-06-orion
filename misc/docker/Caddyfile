@@ -25,6 +25,14 @@
 	# API derrière la même origine que le front (API_BASE_URL=/api): le back n'a pas besoin d'être publié.
 	# API_UPSTREAM: hôte et port du back vus par Caddy.
 	handle_path /api/* {
+		# Requête de la même origine que le front (le navigateur envoie `Origin` pour les écritures): elle n'a rien
+		# d'une requête inter-origines, mais le back la jugerait sur sa liste CORS et la refuserait dès que le front
+		# est joint par une autre adresse que celle configurée (port-forward, autre nom d'hôte). L'en-tête n'est
+		# retiré que s'il désigne exactement l'adresse et le schéma de la requête reçue: une autre origine le garde
+		# et reste refusée (scripts/smoke_test.sh le vérifie). Derrière un TLS porté par un ingress, le schéma
+		# diffère: c'est alors APP_CORS_ALLOWED_ORIGINS qui autorise l'origine publique.
+		@same_origin expression `{header.Origin} == {scheme} + "://" + {hostport}`
+		request_header @same_origin -Origin
 		reverse_proxy {$API_UPSTREAM:localhost:8080}
 	}
 

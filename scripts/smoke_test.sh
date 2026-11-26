@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # But: test de déploiement (santé HTTP) d'une instance déployée, à travers le front.
-# Fonctionnement: vérifie la santé du front et du back, les réglages du front, la lecture de l'API et un cycle
-# création/suppression d'une personne. Sort en erreur au premier contrôle en échec.
+# Fonctionnement: vérifie la santé du front et du back, les réglages du front, la lecture de l'API, un cycle
+# création/suppression d'une personne et le refus d'une origine étrangère. Sort en erreur au premier contrôle en échec.
 # Usage: scripts/smoke_test.sh <URL du front>     ex.: scripts/smoke_test.sh http://localhost:4280
 # Paramètres: SMOKE_TIMEOUT (attente maximale du démarrage, en secondes, défaut 120) ; SMOKE_INSECURE=1 accepte
 # un certificat non reconnu (autorité interne de Caddy).
@@ -49,5 +49,11 @@ id=$(sed -n 's/.*"id" *: *\([0-9][0-9]*\).*/\1/p' <<<"$created" | head -n 1)
 [[ -n "$id" ]] || fail "identifiant absent de la réponse de création"
 fetch -X DELETE -H "Origin: $base" "$base/api/persons/$id" >/dev/null || fail "suppression de la personne $id"
 pass "création puis suppression d'une personne"
+
+# Contrôle inverse: une origine étrangère doit rester refusée.
+status=$(curl "${curl_options[@]/--fail/--no-fail}" -o /dev/null -w '%{http_code}' -H 'Origin: http://origine-etrangere.invalid' \
+  -H 'Content-Type: application/json' -d '{"firstName":"Intrus"}' "$base/api/persons")
+[ "$status" = 403 ] || fail "une écriture d'une origine étrangère n'est pas refusée (code $status)"
+pass "une origine étrangère est refusée"
 
 echo "Test de déploiement réussi: $base"
