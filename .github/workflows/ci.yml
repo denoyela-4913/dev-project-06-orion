@@ -17,8 +17,35 @@ on:
   pull_request:
 
 jobs:
+  # --- Stage "lint" ---------------------------------------------------------
+  # Contrôles rapides, sans compilation, avant les tests (stage 1 du schéma) : ESLint pour le front, hadolint
+  # pour le Dockerfile, et rien d'autre (décision du 26/11). Checkstyle et SpotBugs ont besoin du code compilé :
+  # ils s'exécutent dans `build-back` avec `./gradlew build`.
+  lint:
+    runs-on: ubuntu-26.04 # cf. justification dans test-front
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # hadolint depuis son image officielle, épinglée par version et digest : pas d'action tierce de plus. Le
+      # Dockerfile est passé sur l'entrée standard, aucun fichier du dépôt n'est monté dans le conteneur.
+      # Toute remarque, même `info`, fait échouer le job (comportement par défaut) : le Dockerfile n'en a aucune.
+      - name: hadolint (Dockerfile)
+        env:
+          HADOLINT: hadolint/hadolint:v2.15.1-alpine@sha256:a1d49ae1a4e83c1dbad26b8c1ad7588c8bd1e04f4866b34ad3cac50335198552 # v2.15.1
+        run: docker run --rm -i "$HADOLINT" hadolint - < Dockerfile
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24 # cf. justification dans test-front
+          package-manager-cache: false # cf. justification dans test-front
+      - run: npm ci --ignore-scripts # cf. justification dans test-front
+        working-directory: front
+      # `--max-warnings 0` (script "lint" de package.json) : un avertissement fait aussi échouer le job.
+      - name: ESLint (front)
+        run: npm run lint
+        working-directory: front
+
   # --- Stage "test" ---------------------------------------------------------
   test-front:
+    needs: [lint] # un défaut de lint évite de lancer les tests (ordre du schéma)
     # GitLab : image cypress/browsers (apporte Chrome). Ici les tests tournent avec Vitest dans Node, avec un
     # DOM simulé (jsdom) : aucun navigateur n'est nécessaire (cf. docs/KARMA.md).
     # `ubuntu-26.04` au lieu de `ubuntu-latest` : le label « latest » change de version sans
@@ -65,6 +92,7 @@ jobs:
           retention-days: 1
 
   test-back:
+    needs: [lint]
     # GitLab : image gradle:jdk17. Ici setup-java installe le JDK 21 (le code est compilé en Java 21).
     runs-on: ubuntu-26.04 # cf. justification dans test-front
     defaults:
