@@ -143,6 +143,13 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] ci: nom des projets Sonar et export d'un jalon en une commande (26/11)
+  - `sonar.projectName` dans les trois `sonar-project.properties`: sans lui, le scanner reprenait le nom du projet
+    Gradle et npm, et le front et le back s'affichaient tous deux « microcrm ».
+  - `scripts/sonar-export-release.sh <tag>`: exporte les trois projets sous `docs/quality/<tag>/<partie>/`. Il
+    refuse d'écrire si la dernière analyse de `main` ne porte pas sur le commit du tag (Sonar ne garde que l'état
+    courant): créer le tag, attendre la CI de `main`, puis lancer (`-f` pour forcer). Essayé avec un tag local
+    temporaire sur `main`, avec `v0.0.2` (refus attendu) et avec `-f`.
 - [x] ci: trois projets Sonar (`_front`, `_back`, `_infra`) et trois scans en parallèle (PR #33, fusionnée le 26/11)
   - Demande de l'utilisateur: un Quality Gate par partie. Un gate par projet Sonar: `infra` regroupe le Dockerfile, les
     workflows et les scripts (pas de couverture mesurée). Un `sonar-project.properties` par dossier de base (`front/`,
