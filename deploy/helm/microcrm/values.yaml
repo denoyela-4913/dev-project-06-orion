@@ -26,12 +26,15 @@ back:
     enabled: false
     size: 1Gi
     storageClassName: ""
+  # `ephemeral-storage` borne le disque local du pod (/tmp, journaux) : sans limite, il pourrait remplir le nœud.
   resources:
     requests:
       cpu: 100m
       memory: 384Mi
+      ephemeral-storage: 100Mi
     limits:
       memory: 768Mi
+      ephemeral-storage: 1Gi
 
 front:
   replicas: 1
@@ -39,8 +42,10 @@ front:
     requests:
       cpu: 20m
       memory: 32Mi
+      ephemeral-storage: 20Mi
     limits:
       memory: 128Mi
+      ephemeral-storage: 200Mi
 
 service:
   type: ClusterIP
