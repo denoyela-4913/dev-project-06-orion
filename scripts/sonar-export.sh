@@ -13,26 +13,31 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: scripts/sonar-export.sh [-b branche] [-o dossier] [-k clé_projet]
+Usage: scripts/sonar-export.sh [-b branche] [-o dossier] [-p partie] [-k clé_projet]
 
   -b  branche à exporter                        (défaut: main)
   -o  dossier de sortie, créé si besoin         (défaut: dossier courant)
+  -p  partie du dépôt: front, back ou infra (projet <propriétaire>_<dépôt>_<partie>); sans -p, le projet
+                                                 historique <propriétaire>_<dépôt>, qui n'est plus analysé
+                                                 depuis le 26/11/2026
   -k  clé du projet SonarQube Cloud             (défaut: variable SONAR_PROJECT_KEY, sinon
                                                  déduite du remote git `origin`: <propriétaire>_<dépôt>)
 
-Fichiers produits: sonar-<branche>-measures.json et sonar-<branche>-issues.json
+Fichiers produits: sonar-<branche>-measures.json et sonar-<branche>-issues.json, précédés de la partie avec -p
 (les "/" du nom de branche sont remplacés par "-").
 EOF
 }
 
 branch=main
 out=.
+part=
 key=${SONAR_PROJECT_KEY:-}
 
-while getopts "b:o:k:h" opt; do
+while getopts "b:o:p:k:h" opt; do
   case $opt in
     b) branch=$OPTARG ;;
     o) out=$OPTARG ;;
+    p) part=$OPTARG ;;
     k) key=$OPTARG ;;
     h) usage; exit 0 ;;
     *) usage >&2; exit 2 ;;
@@ -43,12 +48,15 @@ done
 if [[ -z "$key" ]]; then
   slug=$(git -C "$(dirname "$0")" remote get-url origin | sed -E 's#^.*github\.com[:/]##; s#\.git$##')
   key=${slug/\//_}
+  # Un projet par partie depuis le 26/11/2026 (modèle de la documentation Sonar pour les monorepos).
+  if [[ -n "$part" ]]; then key=${key}_${part}; fi
 fi
 
 api=https://sonarcloud.io/api
 page_size=500
 metrics=bugs,vulnerabilities,code_smells,security_hotspots,coverage,duplicated_lines_density,ncloc,reliability_rating,security_rating,sqale_rating
 name=${branch//\//-}
+if [[ -n "$part" ]]; then name="$part-$name"; fi
 
 mkdir -p "$out"
 

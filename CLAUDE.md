@@ -45,6 +45,8 @@ cd front && npm run build -- --optimization     # budget de bundle: avertissemen
   `./gradlew dependencies --write-locks` et commiter `back/gradle.lockfile`.
 - Spring Data REST: `PUT` sur une association remplace la liste, `POST` (text/uri-list) ajoute. Le côté propriétaire
   de la relation est `Organization.persons`.
-- Sonar: projet `denoyela-4913_dev-project-06-orion`, job `sonar` de la CI seulement sur PR et `main`.
-  `scripts/sonar-export.sh` exporte l'état (`docs/quality/`).
+- Sonar: trois projets, `denoyela-4913_dev-project-06-orion_front`, `_back` et `_infra` (Dockerfile, workflows,
+  scripts), un scan chacun (`sonar-front`, `sonar-back`, `sonar-infra`), seulement sur PR et `main`. Le projet
+  historique `denoyela-4913_dev-project-06-orion` n'est plus analysé depuis le 26/11/2026 (référence des clichés
+  `docs/quality/`). `scripts/sonar-export.sh -p front|back|infra` exporte l'état (`docs/quality/`).
 - Tuer un serveur par port (`kill $(lsof -ti :8080)`), jamais par `pkill -f`.
