@@ -83,8 +83,9 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
 - Critère de réussite : tous les jobs obligatoires verts (lint, tests, build, scans).
 - Outil : GitHub Actions (workflow validé), dans la continuité des projets précédents : environnement cohérent
   GitHub, GitHub Actions, GHCR (voir 3.5, risque R2 pour le lien GitLab attendu par le sujet).
-- Ordre des jobs : lint, puis tests avec couverture, puis analyse SonarQube (elle réutilise les rapports de
-  couverture produits par les tests, sans les relancer), puis build, scan de l'image, release et déploiement.
+- Ordre des jobs : lint, puis tests avec couverture, puis, en parallèle, l'analyse SonarQube (elle
+  réutilise les rapports de couverture produits par les tests, sans les relancer) et le contrôle des seuils de
+  couverture (job `coverage`), puis build, scan de l'image, release et déploiement.
   SonarQube vient après les tests car il importe leur couverture ; le build attend Sonar pour ne pas
   construire une version dont l'analyse a échoué.
 - Durée de référence : **127 s** au tag `v0.0.2` (Sonar en parallèle des tests, sans cache). Avec l'ordre
@@ -102,24 +103,25 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
 | Sécurité | SonarQube, Trivy | PR, `main`, hebdomadaire | 0 vulnérabilité critique/haute |
 | Déploiement | script de test de déploiement (santé HTTP) | après déploiement | application répond |
 
-**Quality Gate par partie (proposé, à décider).** Le front et le back ont chacun leur Quality Gate, pour qu'un
-défaut d'une partie ne soit pas masqué par la moyenne de l'autre. SonarQube Cloud le permet en déclarant deux
-projets Sonar pour le même dépôt (support des monorepos), chacun avec son propre Quality Gate et son propre
-rapport de couverture ([documentation Sonar](https://docs.sonarsource.com/sonarqube-cloud/analyzing-source-code/monorepo-support)).
-Le périmètre du Dockerfile, des workflows et des scripts reste à rattacher à l'un des deux projets ou à un
-troisième ; la limite de projets du plan Sonar est à vérifier.
+**Seuils de couverture par partie (décidé le 26/11/2026).** Le front et le back ont chacun leurs seuils, pour
+qu'une partie ne masque pas l'autre dans une moyenne : **80 %** sur **tout le code** et **80 %** sur le **code
+nouveau** (lignes ajoutées ou modifiées par rapport à la branche visée), soit quatre taux. Ils sont vérifiés par
+un job de CI dédié (`coverage`, script `scripts/coverage_gate.py`, avec ses propres tests), qui lit les rapports
+des jobs de tests (lcov pour le front, JaCoCo pour le back) et applique la même formule que SonarQube (lignes et
+branches).
 
-Conditions par partie :
-
-- **Sur le code nouveau** : couverture ≥ 80 % et aucune nouvelle vulnérabilité. C'est l'approche
-  « Clean as You Code » recommandée par Sonar, qui déconseille par défaut d'ajouter des conditions sur le code
-  ancien pour ne pas détourner l'attention du code en cours d'écriture
-  ([documentation Sonar](https://docs.sonarsource.com/sonarcloud/improving/clean-as-you-code)).
-- **Sur tout le code** : un plancher de couverture globale par partie, c'est-à-dire une condition sur le code
-  global (« overall code ») ajoutée à un Quality Gate personnalisé. Sonar le permet, mais le gate par défaut
-  « Sonar way » ne l'a pas et n'est pas modifiable : il faut en créer une copie par partie. Le seuil est fixe ;
-  l'empêcher de baisser revient à le relever à la main quand la couverture monte. État au 26/11/2026 : front
-  70,4 %, back 67,9 %. Valeurs des planchers à fixer.
+- **Mode actuel : non bloquant.** Un taux sous le seuil est signalé, mais ne fait pas échouer la CI, tant que
+  le front et le back n'ont pas atteint 80 % sur tout leur code. État au 26/11/2026 : front 78,1 %, back 67,8 %.
+- **Passage en bloquant** : une PR dédiée, quand les deux parties atteignent 80 % (tâche du backlog).
+- **Choix par rapport à un Quality Gate Sonar par partie.** SonarQube Cloud applique un gate par projet : en
+  avoir un par partie demande deux projets Sonar pour le même dépôt (support des monorepos, [documentation
+  Sonar](https://docs.sonarsource.com/sonarqube-cloud/analyzing-source-code/monorepo-support)), avec deux scans.
+  Orion a retenu un seul projet Sonar, et fait porter les seuils par partie au job `coverage`, qui permet de
+  contrôler à la fois le code nouveau et tout le code pour chaque partie sans second projet. Le Quality Gate de
+  Sonar reste inchangé : un projet, conditions par défaut sur le code nouveau, non bloquant (approche « Clean as
+  You Code » recommandée par Sonar, [documentation
+  Sonar](https://docs.sonarsource.com/sonarcloud/improving/clean-as-you-code)). Deux gates Sonar restent une
+  option si un contrôle par partie côté Sonar devient nécessaire.
 
 Les tests de bout en bout et de performance seront ajoutés avec la partie 2 (déploiement, charge).
 
@@ -161,12 +163,12 @@ déclencher manuellement une livraison en cas de panne de l'automatisation.
 
 ### 3.2.2 Étape 2 : Contrôles qualité et sécurité
 
-- **Description** : SonarQube avec couverture (non bloquant, un Quality Gate par partie à mettre en place), Trivy (dépendances, Dockerfile, images), lint
+- **Description** : SonarQube avec couverture (non bloquant) et seuils de couverture par partie (job `coverage`, non bloquant), Trivy (dépendances, Dockerfile, images), lint
   (ESLint, Checkstyle/SpotBugs, hadolint).
 - **Responsables** : Dev, avec Ops pour les seuils Trivy.
 - **Livrables** : jobs `lint`, `trivy`, `sonar` ; rapport des résultats ; seuils documentés.
-- **État** : SonarQube **fait** (gate vert sur `main` depuis le 26/11/2026, non bloquant) ; Quality Gate par
-  partie, Trivy et lint **à faire**.
+- **État** : SonarQube **fait** (gate vert sur `main` depuis le 26/11/2026, non bloquant) ; seuils de couverture
+  par partie **faits** (non bloquants, passage en bloquant à venir) ; Trivy et lint **à faire**.
 
 ### 3.2.3 Étape 3 : Scripts d'automatisation
 
@@ -218,7 +220,7 @@ Dans un fonctionnement normal (ressources disponibles, sans blocage).
 |---|---|---|---|
 | R1 | Équipe Dev peu expérimentée en Java : sous-estimation des corrections | Haute | Sonar non bloquant d'abord ; revue systématique ; formation courte ; pair programming avec un Ops/senior |
 | R2 | Le sujet évoque un lien GitLab public alors que le choix assumé est GitHub (dépôt, Actions, GHCR) | Moyenne | Faire confirmer par le mentor que le dépôt GitHub public est accepté ; sinon, miroir GitLab avec un `.gitlab-ci.yml` équivalent |
-| R3 | Couverture de tests faible (37,1 %) : Quality Gate difficile à tenir | Moyenne | Seuil de 80 % sur le **code nouveau**, plus un plancher de couverture globale par partie ; ajout de tests à chaque correctif |
+| R3 | Couverture de tests faible (37,1 %) : Quality Gate difficile à tenir | Moyenne | Seuils de 80 % par partie, sur le **code nouveau** et sur tout le code, **non bloquants** jusqu'à atteinte (front 78,1 %, back 67,8 % au 26/11) ; ajout de tests à chaque correctif |
 | R4 | Faux positifs Trivy qui bloquent la CI | Moyenne | Fichier d'exceptions justifiées (`.trivyignore`) ; bloquer seulement les CVE corrigeables |
 | R5 | Panne de l'automatisation lors d'une livraison urgente | Moyenne | Livraison manuelle de secours documentée |
 | R6 | Dépendance à un service externe (Sonar, registre) | Moyenne | Jetons en secrets ; image conservée comme artefact de la CI ; livraison manuelle de secours ; mesure de disponibilité |
@@ -234,7 +236,7 @@ processus automatisé, répétable et mesurable.
 
 ## 4.2 Prochaines étapes
 
-- Terminer les étapes 2 et 3 du plan (Trivy, lint, scripts) ; passer le Quality Gate en mode bloquant.
+- Terminer les étapes 2 et 3 du plan (Trivy, lint, scripts) ; passer les seuils de couverture, puis le Quality Gate, en mode bloquant.
 - Compléter la documentation CI/CD : stratégie de tests, schémas d'architecture IaC, plan de sécurité,
   plans de release, de rollback et de sauvegarde.
 - Mettre en œuvre la partie 2 : Docker, Kubernetes, Helm, Terraform, Ansible, monitoring, métriques DORA.

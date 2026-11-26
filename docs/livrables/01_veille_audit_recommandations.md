@@ -405,8 +405,8 @@ Le calendrier part de la semaine du 23/11/2026. La colonne « État » reflète 
 | **S3** (07–11/12) | P5 | Versionnement automatique de la livraison à la fusion d'une PR. | À faire. |
 
 Cas particulier : le passage du Quality Gate SonarQube en mode **bloquant** est prévu en S3, une fois les
-issues du front traitées (état au 26/11/2026 : gate de `main` vert, couverture globale 69,6 %), avec un Quality Gate distinct pour
-le front et pour le back (voir Modèle 2, §2.6).
+issues du front traitées (état au 26/11/2026 : gate de `main` vert, couverture globale 69,6 %), avec des seuils de couverture de 80 % distincts pour
+le front et pour le back, vérifiés par un job dédié (voir Modèle 2, §2.6).
 
 *Il n'est pas nécessaire d'implémenter toutes les recommandations dans le cadre du projet : la priorité est
 donnée à P1 à P3.*

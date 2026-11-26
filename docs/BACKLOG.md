@@ -142,8 +142,8 @@ la cible au moment de la migration si une version plus récente est sortie.
     « Sonar way »; seuil fixe à relever à la main). État au 26/11:
     front 70,4 %, back 67,9 %.
   - Seuils décidés le 26/11 (80 % par partie, tout le code et code nouveau), appliqués par le job `coverage` de la
-    CI (cf. « Fait »), sans second projet Sonar. Les deux gates Sonar restent une proposition. Les livrables
-    (Modèle 2, §2.6 et risque R3) disent encore « à fixer »: à aligner.
+    CI (cf. « Fait »), sans second projet Sonar. Les deux gates Sonar restent une proposition. Livrables (Modèle 2, §2.6, R3,
+    schéma) alignés le 26/11.
   - À faire avec le passage du gate en bloquant (`sonar.qualitygate.wait=true`); changera l'historique Sonar
     (nouveaux projets): garder les clichés `docs/quality/` comme référence.
 - [ ] ci: passer les seuils de couverture en mode bloquant, par une PR dédiée (décidé le 26/11)
