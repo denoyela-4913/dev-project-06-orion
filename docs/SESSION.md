@@ -65,8 +65,8 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 - Dépôt fork: passer `--repo` (dépôt d'`origin`) à `gh pr create`, pour ne pas viser le dépôt d'OpenClassrooms.
 - Livrables mis à jour le 26/11 (branche `docs/livrables-quality-gates`): ordre tests → Sonar → build, durées
   (127 s à `v0.0.2`, 181 s avec l'ordre actuel), gate vert sur `main`, schéma en 7 stages. Nouveau: un Quality Gate
-  par partie (front/back) proposé, non décidé (tâche au backlog). Restent à mettre à jour après la migration Vitest:
-  mentions de Karma (Modèle 2, §1.3 et §2.6, et schéma).
+  par partie (front/back) proposé, non décidé (tâche au backlog). Mentions de Karma corrigées après la migration Vitest
+  (Modèle 2 §2.6 et schéma; §1.3 décrit l'état initial et garde Karma).
 
 ## Prochaine étape (ordre décidé)
 
