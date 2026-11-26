@@ -1,0 +1,11 @@
+{
+  "name": "microcrm-e2e",
+  "private": true,
+  "description": "Tests de bout en bout de MicroCRM, dans un navigateur, contre une application déployée",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1"
+  }
+}
