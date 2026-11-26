@@ -1,0 +1,42 @@
+# Réglages communs à staging et production : redémarrage automatique, système de fichiers en lecture seule,
+# droits Linux retirés, limites de mémoire, et données conservées dans un volume (HSQLDB sur fichier).
+# Le back reste sur une seule instance : HSQLDB sur fichier n'accepte qu'un processus.
+services:
+  back:
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: ${BACK_MEM_LIMIT:-768m}
+    environment:
+      # `shutdown=true` : la base est fermée proprement quand la dernière connexion se ferme.
+      SPRING_DATASOURCE_URL: jdbc:hsqldb:file:/data/microcrm;shutdown=true;hsqldb.write_delay=false
+      SPRING_DATASOURCE_USERNAME: sa
+      # Le schéma est créé puis complété par Hibernate ; pas encore d'outil de migration (cf. docs/BACKLOG.md).
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    volumes:
+      - back-data:/data
+  front:
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    # Caddy porte la capacité d'ouvrir les ports < 1024 sur son binaire (Dockerfile) : elle doit rester permise,
+    # sinon le noyau refuse de l'exécuter.
+    cap_add: [NET_BIND_SERVICE]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: ${FRONT_MEM_LIMIT:-128m}
+    volumes:
+      # Certificats et état de Caddy.
+      - front-data:/home/app/.local/share/caddy
+      - front-config:/home/app/.config/caddy
+
+volumes:
+  back-data:
+  front-data:
+  front-config:

@@ -1,0 +1,12 @@
+# Production : front en HTTPS. SITE_ADDRESS est le nom de domaine servi : avec un vrai domaine, Caddy obtient son
+# certificat automatiquement ; avec `localhost`, il utilise son autorité interne (démonstration).
+services:
+  front:
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    healthcheck:
+      # Le certificat interne n'est pas connu de BusyBox : la vérification porte sur la réponse, pas sur le TLS.
+      test: ["CMD", "wget", "-q", "--no-check-certificate", "-O", "/dev/null", "https://localhost/healthz"]

@@ -1,0 +1,40 @@
+# Socle commun aux trois environnements. À combiner avec un fichier d'environnement et un fichier de réglages :
+#   scripts/compose.sh <dev|staging|production> up -d --wait
+# Le navigateur ne parle qu'au front ; Caddy relaie /api vers le back (même origine, back non publié).
+name: microcrm
+
+services:
+  back:
+    image: ${BACK_IMAGE:-microcrm-back:local}
+    build:
+      context: ../..
+      target: back
+    environment:
+      # CORS : l'origine publique du front. Utile quand le TLS s'arrête au front : le back reçoit alors une
+      # requête HTTP avec une origine HTTPS et la traite comme venant d'une autre origine.
+      APP_CORS_ALLOWED_ORIGINS: ${PUBLIC_URL:?PUBLIC_URL manquant (fichier env/<environnement>.env)}
+    healthcheck:
+      # `wget` de BusyBox, déjà dans l'image Alpine.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 60s
+
+  front:
+    image: ${FRONT_IMAGE:-microcrm-front:local}
+    build:
+      context: ../..
+      target: front
+    environment:
+      SITE_ADDRESS: ":8080"
+      API_BASE_URL: /api
+      API_UPSTREAM: back:8080
+    depends_on:
+      back:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
