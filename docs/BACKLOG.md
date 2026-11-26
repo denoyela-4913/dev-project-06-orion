@@ -88,7 +88,8 @@ la cible au moment de la migration si une version plus récente est sortie.
   - Au 26/11, `main` a aussi 2 code smells `java:S6813` (injection par champ, `InitialDataFixture.java` lignes 14
     et 17), hors de ces lots: préférer l'injection par constructeur.
   - Lots, dans l'ordre décidé (une branche `front/…` par lot, tests qui échouent d'abord):
-    1. promesses non gérées (`typescript:S9383`, 13 restantes sur `main` au 26/11, 16 au départ): le lot le plus gros, et il touche la logique des composants
+    1. promesses non gérées (`typescript:S9383`, 16 au départ, 13 sur `main` avant le lot): fait, cf. « Fait ».
+       Fermeture des issues à confirmer sur l'analyse de `main`
     2. accessibilité et petites corrections: labels de formulaire (`Web:InputWithoutLabelCheck` ×7, `Web:S6853` ×6),
        `<th>` du tableau (`Web:S5256`), `Number.parseInt` (`S7773` ×2), opération asynchrone dans le constructeur (`S7059`)
     3. couverture de tests (le gate Sonar de `main` était en échec pour `new_coverage` = 0 %, à relire sur l'analyse
@@ -100,13 +101,36 @@ la cible au moment de la migration si une version plus récente est sortie.
     `org.sonarqube`.
   - Piste: une tâche Gradle qui écrit le classpath de compilation, passé au scan via `-Dsonar.java.libraries=...`.
   - À faire après la migration de Spring Boot (le classpath change), et à comparer au nombre d'issues Java actuel.
+- [ ] front: corriger les défauts d'affichage et de navigation relevés pendant le lot des promesses (26/11)
+  - Une correction par commit, avec un test qui échoue d'abord. Aucun n'est signalé par les issues Sonar traitées
+    dans les lots ci-dessus. Priorité non décidée.
+  - Vu à l'écran (front lancé sans le back):
+    - tableau de bord: après un échec de chargement, « No person yet » et « No organization yet » s'affichent sous
+      les messages d'erreur, comme si les listes étaient vides;
+    - page d'une organisation: après un échec de chargement, le titre est `Organization ""`. La page d'une personne
+      a le même modèle de titre (non vu à l'écran).
+  - Vu à la lecture du code, non reproduit dans le navigateur:
+    - tableau de bord: le lien « Create one » des organisations vise `organization/new` (singulier,
+      `main-dashboard.component.html`). Aucune route ne correspond: la route `**` renvoie à l'accueil;
+    - page d'une personne: le `(click)` du bouton « + » est sur le `<span>` intérieur et non sur le `<button>`. Un
+      clic sur le bord du bouton, ou son activation au clavier, n'appelle pas `addSelectedOrganization()`. Le
+      bouton est aussi dans le formulaire sans `type="button"`;
+    - page d'une personne: le message « Phone must be a valid phone number. » attend une erreur `tel` qu'aucun
+      validateur ne produit;
+    - `angular.json`, cible `test`: les assets citent `src/favicon.ico`, absent (le fichier est `src/favicon.png`).
 - [ ] front: remplacer Karma (déprécié) comme lanceur de tests
+  - Détail des problèmes, pistes, étapes et points à vérifier: `docs/KARMA.md`.
+  - 26/11: sur des promesses rejetées non traitées, le run s'est arrêté à 26 tests sur 36 (déconnexion, pas de
+    ligne `TOTAL`, code de sortie 1). Cause de la déconnexion non analysée, non propre à Karma à ce stade.
   - Constat: `npm ci` affiche des `npm warn deprecated` pour `inflight@1.0.6`, `rimraf@3.0.2` et `glob@7.2.3`. Ils
     viennent tous de `karma@6.4.4` (`npm ls inflight rimraf glob`), donc des tests seulement, pas de l'application
     livrée. `npm audit`: 0 vulnérabilité.
-  - Karma 6.4.4 est la dernière version publiée et le projet est en fin de vie: il n'y a pas de correctif à attendre.
+  - Karma 6.4.4 est la dernière version publiée et le projet est déprécié: seules les failles critiques restent
+    traitées, et Angular le dit toujours pris en charge (sources dans `docs/KARMA.md`).
     Forcer des versions récentes avec `overrides` n'est pas testé par Karma, donc écarté.
-  - Pistes: Vitest (proposé par Angular) ou Jest. À comparer avant de choisir, et à mesurer (temps de CI).
+  - Pistes: Vitest (lanceur par défaut des nouveaux projets Angular, migration d'un projet existant déclarée
+    expérimentale), Jest, Web Test Runner, jasmine-browser-runner, ou garder Karma.
+    À comparer avant de choisir, et à mesurer (temps de CI).
   - À faire après les corrections de bugs et d'issues Sonar du front, pour ne pas mélanger les changements. Les tests
     écrits pour ces corrections devront être migrés, d'où l'intérêt de limiter leur nombre de dépendances à Karma.
 - [ ] front: migrer les builders `@angular-devkit/build-angular` vers `@angular/build` (dépréciés)
@@ -209,4 +233,9 @@ la cible au moment de la migration si une version plus récente est sortie.
   `https://localhost`. `PUT` ajouté aux méthodes: le front l'utilise et il ne passait que grâce à `@CrossOrigin`.
   Tests `CorsTests`; vérifié sur le jar avec curl. Limite: CORS n'est pas un contrôle d'accès, l'API n'a pas
   d'authentification. Une autre adresse du front (ex. `http://127.0.0.1:4200`, autre port) doit être déclarée
-
+- [x] front: promesses non gérées (`typescript:S9383`). Dans les trois composants, chaque échec affiche un message
+  (`role="alert"`, module Bulma `notification`) et écrit sa cause dans la console: ni `void` ni `.catch` vide. Les
+  ajouts et retraits d'organisation, appelés par le template et non signalés par Sonar, sont traités aussi. Quand
+  l'action réussit mais pas la navigation ou le rechargement, le message le dit. Tests
+  `error-handling.spec.ts`: les 18 tests d'erreur échouent sur l'ancien code; 36 tests sur 36 ensuite. Bundle de
+  production 814 kB. Vérifié dans Chromium sans interface, back arrêté, pour les erreurs de chargement seulement
