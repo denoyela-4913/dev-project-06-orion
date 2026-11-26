@@ -165,3 +165,7 @@ production 814 kB; `npm ci` sans avertissement de dépréciation, 0 vulnérabili
 `ng extract-i18n` demande `@angular/localize`, absent du projet: non utilisable ici.
 
 CI et Sonar: cf. la PR et `SESSION.md`. Non vérifié: mode `watch` de `ng test`, pages dans un navigateur.
+
+**Après fusion (PR #26)**: Quality Gate OK sur `main`. **Sonar ne compte pas les templates HTML** présents dans le
+lcov: sa couverture du front (78,5 %) correspond aux seules sources TypeScript. La hausse (70,4 % avant) vient du
+changement d'outil, surtout du comptage des branches (80 conditions au lieu de 21), pas de nouveaux tests.
