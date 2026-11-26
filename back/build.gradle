@@ -4,6 +4,10 @@ plugins {
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'com.adarshr.test-logger' version '4.0.0'
 	id 'jacoco'
+	// Analyses du code Java, rattachées à `check` donc lancées par `./gradlew build` (job `build-back`).
+	id 'checkstyle'
+	// 6.5.13 : dernière version du plugin publiée depuis plus de 7 jours au 26/11/2026 (même délai que Dependabot).
+	id 'com.github.spotbugs' version '6.5.13'
 }
 
 group = 'com.openclassroom.devops.orion'
@@ -23,6 +27,25 @@ dependencyLocking {
 
 repositories {
 	mavenCentral()
+}
+
+// Bloquants avec zéro écart (avertissements compris) : un défaut signalé fait échouer `check`.
+checkstyle {
+	toolVersion = '14.4.0'
+	maxWarnings = 0
+}
+
+spotbugs {
+	// Version de l'outil figée par gradle.lockfile, comme les autres dépendances.
+	excludeFilter = file('config/spotbugs/exclude.xml')
+}
+
+// Rapport HTML lisible dans build/reports/spotbugs (le plugin n'en produit pas par défaut).
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask).configureEach {
+	reports {
+		html.required = true
+		xml.required = true
+	}
 }
 
 dependencies {
