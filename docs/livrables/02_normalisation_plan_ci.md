@@ -113,9 +113,10 @@ un job de CI dédié (`coverage`, script `scripts/coverage_gate.py`, avec ses pr
 des jobs de tests (lcov pour le front, JaCoCo pour le back) et applique la même formule que SonarQube (lignes et
 branches).
 
-- **Mode actuel : non bloquant.** Un taux sous le seuil est signalé, mais ne fait pas échouer la CI, tant que
-  le front et le back n'ont pas atteint 80 % sur tout leur code. État au 26/11/2026 : front 78,1 %, back 67,8 %.
-- **Passage en bloquant** : une PR dédiée, quand les deux parties atteignent 80 % (tâche du backlog).
+- **Mode actuel : bloquant** depuis le 26/11/2026. Un taux sous le seuil fait échouer le job et empêche les
+  builds. Le passage a été fait par une PR dédiée, une fois les 80 % dépassés sur tout le code des deux parties :
+  front 97,5 %, back 93,9 %. Les quatre taux sont concernés ; sans ligne nouvelle à couvrir, le taux sur le code
+  nouveau n'est pas un échec.
 - **Un projet et un Quality Gate Sonar par partie (fait le 26/11/2026).** SonarQube Cloud applique un gate par
   projet ; le dépôt a donc trois projets Sonar (support des monorepos, [documentation
   Sonar](https://docs.sonarsource.com/sonarqube-cloud/analyzing-source-code/monorepo-support)) : `front`, `back`
@@ -167,13 +168,13 @@ déclencher manuellement une livraison en cas de panne de l'automatisation.
 
 ### 3.2.2 Étape 2 : Contrôles qualité et sécurité
 
-- **Description** : SonarQube avec couverture (un projet et un gate par partie, non bloquants) et seuils de couverture par partie (job `coverage`, non bloquant), Trivy (dépendances, Dockerfile, images), lint
+- **Description** : SonarQube avec couverture (un projet et un gate par partie, non bloquants) et seuils de couverture par partie (job `coverage`, bloquant), Trivy (dépendances, Dockerfile, images), lint
   (ESLint, hadolint), Checkstyle et SpotBugs dans le build Gradle.
 - **Responsables** : Dev, avec Ops pour les seuils Trivy.
 - **Livrables** : jobs `lint`, `trivy`, `sonar-front`, `sonar-back`, `sonar-infra` ; rapport des résultats ; seuils documentés.
 - **État** : SonarQube **fait**, en trois projets (front, back, infra) depuis le 26/11/2026, gates non
   bloquants ; seuils de couverture
-  par partie **faits** (non bloquants, passage en bloquant à venir) ; Trivy et lint **à faire**.
+  par partie **faits** (bloquants depuis le 26/11/2026) ; Trivy et lint **à faire**.
 
 ### 3.2.3 Étape 3 : Scripts d'automatisation
 
@@ -225,7 +226,7 @@ Dans un fonctionnement normal (ressources disponibles, sans blocage).
 |---|---|---|---|
 | R1 | Équipe Dev peu expérimentée en Java : sous-estimation des corrections | Haute | Sonar non bloquant d'abord ; revue systématique ; formation courte ; pair programming avec un Ops/senior |
 | R2 | Le sujet évoque un lien GitLab public alors que le choix assumé est GitHub (dépôt, Actions, GHCR) | Moyenne | Faire confirmer par le mentor que le dépôt GitHub public est accepté ; sinon, miroir GitLab avec un `.gitlab-ci.yml` équivalent |
-| R3 | Couverture de tests faible (37,1 %) : Quality Gate difficile à tenir | Moyenne | Seuils de 80 % par partie, sur le **code nouveau** et sur tout le code, **non bloquants** jusqu'à atteinte (front 78,1 %, back 67,8 % au 26/11) ; ajout de tests à chaque correctif |
+| R3 | Couverture de tests faible (37,1 %) : Quality Gate difficile à tenir | Moyenne | Seuils de 80 % par partie, sur le **code nouveau** et sur tout le code, **bloquants** depuis qu'ils sont atteints (front 97,5 %, back 93,9 % au 26/11) ; ajout de tests à chaque correctif |
 | R4 | Faux positifs Trivy qui bloquent la CI | Moyenne | Fichier d'exceptions justifiées (`.trivyignore`) ; bloquer seulement les CVE corrigeables |
 | R5 | Panne de l'automatisation lors d'une livraison urgente | Moyenne | Livraison manuelle de secours documentée |
 | R6 | Dépendance à un service externe (Sonar, registre) | Moyenne | Jetons en secrets ; image conservée comme artefact de la CI ; livraison manuelle de secours ; mesure de disponibilité |
@@ -241,7 +242,7 @@ processus automatisé, répétable et mesurable.
 
 ## 4.2 Prochaines étapes
 
-- Terminer les étapes 2 et 3 du plan (Trivy, lint, scripts) ; passer les seuils de couverture, puis le Quality Gate, en mode bloquant.
+- Terminer les étapes 2 et 3 du plan (Trivy, lint, scripts) ; passer le Quality Gate en mode bloquant.
 - Compléter la documentation CI/CD : stratégie de tests, schémas d'architecture IaC, plan de sécurité,
   plans de release, de rollback et de sauvegarde.
 - Mettre en œuvre la partie 2 : Docker, Kubernetes, Helm, Terraform, Ansible, monitoring, métriques DORA.
