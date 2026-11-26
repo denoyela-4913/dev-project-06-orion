@@ -4,8 +4,6 @@
 
 ### Priorité (donnée par l'utilisateur le 26/11): sécurité et accélération de la CI
 
-- [ ] sécurité: auditer les dépendances du back et les images Docker, puis scanner dans la CI (cf. l'entrée
-  « auditer le back et les images » plus bas)
 - [ ] ci: éviter que le scan Sonar télécharge la distribution Gradle (étape « Detecting build system
   information », 27 à 38 s mesurées sur les runs à un seul scan après la PR #19, contre 8 s avant). À remesurer
   avec les trois scans parallèles (PR #33) avant de corriger
@@ -19,7 +17,6 @@
 
 Objectif: toutes les cases du schéma « faites », ou une entrée « en attente de décision ». Une PR par lot.
 
-- [ ] ci/sécurité: scan Trivy (images, Dockerfile, dépendances), avec un scan hebdomadaire
 - [ ] cd: charts Helm avec des valeurs par environnement (dev, staging, production)
 - [ ] cd: Terraform, découpé en modules et en environnements
 - [ ] ci: release sur `main` (version SemVer et tag, images publiées sur GHCR, notes de release)
@@ -36,6 +33,9 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 
 ### Autres tâches
 
+- [ ] ci: suivre les mises à jour des images de Trivy et de Playwright (références par digest dans
+  `scripts/trivy.sh` et `scripts/e2e.sh`, que Dependabot ne voit pas), ainsi que celle de hadolint (`ci.yml`) et
+  les versions de kind, Helm et Terraform
 - [ ] données (en attente de décision: base de données de production): HSQLDB interne au back limite à une instance
   et à une coupure par mise à jour; PostgreSQL (et un outil de migration à la place de `ddl-auto=update`) à décider
 - [ ] ci: mettre en cache les couches Docker (le job `images` reconstruit tout à chaque run, tests du back compris)
@@ -135,9 +135,6 @@ la cible au moment de la migration si une version plus récente est sortie.
     - page d'une personne, bouton « + »: **corrigé** avec le lot lint (26/11);
     - page d'une personne: le message « Phone must be a valid phone number. » attend une erreur `tel` qu'aucun
       validateur ne produit.
-- [ ] sécurité: auditer le back et les images, puis scanner dans la CI
-  - Back (Gradle) et images Docker n'ont pas encore été analysés.
-  - Ajouter un scan de vulnérabilités dans la CI une fois les mises à jour faites, pour ne pas les réintroduire.
 - [ ] sécurité: CORS n'est pas un contrôle d'accès, protéger l'API (portée et solution non décidées)
   - Constat (26/11): aucune dépendance ni configuration de sécurité dans le back. Spring Data REST expose les
     personnes et les organisations (`PersonRepository`, `OrganizationRepository`), lecture et écriture, sur le port
@@ -152,6 +149,14 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] sécurité: auditer les dépendances du back et les images Docker, puis scanner dans la CI (cf. l'entrée
+  « auditer le back et les images » plus bas)
+  - Audit du 26/11 au soir: 0 vulnérabilité (verrous npm et Gradle, trois images), 0 secret, 0 erreur de
+    configuration du Dockerfile. Détail: `docs/SECURITE.md`.
+- [x] ci/sécurité: scan Trivy (images, Dockerfile, dépendances), avec un scan hebdomadaire
+  - Job `scan` (dépôt et trois images, bloquant sur critique ou haute avec correctif), rescan le lundi (workflow
+    « Scan de sécurité »), `scripts/trivy.sh`. Image officielle 0.76.2 par digest, sans action Trivy (compromission
+    de mars 2026). Le script échoue bien sur un verrou de test vulnérable.
 - [x] ci: construction des images Docker dans la CI
   - Jobs `images` (front, back, standalone, transmises par artefact) et `compose-test` (les trois environnements).
 - [x] docker: images prêtes au déploiement (sonde de santé, adresse de l'API réglable) et Docker Compose
