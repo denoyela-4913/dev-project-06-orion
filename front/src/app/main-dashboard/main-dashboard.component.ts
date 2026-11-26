@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Person, PersonService } from '../person.service';
 import { Organization, OrganizationService } from '../organization.service';
@@ -12,11 +12,12 @@ import { Organization, OrganizationService } from '../organization.service';
     styleUrl: './main-dashboard.component.css'
 })
 export class MainDashboardComponent implements OnInit {
+  private personService = inject(PersonService);
+  private organizationService = inject(OrganizationService);
+
   organizations: Organization[] = [];
   persons: Person[] = [];
   errors: string[] = [];
-
-  constructor(private personService: PersonService, private organizationService: OrganizationService) { }
 
 
   ngOnInit(): void {

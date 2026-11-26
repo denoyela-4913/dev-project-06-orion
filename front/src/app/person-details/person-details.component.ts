@@ -1,5 +1,5 @@
 
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Person, PersonService } from '../person.service';
@@ -13,6 +13,11 @@ import { Organization, OrganizationService } from '../organization.service';
     styleUrl: './person-details.component.css'
 })
 export class PersonDetailsComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+  private personService = inject(PersonService);
+  private organizationService = inject(OrganizationService);
+  private router = inject(Router);
+
   person: Person = {
     id: undefined as (number | undefined),
     firstName: '',
@@ -29,9 +34,6 @@ export class PersonDetailsComponent implements OnInit {
   selectedOrganization: Organization | null = null;
   isNew: boolean = false;
   errors: string[] = [];
-
-  constructor(private route: ActivatedRoute, private personService: PersonService, private organizationService: OrganizationService, private router: Router) {
-  }
 
   ngOnInit(): void {
     // Chargement ici et non dans le constructeur (Sonar S7059): un constructeur ne doit pas lancer d'appel
