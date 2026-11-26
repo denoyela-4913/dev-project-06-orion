@@ -128,6 +128,21 @@ describe('IndividualDetailsComponent', () => {
     }
   });
 
+  // Le clic doit être porté par le bouton: sur le texte seul, un clic au bord du bouton ou son activation au
+  // clavier ne faisait rien.
+  it('should add the selected organization when the add button itself is activated', () => {
+    const add = vi.spyOn(component, 'addSelectedOrganization').mockResolvedValue(undefined);
+    const button: HTMLButtonElement = fixture.nativeElement
+      .querySelector('#organization-to-add').closest('.has-addons').querySelector('button');
+
+    button.click();
+
+    expect(add).toHaveBeenCalledTimes(1);
+    // `type="button"`: le bouton est dans le formulaire de la personne et ne doit pas le soumettre.
+    expect(button.type).toBe('button');
+    expect(button.getAttribute('aria-label')).toBe('Add organization');
+  });
+
   // Sonar Web:S5256: un tableau de données a besoin d'en-têtes de colonnes.
   it('should give every table a header cell', () => {
     component.person.organizations = [{ id: 1, name: 'Orion', createdAt: new Date(), persons: [] }];
