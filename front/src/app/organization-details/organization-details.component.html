@@ -10,7 +10,8 @@
             <span>New organization</span>
           }
           @if (!isNew) {
-            <span>Organization "{{ org.name }}"</span>
+            <!-- Sans identifiant, l'organisation n'est pas (encore) chargée: pas de nom vide entre guillemets. -->
+            <span>Organization @if (org.id) {"{{ org.name }}"}</span>
           }
         </h2>
       </div>

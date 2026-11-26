@@ -37,7 +37,7 @@
                 <td>{{ pers.updatedAt | date }}</td>
               </tr>
             }
-            @if (persons.length === 0) {
+            @if (personsLoaded && persons.length === 0) {
               <tr>
                 <td colspan="3" class="has-text-centered is-italic">
                   No person yet.
@@ -80,11 +80,11 @@
                 <td>{{ org.updatedAt | date }}</td>
               </tr>
             }
-            @if (organizations.length === 0) {
+            @if (organizationsLoaded && organizations.length === 0) {
               <tr>
                 <td colspan="3" class="has-text-centered is-italic">
                   No organization yet.
-                  <a [routerLink]="['organization/new']">Create one</a>
+                  <a [routerLink]="['organizations/new']">Create one</a>
                 </td>
               </tr>
             }

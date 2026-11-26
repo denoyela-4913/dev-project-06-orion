@@ -11,7 +11,7 @@
           }
           @if (!isNew) {
             <span
-              >Person "{{ person.firstName }} {{ person.lastName }}"</span
+              >Person @if (person.id) {"{{ person.firstName }} {{ person.lastName }}"}</span
               >
             }
           </h2>
