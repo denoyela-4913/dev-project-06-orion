@@ -85,7 +85,10 @@
             ],
             "coverageExclude": [
               "src/**/*.spec.ts",
-              "src/test-setup.ts"
+              "src/test-setup.ts",
+              "src/main.ts",
+              "src/app/app.config.ts",
+              "src/app/app.routes.ts"
             ],
             "coverageReporters": [
               "html",
