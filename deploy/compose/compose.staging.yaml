@@ -1,0 +1,5 @@
+# Staging : mêmes protections que la production, en HTTP sur la machine locale (TLS porté par ce qui est devant).
+services:
+  front:
+    ports:
+      - "127.0.0.1:${HTTP_PORT:-4281}:8080"

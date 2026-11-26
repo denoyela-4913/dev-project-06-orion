@@ -1,0 +1,9 @@
+# Développement : tout en HTTP sur la machine locale, back publié pour l'interroger directement, base en mémoire
+# (données de démonstration rechargées à chaque démarrage).
+services:
+  back:
+    ports:
+      - "127.0.0.1:${BACK_PORT:-8080}:8080"
+  front:
+    ports:
+      - "127.0.0.1:${HTTP_PORT:-4280}:8080"
