@@ -158,6 +158,28 @@ jobs:
           fi
       - name: Syntaxe des scripts d'exploitation
         run: for script in scripts/*.sh; do bash -n "$script"; done
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          # Terraform n'a pas de LTS : version fixe, suivie à la mineure (cf. deploy/terraform/README.md).
+          terraform_version: 1.17.2
+          # Sans l'enveloppe de l'action, les codes de sortie de terraform sont transmis tels quels.
+          terraform_wrapper: false
+      - name: Terraform, mise en forme
+        run: terraform fmt -check -recursive -diff deploy/terraform
+      - name: Terraform, validation des trois environnements
+        run: |
+          for environment in dev staging production; do
+            cd "deploy/terraform/environments/$environment"
+            # `-lockfile=readonly` : échec si les fournisseurs ne correspondent pas au fichier de verrouillage.
+            terraform init -backend=false -input=false -lockfile=readonly
+            terraform validate
+            cd - > /dev/null
+          done
+      - name: Terraform, tests du module platform (fournisseur simulé, sans cluster)
+        working-directory: deploy/terraform/modules/platform
+        run: |
+          terraform init -backend=false -input=false
+          terraform test
 
   # --- Seuils de couverture -------------------------------------------------
   # 80 % pour le front et pour le back, sur tout le code et sur le code nouveau (scripts/coverage_gate.py, à
