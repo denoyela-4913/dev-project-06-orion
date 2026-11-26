@@ -17,7 +17,6 @@
 
 Objectif: toutes les cases du schéma « faites », ou une entrée « en attente de décision ». Une PR par lot.
 
-- [ ] cd: charts Helm avec des valeurs par environnement (dev, staging, production)
 - [ ] cd: Terraform, découpé en modules et en environnements
 - [ ] ci: release sur `main` (version SemVer et tag, images publiées sur GHCR, notes de release)
 - [ ] cd: déploiement de démonstration, test de santé HTTP, notification du résultat
@@ -33,6 +32,8 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 
 ### Autres tâches
 
+- [ ] cd: sauvegardes planifiées et stockées hors de la machine qui les lance (aujourd'hui: à la demande et avant
+  chaque mise à jour, en local); procédure de rétention. Lié au choix de l'hébergement
 - [ ] ci: suivre les mises à jour des images de Trivy et de Playwright (références par digest dans
   `scripts/trivy.sh` et `scripts/e2e.sh`, que Dependabot ne voit pas), ainsi que celle de hadolint (`ci.yml`) et
   les versions de kind, Helm et Terraform
@@ -149,6 +150,11 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] cd: charts Helm avec des valeurs par environnement (dev, staging, production)
+  - Chart `deploy/helm/microcrm` avec `values-dev`, `values-staging` et `values-production`; pods sans root,
+    lecture seule, compatibles « restricted »; back limité à une instance (le chart refuse davantage). Vérifié en
+    CI (`infra-check`) et sur minikube. Défaut trouvé par le test de santé et corrigé: derrière le proxy, une
+    écriture de la même origine était refusée (403) dès que l'adresse différait de celle configurée.
 - [x] sécurité: auditer les dépendances du back et les images Docker, puis scanner dans la CI (cf. l'entrée
   « auditer le back et les images » plus bas)
   - Audit du 26/11 au soir: 0 vulnérabilité (verrous npm et Gradle, trois images), 0 secret, 0 erreur de
