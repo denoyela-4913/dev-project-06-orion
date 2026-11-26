@@ -34,7 +34,9 @@ export class OrganizationDetailsComponent implements OnInit {
     if (orgIdParam === 'new') {
       this.isNew = true
     } else if (typeof orgIdParam === 'string') {
-      const orgId = parseInt(orgIdParam)
+      // Number.parseInt avec la base 10 explicite (Sonar S7773): même résultat qu'avant, sans dépendre de la
+      // variable globale ni deviner la base.
+      const orgId = Number.parseInt(orgIdParam, 10)
       this.organizationService.fetchById(orgId)
         .then(org => {
           this.org = org

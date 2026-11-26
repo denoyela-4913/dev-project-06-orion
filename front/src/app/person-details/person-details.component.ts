@@ -31,19 +31,23 @@ export class PersonDetailsComponent implements OnInit {
   errors: string[] = [];
 
   constructor(private route: ActivatedRoute, private personService: PersonService, private organizationService: OrganizationService, private router: Router) {
-    this.organizationService.fetchAll()
-      .then(orgs => this.organizations = orgs)
-      .catch(error => this.reportError('Could not load the organizations.', error))
   }
 
   ngOnInit(): void {
+    // Chargement ici et non dans le constructeur (Sonar S7059): un constructeur ne doit pas lancer d'appel
+    // asynchrone, le composant n'est pas encore initialisé et le test ne peut pas le contrôler.
+    this.organizationService.fetchAll()
+      .then(orgs => this.organizations = orgs)
+      .catch(error => this.reportError('Could not load the organizations.', error))
+
     const routeParams = this.route.snapshot.paramMap;
     const personIdParam = routeParams.get('personId');
 
     if (personIdParam === 'new') {
       this.isNew = true
     } else if (typeof personIdParam === 'string') {
-      const personId = parseInt(personIdParam)
+      // Number.parseInt avec la base 10 explicite (Sonar S7773): même résultat qu'avant.
+      const personId = Number.parseInt(personIdParam, 10)
       this.personService.fetchById(personId)
         .then(p => {
           this.person = p
