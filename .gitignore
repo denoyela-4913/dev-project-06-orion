@@ -1,3 +1,10 @@
 # Marque ajoutée par Windows aux fichiers téléchargés (visible sous WSL), sans intérêt dans le dépôt
 *:Zone.Identifier
 backups/
+
+# Terraform : dossier de travail, état (peut contenir des valeurs sensibles) et variables locales
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+terraform.tfvars
