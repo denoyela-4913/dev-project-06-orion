@@ -20,7 +20,6 @@
 Objectif: toutes les cases du schéma « faites », ou une entrée « en attente de décision ». Une PR par lot.
 
 - [ ] ci: stage lint (ESLint pour le front, hadolint pour les Dockerfile)
-- [ ] ci/back: Checkstyle et SpotBugs (cf. l'entrée plus bas)
 - [ ] docker: images prêtes au déploiement (sonde de santé, adresse de l'API réglable) et Docker Compose
   (dev, staging, production)
 - [ ] ci: construction des images Docker dans la CI
@@ -41,12 +40,6 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 
 ### Autres tâches
 
-- [ ] ci/back: ajouter Checkstyle et SpotBugs au build Gradle (décision du 26/11)
-  - Plugins rattachés à `check`: `./gradlew build` du job `build-back` les lance, sans job ni étape de plus. Ils
-    ne vont pas dans le job `lint`, qui ne contient qu'ESLint et hadolint.
-  - Mettre à jour `back/gradle.lockfile`. Décider s'ils sont bloquants au début: un défaut signalé par ces
-    plugins fait échouer le build avec leurs réglages par défaut, à vérifier à l'ajout.
-  - `Dockerfile` lance aussi `./gradlew build`: ces analyses s'exécuteront dans la construction de l'image.
 - [ ] ci: ajouter le cache npm (`cache:` de `setup-node`; le cache Gradle est fait, cf. « Fait »)
   - Pré-requis: mesurer les durées de run sans cache (`gh run view`), puis avec cache.
   - Mesure sans cache (premier run, 18/11/2026): test-back ~48 s, test-front ~59 s, build-front ~45 s,
@@ -115,9 +108,6 @@ la cible au moment de la migration si une version plus récente est sortie.
     `setcap cap_net_bind_service`, nginx pourrait passer sur des ports élevés (le mappage `-p 80:<port>` du
     README suffit à garder les mêmes URL).
   - À faire avec la mise à jour d'Alpine, pour n'installer qu'une fois le paquet nginx de la version cible.
-- [ ] back: corriger les 2 code smells `java:S6813` (injection par champ, `InitialDataFixture.java` lignes 14 et 17)
-  - Préférer l'injection par constructeur. Ce sont les seules issues ouvertes sur les trois projets Sonar au 26/11
-    (`main` à `9614697`).
 - [ ] ci: améliorer la précision de l'analyse Java de Sonar (`sonar.java.libraries`)
   - Constat: le scan signale `Missing 'sonar.java.libraries'` et des types non résolus, car le scanner générique
     (choisi pour garder un seul projet Sonar) ne connaît pas le classpath Gradle, contrairement au plugin
@@ -157,6 +147,17 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] back: corriger les 2 code smells `java:S6813` (injection par champ, `InitialDataFixture.java` lignes 14 et 17)
+  - Fait le 26/11: injection par constructeur dans `InitialDataFixture`.
+- [x] ci/back: ajouter Checkstyle et SpotBugs au build Gradle (décision du 26/11)
+  - Checkstyle 14.4.0 (règles ciblées, `back/config/checkstyle/`) et SpotBugs (plugin 6.5.13), bloquants avec zéro
+    écart, lancés par `./gradlew build`. Premiers résultats: 26 écarts Checkstyle (tabulations, import inutilisé, fin
+    de fichier, noms de test `whenX_thenY`, convention autorisée dans la règle) et 8 `EI_EXPOSE_REP` SpotBugs:
+    dates et tableau CORS corrigés par des copies (test qui échoue sans elles), liste JPA et bean injecté exclus avec
+    justification (`back/config/spotbugs/exclude.xml`). Choix « bloquant » fait pendant le mandat de nuit,
+    réversible (`ignoreFailures`).
+- [x] ci/back: Checkstyle et SpotBugs (cf. l'entrée plus bas)
+  - Fait le 26/11: cf. l'entrée ci-dessous.
 - [x] ci: seuils de couverture en mode bloquant, par une PR dédiée (26/11)
   - `COVERAGE_BLOCKING: "true"` dans le job `coverage`. Les 4 taux sont bloquants: tout le code et code nouveau, pour
     le front et le back. Au passage: front 97,5 % (242/248), back 93,9 % (77/82).
