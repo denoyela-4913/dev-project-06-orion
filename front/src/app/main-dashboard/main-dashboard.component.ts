@@ -18,15 +18,24 @@ export class MainDashboardComponent implements OnInit {
   organizations: Organization[] = [];
   persons: Person[] = [];
   errors: string[] = [];
+  // « Liste vide » n'est annoncé qu'après un chargement réussi: avant la réponse, ou après un échec, on ne sait pas.
+  personsLoaded = false;
+  organizationsLoaded = false;
 
 
   ngOnInit(): void {
     // Les deux listes sont chargées en parallèle: chacune traite son échec, et les deux messages peuvent s'afficher.
     this.personService.fetchAll()
-      .then(persons => this.persons = persons)
+      .then(persons => {
+        this.persons = persons;
+        this.personsLoaded = true;
+      })
       .catch(error => this.reportError('Could not load the persons.', error));
     this.organizationService.fetchAll()
-      .then(orgs => this.organizations = orgs)
+      .then(orgs => {
+        this.organizations = orgs;
+        this.organizationsLoaded = true;
+      })
       .catch(error => this.reportError('Could not load the organizations.', error));
   }
 
