@@ -63,8 +63,10 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
   `front/migrate-to-vitest`, avec les builders `@angular/build`; justification et vérifications dans
   `docs/KARMA.md`. PR #26 fusionnée (`0566d3a`): gate OK, couverture 75,8 % (69,6 % avant).
 - Défauts d'affichage et de navigation relevés pendant le lot 1: ajoutés au backlog, priorité non décidée.
-- `back/bin/main/application.properties` est suivi par git et s'est trouvé modifié localement (probablement par
-  l'IDE, non vérifié): restauré sans être commité. Retrait du suivi non décidé.
+- `back/bin/` (sortie de compilation de l'IDE) n'est plus suivi par git et est ignoré (26/11):
+  `bin/main/application.properties`, versionné depuis le commit initial, apparaissait modifié à chaque recopie de la
+  source. Dans un dossier où il est encore modifié: `git restore back/bin/main/application.properties` avant de
+  mettre `main` à jour (git supprime alors le fichier; l'IDE le recrée, ignoré).
 - Dépôt fork: passer `--repo` (dépôt d'`origin`) à `gh pr create`, pour ne pas viser le dépôt d'OpenClassrooms.
 - Trois projets Sonar (`_front`, `_back`, `_infra`) et trois scans parallèles depuis la PR #33 (26/11, détail et
   mesures dans le backlog, « Fait »): run de `main` 131 s, gates OK sur la PR. L'ancien projet unique n'est plus analysé.
