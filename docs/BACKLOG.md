@@ -132,30 +132,29 @@ la cible au moment de la migration si une version plus récente est sortie.
     limité au niveau réseau ou proxy). Une authentification demande aussi des changements dans le front.
   - Une correction devra avoir des tests qui échouent d'abord (requête sans identification refusée).
 
-- [ ] ci: un Quality Gate Sonar par partie (front et back), proposition non décidée
-  - Demande de l'utilisateur (26/11): un gate pour le front et un pour le back. SonarQube Cloud applique un gate par
-    projet: il faut deux projets Sonar pour le même dépôt (support des monorepos), deux scans avec chacun son
-    rapport de couverture. Reste à décider où rattacher le Dockerfile, les workflows et les scripts, et à vérifier
-    la limite de projets du plan.
-  - Conditions proposées par partie: couverture ≥ 80 % et 0 nouvelle vulnérabilité sur le code nouveau (approche
-    recommandée par Sonar), plus un plancher de couverture globale (condition « code global » dans un gate personnalisé, copie de
-    « Sonar way »; seuil fixe à relever à la main). État au 26/11:
-    front 70,4 %, back 67,9 %.
-  - Seuils décidés le 26/11 (80 % par partie, tout le code et code nouveau), appliqués par le job `coverage` de la
-    CI (cf. « Fait »), sans second projet Sonar. Les deux gates Sonar restent une proposition. Livrables (Modèle 2, §2.6, R3,
-    schéma) alignés le 26/11.
-  - À faire avec le passage du gate en bloquant (`sonar.qualitygate.wait=true`); changera l'historique Sonar
-    (nouveaux projets): garder les clichés `docs/quality/` comme référence.
 - [ ] ci: passer les seuils de couverture en mode bloquant, par une PR dédiée (décidé le 26/11)
   - Condition d'ouverture: le front ET le back atteignent 80 % sur tout leur code (le job `coverage` le signale par
     un avertissement). Au 26/11: front 78,1 %, back 67,8 %.
   - Changement: `COVERAGE_BLOCKING: "true"` dans le job `coverage` de `ci.yml`, et commentaires à jour (`ci.yml`,
     `docs/SESSION.md`). Les 4 taux deviennent bloquants: tout le code et code nouveau, pour le front et le back.
   - La CI de cette PR tourne déjà en mode bloquant: elle doit être verte.
-  - Le Quality Gate Sonar n'est pas concerné (`sonar.qualitygate.wait`, protection de `main`: non décidés).
+  - Les Quality Gates Sonar (un par projet) ne sont pas concernés (`sonar.qualitygate.wait`, protection de
+    `main`: non décidés).
 
 ## Fait
 
+- [x] ci: trois projets Sonar (`_front`, `_back`, `_infra`) et trois scans en parallèle (PR #33, fusionnée le 26/11)
+  - Demande de l'utilisateur: un Quality Gate par partie. Un gate par projet Sonar: `infra` regroupe le Dockerfile, les
+    workflows et les scripts (pas de couverture mesurée). Un `sonar-project.properties` par dossier de base (`front/`,
+    `back/`, racine). Les chemins lcov du front n'ont plus besoin d'être réécrits. L'ancien projet
+    `denoyela-4913_dev-project-06-orion` n'est plus analysé (conservé comme référence des clichés `docs/quality/`).
+  - Mesuré (run 45880516355 sur `main`): run 131 s (181 s avec un seul scan, 127 s à `v0.0.2`); scans front 48 s, back
+    62 s, infra 50 s (un seul scan: 104 s). Quality Gate de la PR: OK pour les trois projets.
+  - `main` après la PR: front 993 lignes, 78,2 % de couverture, 0 issue; back 220 lignes, 93,9 %, 2 code smells; infra
+    483 lignes (docker 32, py 124, shell 104, yaml 223), 0 issue. Le statut du gate sur la branche `main` n'est pas
+    encore affiché par l'API (à revérifier après une seconde analyse).
+  - Le jeton `SONAR_TOKEN` existant a suffi pour les trois projets.
+  - `docs/` est exclu du projet infra (exports JSON, pas du code): `docs/quality/` n'est plus analysé (9 lignes avant).
 - [x] ci: workflow GitHub Actions équivalent à `.gitlab-ci.yml` (PR #1)
 - [x] ci: vulnérabilités Sonar du workflow corrigées (`S6505`, `S8543`): Angular CLI lancé depuis le lockfile
   (`npm test`, `npm run build`) au lieu de `npx @angular/cli`, et `npm ci --ignore-scripts`
