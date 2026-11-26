@@ -1,116 +1,147 @@
-# Karma: problèmes constatés et pistes de remplacement
+# Remplacement de Karma par Vitest: analyse et justification
 
-État au **26/11/2026**. La tâche correspondante est dans `BACKLOG.md`. Rien n'est décidé ni essayé pour le
-remplacement.
+État au **26/11/2026**. Tâche correspondante dans `BACKLOG.md`.
 
-## À quoi sert Karma ici
+## Conclusion
 
-`ng test` lance Karma (`karma@6.4.4`), qui ouvre Chrome et y exécute les tests écrits avec Jasmine:
+**Le projet peut passer à Vitest: aucun obstacle bloquant n'a été trouvé, et Vitest est le choix recommandé.**
+La migration n'est **pas encore faite** dans le dépôt. Elle a été essayée dans une copie jetable du front: les
+36 tests passent, le build de production et l'image Docker du front se construisent, `npm start` répond. La CI et
+l'import de la couverture dans Sonar restent à vérifier sur une vraie branche.
 
-- **Karma** lance le navigateur et remonte les résultats;
-- **Jasmine** est la bibliothèque de test (`describe`, `it`, `expect`, `spyOn`).
+## Pourquoi quitter Karma
 
-Fichiers concernés: `front/karma.conf.js`, la cible `test` de `front/angular.json`
-(`@angular-devkit/build-angular:karma`), `front/tsconfig.spec.json`, le job `test-front` de la CI. La couverture
-est écrite dans `front/coverage/microcrm/lcov.info`, lue par Sonar.
+À quoi il sert ici: `ng test` lance Karma, qui ouvre Chrome et y exécute les tests écrits avec Jasmine
+(`describe`, `it`, `expect`, `spyOn`).
 
-## Problème 1: Karma est déprécié
+1. **Déprécié.** Le [README du projet](https://github.com/karma-runner/karma) indique « Karma is deprecated and is
+   not accepting new features or general bug fixes », sans date. Seules les failles **critiques** restent traitées,
+   jusqu'à 12 mois après que le support de Web Test Runner par Angular CLI aura été déclaré stable. Dernière
+   version: 6.4.4 (29/07/2024). Le paquet n'est pas marqué déprécié sur npm, et le
+   [guide Angular](https://angular.dev/guide/testing/karma) le dit toujours pris en charge.
+2. **Dépendances transitives dépréciées**: `inflight@1.0.6` (fuite de mémoire signalée), `rimraf@3.0.2` et
+   `glob@7.2.3` (non maintenu, failles publiées), amenés par `karma` (`npm ls`). Ils concernent les tests, pas
+   l'application livrée.
+3. **Run interrompu** (observé le 26/11, tests de gestion d'erreurs lancés sur l'ancien code): sur des promesses
+   rejetées sans traitement, `An error was thrown in afterAll`, puis `Disconnected, because no message in
+   30000 ms`. 26 tests exécutés sur 36, pas de ligne `TOTAL`, code de sortie 1. La CI aurait échoué, mais avec une
+   liste d'échecs incomplète. La raison de la déconnexion n'a pas été analysée. Sur le même code, Vitest exécute
+   les 36 tests (18 en échec) et signale les erreurs non traitées à part.
 
-- Le README du projet indique: « Karma is deprecated and is not accepting new features or general bug fixes. » Il ne
-  donne pas de date. Les failles de sécurité **critiques** restent traitées, jusqu'à 12 mois après que le support
-  de Web Test Runner par Angular CLI aura été déclaré stable
-  ([README](https://github.com/karma-runner/karma)).
-- La dernière version est la 6.4.4 (publiée le 29/07/2024, `npm view karma time`). `npm view karma@6.4.4 deprecated`
-  ne renvoie rien: le paquet n'est pas marqué déprécié sur npm, l'annonce est dans le dépôt.
-- Côté Angular, [le guide Karma](https://angular.dev/guide/testing/karma) le dit toujours pris en charge, tandis que
-  Vitest est le lanceur par défaut des **nouveaux** projets.
+## Contraintes examinées
 
-Conséquence: pas d'urgence démontrée, mais les défauts qui ne sont pas des failles critiques ne seront pas corrigés.
-
-## Problème 2: dépendances transitives dépréciées
-
-`npm ci` affiche des `npm warn deprecated`. D'après `npm ls karma glob rimraf inflight` (26/11):
-
-| Paquet | Amené par | Message de npm (résumé) |
+| Contrainte | Constat | Bloquant |
 |---|---|---|
-| `inflight@1.0.6` | `karma` → `glob@7.2.3` | non maintenu, fuite de mémoire |
-| `rimraf@3.0.2` | `karma` | versions antérieures à la 4 non maintenues |
-| `glob@7.2.3` | `karma` et `rimraf` | ancienne version non maintenue, failles de sécurité publiées |
+| Compatibilité Angular | `@angular/build@22` accepte `vitest ^4.0.8 \|\| ^5.0.0`; Vitest est le lanceur par défaut des nouveaux projets Angular | non |
+| Node | Vitest 5 demande `^22.12 \|\| ^24 \|\| >=26`, `jsdom` 31 au moins 24.15 sur la branche 24. Essai en local avec 24.21; image Docker construite avec l'image Node épinglée | non (CI à vérifier) |
+| Builders | le lanceur `unit-test` attend `@angular/build:application`, le projet utilise `@angular-devkit/build-angular:application`. Il faut migrer le build, ce qui est déjà une tâche du backlog (builders dépréciés) | non |
+| Migration « expérimentale » | Angular qualifie d'expérimentale la migration d'un projet existant et le schéma de conversion. Le code produit par le schéma **ne compilait pas** (2 types à corriger) | non: risque limité par l'essai complet |
+| Code des tests | pas de `fakeAsync` ni de `waitForAsync`; les tests avec zone.js, `HttpTestingController` et lecture du DOM passent | non |
+| Navigateur | par défaut, DOM simulé (`jsdom`) dans Node, au lieu de Chrome: pas de rendu ni de mise en page. Les tests actuels n'en dépendent pas. Mode navigateur possible (`@vitest/browser-playwright`, non essayé) | non, mais la fidélité baisse |
+| Installation en CI et Docker | `npm ci --ignore-scripts` fonctionne, `npm audit`: 0 vulnérabilité | non |
+| Sonar | le lcov sort au même chemin, `front/coverage/microcrm/lcov.info`. La liste des fichiers change: les templates HTML apparaissent | non (import à vérifier) |
+| Licence | Vitest et `jsdom` sous licence MIT | non |
+| Règle de versions du projet | **Vitest n'a ni LTS ni date de fin de support** ([politique](https://vitest.dev/releases)): le critère « support au-delà de 05/2027 » ne peut pas être garanti | à accepter, cf. ci-dessous |
 
-- Dans cet arbre, ils viennent de `karma@6.4.4`: ils concernent les tests, pas l'application livrée.
-- `npm audit` signalait 0 vulnérabilité après les montées de version (cf. « Fait » dans le backlog; non relancé le
-  26/11), malgré l'avertissement de `glob`.
-- Forcer des versions récentes avec `overrides` n'est pas testé par Karma: piste écartée.
+### Règle de versions
 
-## Problème 3: un run interrompu masque une partie des résultats
+La règle du projet (LTS avec support au-delà de 05/2027) ne peut pas s'appliquer. D'après la politique de Vitest,
+les correctifs courants vont à la dernière mineure (5.1), les correctifs importants et de sécurité aussi à la
+mineure précédente et à la dernière mineure de la majeure précédente (5.0 et 4.1). On propose la même règle que
+pour Gradle: **viser la dernière mineure de la dernière majeure (5.1.x au 26/11) et la mettre à jour
+régulièrement**. Vitest 5.0.0 date du 03/09/2026: une nouvelle majeure demandera une montée de version. Karma ne
+satisfait pas non plus cette règle, et il est déprécié.
 
-Observé le 26/11 en lançant les nouveaux tests de gestion d'erreurs sur l'ancien code des composants, qui ne
-traitait pas les promesses rejetées:
+## Pourquoi Vitest est acceptable
 
-```text
-An error was thrown in afterAll
-Error: API down
-...
-Disconnected , because no message in 30000 ms.
-Executed 26 of 36 (10 FAILED) DISCONNECTED
-```
+- **Intégré à Angular**: `ng test` reste la commande; le builder `@angular/build:unit-test` n'accepte que
+  `vitest` (par défaut) ou `karma`. `@angular-devkit/build-angular@22` ne fournit pas de builder Jest ni Web Test
+  Runner.
+- **Maintenu**: version 5.1.2 publiée le 25/11/2026, correctifs en général chaque semaine d'après le projet.
+- **Plus simple à exécuter**: plus de Chrome à fournir (ni `CHROME_BIN`, ni lanceur `ChromeHeadlessNoSandbox`).
+- **Moins de dépendances**: sans Karma ni `@angular-devkit/build-angular`, le verrou passe de **1014 à 530
+  paquets**; `karma`, `inflight`, `rimraf` et `glob` disparaissent de l'arbre, et `npm ci` n'affiche plus
+  d'avertissement de dépréciation.
+- **Retour arrière possible**: tant que la branche n'est pas fusionnée, rien ne change; après, les commits de
+  migration peuvent être annulés (`git revert`).
 
-- 10 tests sur 36 n'ont pas été exécutés et la ligne `TOTAL` manque. Le code de sortie est 1: la CI aurait bien
-  échoué, mais la liste des échecs est incomplète.
-- Une sortie filtrée sur les échecs ressemblait à un résultat complet. **Comparer le nombre de tests exécutés au
-  nombre attendu.**
-- Pour prouver que chaque test échouait, il a fallu lancer les groupes séparément (`fdescribe` temporaire).
-  Chaque groupe lancé ainsi s'est aussi terminé par une déconnexion.
-- Avec le code corrigé, trois runs de suite: 36 sur 36, sans déconnexion.
+**Pas démontré: un gain de temps.** En local, Vitest avec couverture a pris 3,0 à 4,0 s sur 3 runs, Karma 3,4 à
+10,1 s (le premier run était le plus long). Peu de mesures, rien en CI.
 
-**Cause**: le point de départ est dans le code testé (les promesses rejetées sans traitement, `Error: API down`
-vient du test). La raison de la déconnexion qui suit n'a pas été analysée, et rien ne montre qu'elle soit propre à
-Karma: le même cas n'a pas été essayé avec un autre lanceur. Ce n'est donc pas, à lui seul, un argument pour le
-remplacer.
+## Coût du changement
 
-## Contrainte liée: les builders dépréciés
+Faible, mesuré sur l'essai (36 tests, 7 fichiers, 560 lignes de tests).
 
-La cible `test` utilise `@angular-devkit/build-angular:karma`. `npm start` signale que ce paquet est déprécié pour
-`dev-server` au profit de `@angular/build`. La migration des builders (autre tâche du backlog) est liée à celle-ci.
+| Élément | Travail |
+|---|---|
+| Tests à adapter | **2 fichiers sur 7**: `error-handling.spec.ts` et `person-details.component.spec.ts`, 62 lignes ajoutées et 49 supprimées hors indentation. 23 tests concernés (directement ou par leur préparation), 13 inchangés |
+| Conversion | schéma `ng g @schematics/angular:refactor-jasmine-vitest`, puis à la main 2 conversions de types et 1 point signalé (`arrayWithExactContents`, remplacé par une longueur et `arrayContaining`) |
+| Indentation | le schéma réindente 6 fichiers, dont 4 sans autre changement: à rétablir ou à commiter à part |
+| Configuration | `angular.json` (4 builders), `package.json` (9 paquets retirés, `@angular/build`, `vitest`, `@vitest/coverage-v8` et `jsdom` ajoutés) et son verrou, `tsconfig.spec.json`, suppression de `karma.conf.js` |
+| Autour | commande de test de `ci.yml`, `CLAUDE.md`, les README; livrables si nécessaire |
+| Application et back | aucun changement du code de l'application; tests du back non concernés |
 
-## Pistes de remplacement
+Le coût augmente avec les tests: chaque nouveau test qui utilise les espions de Jasmine est à convertir.
 
-| Piste | Exécution | Pour | Contre ou à vérifier |
-|---|---|---|---|
-| **Vitest** (`@angular/build:unit-test`) | Node avec DOM simulé (`jsdom` ou `happy-dom`) par défaut; vrai navigateur en option (`@vitest/browser-playwright`) | lanceur par défaut des nouveaux projets Angular, guide de migration et schéma de conversion | migration d'un projet existant et schéma déclarés **expérimentaux** par Angular |
-| **Jest** | Node | cité par le README de Karma parmi les alternatives | absent des pages Angular consultées: intégration à vérifier |
-| **Web Test Runner** | navigateur | cité par le README de Karma | absent des pages Angular consultées: support par Angular CLI à vérifier |
-| **jasmine-browser-runner** | navigateur | cité par le README de Karma, garde Jasmine | cité pour les projets hors Angular: intégration à vérifier |
-| **Garder Karma** pour l'instant | navigateur (comme aujourd'hui) | aucun travail, toujours pris en charge d'après Angular | les problèmes 1 et 2 restent |
+Les compteurs de couverture changent d'outil: l'essai donne 78,45 % des lignes (284/362, templates HTML compris),
+Karma 74,37 % (119/160, sans les templates). **Les deux chiffres ne se comparent pas.**
 
-**Proposition (non décidée)**: évaluer d'abord Vitest dans une branche `front/…`, à cause de son intégration
-documentée par Angular, avec la possibilité de rester sur Karma si l'essai n'est pas concluant.
+## Autres pistes
 
-### Étapes de la migration vers Vitest, d'après la documentation Angular (non essayées)
+Analyse rapide, **aucune n'a été essayée**. Versions et dates d'après npm; absence de builder vérifiée dans les
+paquets Angular 22 installés. Les points marqués « à vérifier » ne l'ont pas été.
 
-Sources: [guide de migration](https://angular.dev/guide/testing/migrating-to-vitest),
-[couverture](https://angular.dev/guide/testing/code-coverage). Pré-requis: le système de build `application`
-(le build du projet l'utilise déjà).
+| Piste | Avantages | Inconvénients |
+|---|---|---|
+| **Jest** (30.5.2) | très répandu, projet actif, DOM simulé dans Node | pas de builder Angular: configuration à part, hors de `ng test`; pour Angular, paquet communautaire `jest-preset-angular` (17.0.3: Angular `>=20 <23`, à mettre à jour avec Angular 23); espions Jasmine à convertir |
+| **Web Test Runner** (`@web/test-runner` 1.0.1) | tests dans de vrais navigateurs; cité par le README de Karma | pas de builder dans Angular 22: compilation d'Angular et des templates à mettre en place (à vérifier); compatibilité avec les tests Jasmine à vérifier |
+| **jasmine-browser-runner** (5.0.0) | garde Jasmine (peu ou pas de réécriture des tests, à vérifier) et un vrai navigateur; cité par le README de Karma | pas de builder Angular: compilation des tests, templates, couverture et lcov à mettre en place et à maintenir (à vérifier); le README le cite pour les projets hors Angular |
+| **Garder Karma** | aucun travail, vrai navigateur, toujours pris en charge d'après Angular | problèmes 1 et 2; migration plus chère à mesure que les tests s'ajoutent |
 
-1. Installer `vitest` et `jsdom`, plus `@vitest/coverage-v8` pour la couverture.
-2. Dans `angular.json`, remplacer le builder de `test` par `@angular/build:unit-test`. Les options de build
-   (`polyfills`, `assets`, `styles`) passent dans une configuration de build.
-3. Reporter les réglages utiles de `karma.conf.js`, puis le supprimer et désinstaller les paquets `karma*` et
-   `jasmine-core`.
-4. Convertir les tests: `ng g @schematics/angular:refactor-jasmine-vitest`. Le schéma peut ne pas couvrir tous
-   les cas, et ne modifie ni les paquets ni `angular.json`.
-5. Couverture: ajouter `lcov` à `coverageReporters`.
+## Vitest reste-t-il le bon choix?
 
-### Points à vérifier pendant l'essai
+**Oui.** C'est la seule des pistes que le builder de test d'Angular 22 prend en charge, et son coût a été mesuré.
+`jasmine-browser-runner` éviterait de réécrire des tests, mais déplacerait le travail vers une chaîne de
+compilation propre au projet, pour économiser l'adaptation de 2 fichiers. Réserves: migration déclarée
+expérimentale, pas de LTS, DOM simulé. Si les tests devaient vérifier le rendu, ajouter le mode navigateur de
+Vitest.
 
-- **Sonar**: la documentation ne précise pas le chemin du fichier lcov. Le relever, puis adapter
-  `sonar.javascript.lcov.reportPaths` et les artefacts de `ci.yml`, puis comparer la couverture avant et après
-  (l'outil de mesure change).
-- **Conversion**: les tests utilisent les espions de Jasmine, surtout `src/app/error-handling.spec.ts`
-  (`createSpyObj`, `callFake`, `resolveTo`, `arrayWithExactContents`).
-- **zone.js**: l'application utilise la détection de changements avec zone.js; vérifier le comportement des tests.
-- **DOM simulé ou navigateur**: certains tests lisent le DOM et remplissent des champs. Choisir le mode et
-  vérifier que les résultats restent significatifs.
-- **CI**: remplacer `--code-coverage --browsers=ChromeHeadlessNoSandbox` et mesurer la durée de `test-front`.
-- **Erreurs non traitées**: vérifier qu'un rejet non traité fait échouer le run et que tous les tests s'exécutent.
-- **Documentation**: mettre à jour les commandes de `CLAUDE.md` et du README.
+**Quand**: proposition, après le lot 2 des issues Sonar du front et **avant le lot 3**, qui ajoutera des tests.
+
+## Migration
+
+Séquence essayée (les builders et la désinstallation ont été faits à la main):
+
+1. Installer `@angular/build`, `vitest`, `@vitest/coverage-v8` et `jsdom`.
+2. Lancer `ng g @schematics/angular:refactor-jasmine-vitest`, corriger les types des faux services
+   (`as unknown as MockedObject<…>`) et le point signalé.
+3. `angular.json`: remplacer `@angular-devkit/build-angular:` par `@angular/build:`; la cible `test` devient
+   `unit-test`, avec `buildTarget`, `tsConfig` et `coverageReporters: ["text", "lcov"]`.
+4. `tsconfig.spec.json`: type `vitest/globals` à la place de `jasmine`.
+5. Supprimer `karma.conf.js` et désinstaller `karma`, `karma-chrome-launcher`, `karma-coverage`, `karma-jasmine`,
+   `karma-jasmine-html-reporter`, `jasmine-core`, `@types/jasmine`, `istanbul-lib-instrument` et
+   `@angular-devkit/build-angular`.
+6. Lancer les tests avec `ng test --watch=false --coverage`.
+
+### À vérifier sur la branche de migration
+
+- CI: nouvelle commande de `test-front` (sans les options de navigateur), version de Node, durée.
+- Sonar: import du lcov (le job `sonar` en réécrit les chemins), effet des templates HTML sur la couverture et le
+  Quality Gate.
+- Vérifier qu'un test volontairement cassé fait échouer la CI.
+- Images Docker `standalone` et exécution du front construit (seule l'étape de construction `front` a été essayée).
+- `ng extract-i18n` (builder changé, non lancé) et le mode `watch` de `ng test`.
+
+## Essai du 26/11: ce qui a été fait
+
+Copie du front hors du dépôt, rien n'a été commité. D'abord avec Vitest 4.1.12, puis avec **Vitest 5.1.2** et
+sans Karma ni `@angular-devkit/build-angular` (`@angular/build` 22.3.0):
+
+| Vérification | Résultat |
+|---|---|
+| Tests, 3 runs avec couverture | 36 sur 36 |
+| Anciens composants (promesses non traitées) | 36 exécutés, 18 en échec, 7 erreurs signalées, code de sortie 1 |
+| `npm ci --ignore-scripts` | 0 vulnérabilité, aucun avertissement de dépréciation |
+| Build de production | 814 kB, comme avant |
+| `npm start` | réponse HTTP 200, ni avertissement ni erreur dans le journal (pages non vues dans un navigateur) |
+| `docker build --target front` | réussi (image non lancée) |
