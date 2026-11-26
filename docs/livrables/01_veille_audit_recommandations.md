@@ -331,7 +331,7 @@ livraison. Le processus Ops est extrêmement limité et entièrement manuel.
 - **Description** : lancer SonarQube (SonarQube Cloud) à chaque pull request et sur `main`, avec couverture
   de tests (JaCoCo pour le back, lcov pour le front).
 - **Raisonnement** : risque de dérive sur le back-end à cause du manque d'expérience Java / Spring Boot.
-- **Implémentation** : job `sonar` avec jeton stocké en secret de la plateforme ; Quality Gate **non
+- **Implémentation** : un job de scan par projet (front, back, infra) avec jeton stocké en secret de la plateforme ; Quality Gate **non
   bloquant** d'abord, puis bloquant quand les correctifs auront ramené le projet à un niveau suffisant
   (voir calendrier).
 - **Impacts** : les mauvaises pratiques sont détectées au fil de l'eau ; pas d'accumulation de dette

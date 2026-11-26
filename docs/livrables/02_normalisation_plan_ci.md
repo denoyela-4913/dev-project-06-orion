@@ -83,14 +83,14 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
 - Critère de réussite : tous les jobs obligatoires verts (lint, tests, build, scans).
 - Outil : GitHub Actions (workflow validé), dans la continuité des projets précédents : environnement cohérent
   GitHub, GitHub Actions, GHCR (voir 3.5, risque R2 pour le lien GitLab attendu par le sujet).
-- Ordre des jobs : lint, puis tests avec couverture, puis, en parallèle, l'analyse SonarQube (elle
-  réutilise les rapports de couverture produits par les tests, sans les relancer) et le contrôle des seuils de
-  couverture (job `coverage`), puis build, scan de l'image, release et déploiement.
-  SonarQube vient après les tests car il importe leur couverture ; le build attend Sonar pour ne pas
-  construire une version dont l'analyse a échoué.
-- Durée de référence : **127 s** au tag `v0.0.2` (Sonar en parallèle des tests, sans cache). Avec l'ordre
-  tests → Sonar → build, **181 s** sur `main` (run 45809708667, cache Gradle actif) : le coût de
-  l'enchaînement.
+- Ordre des jobs : lint, puis tests avec couverture, puis, en parallèle, les trois analyses SonarQube (une par
+  projet : front, back et infra, voir 2.6) et le contrôle des seuils de couverture (job `coverage`), puis build,
+  scan de l'image, release et déploiement. SonarQube vient après les tests car il importe leur couverture (les
+  rapports des tests sont réutilisés, sans relancer les tests) ; le build attend les analyses pour ne pas
+  construire une version dont l'analyse a échoué. L'analyse de l'infra n'attend rien et part dès le début.
+- Durée de référence : **127 s** au tag `v0.0.2` (Sonar en parallèle des tests, sans cache). Avec un seul scan
+  Sonar entre les tests et le build : **181 s** sur `main` (run 45809708667, scan de 104 s). Avec trois scans
+  parallèles : **131 s** sur `main` (run 45880516355), le plus long scan (back) durant 62 s.
 
 ## 2.6 Tests
 
@@ -113,15 +113,16 @@ branches).
 - **Mode actuel : non bloquant.** Un taux sous le seuil est signalé, mais ne fait pas échouer la CI, tant que
   le front et le back n'ont pas atteint 80 % sur tout leur code. État au 26/11/2026 : front 78,1 %, back 67,8 %.
 - **Passage en bloquant** : une PR dédiée, quand les deux parties atteignent 80 % (tâche du backlog).
-- **Choix par rapport à un Quality Gate Sonar par partie.** SonarQube Cloud applique un gate par projet : en
-  avoir un par partie demande deux projets Sonar pour le même dépôt (support des monorepos, [documentation
-  Sonar](https://docs.sonarsource.com/sonarqube-cloud/analyzing-source-code/monorepo-support)), avec deux scans.
-  Orion a retenu un seul projet Sonar, et fait porter les seuils par partie au job `coverage`, qui permet de
-  contrôler à la fois le code nouveau et tout le code pour chaque partie sans second projet. Le Quality Gate de
-  Sonar reste inchangé : un projet, conditions par défaut sur le code nouveau, non bloquant (approche « Clean as
-  You Code » recommandée par Sonar, [documentation
-  Sonar](https://docs.sonarsource.com/sonarcloud/improving/clean-as-you-code)). Deux gates Sonar restent une
-  option si un contrôle par partie côté Sonar devient nécessaire.
+- **Un projet et un Quality Gate Sonar par partie (fait le 26/11/2026).** SonarQube Cloud applique un gate par
+  projet ; le dépôt a donc trois projets Sonar (support des monorepos, [documentation
+  Sonar](https://docs.sonarsource.com/sonarqube-cloud/analyzing-source-code/monorepo-support)) : `front`, `back`
+  et `infra` (Dockerfile, workflows GitHub Actions, scripts). Chacun a son gate, ses notes et son périmètre
+  (un `sonar-project.properties` par dossier de base), et son propre scan en parallèle. L'infra ne mesure pas de
+  couverture : ce sont des outils, pas l'application. Les gates restent ceux par défaut de Sonar, sur le code
+  nouveau (approche « Clean as You Code », [documentation
+  Sonar](https://docs.sonarsource.com/sonarcloud/improving/clean-as-you-code)), et **non bloquants**. Le job
+  `coverage` reste en plus : il contrôle les 80 % sur tout le code et sur le code nouveau, ce que le gate par
+  défaut de Sonar ne fait pas (il ne porte que sur le code nouveau).
 
 Les tests de bout en bout et de performance seront ajoutés avec la partie 2 (déploiement, charge).
 
@@ -163,11 +164,12 @@ déclencher manuellement une livraison en cas de panne de l'automatisation.
 
 ### 3.2.2 Étape 2 : Contrôles qualité et sécurité
 
-- **Description** : SonarQube avec couverture (non bloquant) et seuils de couverture par partie (job `coverage`, non bloquant), Trivy (dépendances, Dockerfile, images), lint
+- **Description** : SonarQube avec couverture (un projet et un gate par partie, non bloquants) et seuils de couverture par partie (job `coverage`, non bloquant), Trivy (dépendances, Dockerfile, images), lint
   (ESLint, Checkstyle/SpotBugs, hadolint).
 - **Responsables** : Dev, avec Ops pour les seuils Trivy.
-- **Livrables** : jobs `lint`, `trivy`, `sonar` ; rapport des résultats ; seuils documentés.
-- **État** : SonarQube **fait** (gate vert sur `main` depuis le 26/11/2026, non bloquant) ; seuils de couverture
+- **Livrables** : jobs `lint`, `trivy`, `sonar-front`, `sonar-back`, `sonar-infra` ; rapport des résultats ; seuils documentés.
+- **État** : SonarQube **fait**, en trois projets (front, back, infra) depuis le 26/11/2026, gates non
+  bloquants ; seuils de couverture
   par partie **faits** (non bloquants, passage en bloquant à venir) ; Trivy et lint **à faire**.
 
 ### 3.2.3 Étape 3 : Scripts d'automatisation
