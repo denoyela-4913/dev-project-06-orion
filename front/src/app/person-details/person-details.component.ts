@@ -28,9 +28,12 @@ export class PersonDetailsComponent implements OnInit {
   organizations: Organization[] = []
   selectedOrganization: Organization | null = null;
   isNew: boolean = false;
+  errors: string[] = [];
 
   constructor(private route: ActivatedRoute, private personService: PersonService, private organizationService: OrganizationService, private router: Router) {
-    this.organizationService.fetchAll().then(orgs => this.organizations = orgs)
+    this.organizationService.fetchAll()
+      .then(orgs => this.organizations = orgs)
+      .catch(error => this.reportError('Could not load the organizations.', error))
   }
 
   ngOnInit(): void {
@@ -41,48 +44,83 @@ export class PersonDetailsComponent implements OnInit {
       this.isNew = true
     } else if (typeof personIdParam === 'string') {
       const personId = parseInt(personIdParam)
-      this.personService.fetchById(personId).then(p => {
-        this.person = p
-        this.isNew = false
-      })
+      this.personService.fetchById(personId)
+        .then(p => {
+          this.person = p
+          this.isNew = false
+        })
+        .catch(error => this.reportError('Could not load the person.', error))
     }
   }
 
-  savePerson() {
-    this.personService.save({
-      ...this.person
-    }).then(p => {
-      this.person = p
-      if (this.isNew) {
-        this.router.navigate(["persons", p.id])
-      }
-    })
+  // L'action et la suite (navigation, rechargement) sont traitées séparément: si seule la suite échoue, le
+  // message ne doit pas annoncer l'échec d'une action qui a réussi.
+  async savePerson() {
+    this.errors = []
+    try {
+      this.person = await this.personService.save({ ...this.person })
+    } catch (error) {
+      this.reportError('Could not save the person.', error)
+      return
+    }
+    if (this.isNew) {
+      await this.router.navigate(["persons", this.person.id])
+        .catch(error => this.reportError('The person is saved, but its page could not be opened.', error))
+    }
   }
 
-  deletePerson() {
+  async deletePerson() {
     if (this.person.id === undefined) return
-    this.personService.deleteById(this.person.id).then(() => {
-      this.router.navigate([""])
-    })
+    this.errors = []
+    try {
+      await this.personService.deleteById(this.person.id)
+    } catch (error) {
+      this.reportError('Could not delete the person.', error)
+      return
+    }
+    await this.router.navigate([""])
+      .catch(error => this.reportError('The person is deleted, but the home page could not be opened.', error))
   }
 
   // On attend la fin de l'appel avant de recharger: sinon le rechargement peut partir avant que l'API ait
   // enregistré le lien, et l'écran affiche l'ancien état.
+  // Appelées par le template: personne n'attend leur promesse, elles doivent donc traiter leurs échecs.
   async addSelectedOrganization() {
     if (this.selectedOrganization?.id === undefined || this.person.id === undefined) return
-    await this.organizationService.addPerson(this.selectedOrganization.id, this.person.id)
-    await this.refresh()
+    this.errors = []
+    try {
+      await this.organizationService.addPerson(this.selectedOrganization.id, this.person.id)
+    } catch (error) {
+      this.reportError('Could not add the organization.', error)
+      return
+    }
+    await this.reload()
   }
 
   async removeOrganization(org: Organization) {
     if (org?.id === undefined || this.person.id === undefined) return
-    await this.organizationService.removePerson(org.id, this.person.id)
-    await this.refresh()
+    this.errors = []
+    try {
+      await this.organizationService.removePerson(org.id, this.person.id)
+    } catch (error) {
+      this.reportError('Could not remove the organization.', error)
+      return
+    }
+    await this.reload()
   }
 
   async refresh() {
     if (this.person.id === undefined) return
     this.person = await this.personService.fetchById(this.person.id)
     this.isNew = false
+  }
+
+  private async reload() {
+    await this.refresh().catch(error => this.reportError('Could not reload the person.', error))
+  }
+
+  private reportError(message: string, error: unknown) {
+    console.error(message, error)
+    this.errors.push(message)
   }
 }

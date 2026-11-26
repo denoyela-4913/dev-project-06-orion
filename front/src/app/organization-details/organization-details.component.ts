@@ -22,6 +22,7 @@ export class OrganizationDetailsComponent implements OnInit {
   };
 
   isNew: boolean = false;
+  errors: string[] = [];
 
   constructor(private route: ActivatedRoute, private personService: PersonService, private organizationService: OrganizationService, private router: Router) {
   }
@@ -34,29 +35,46 @@ export class OrganizationDetailsComponent implements OnInit {
       this.isNew = true
     } else if (typeof orgIdParam === 'string') {
       const orgId = parseInt(orgIdParam)
-      this.organizationService.fetchById(orgId).then(org => {
-        this.org = org
-        this.isNew = false
-      })
-
+      this.organizationService.fetchById(orgId)
+        .then(org => {
+          this.org = org
+          this.isNew = false
+        })
+        .catch(error => this.reportError('Could not load the organization.', error))
     }
   }
 
-  saveOrg() {
-    this.organizationService.save({
-      ...this.org
-    }).then(o => {
-      this.org = o
-      if (this.isNew) {
-        this.router.navigate(["organizations", o.id])
-      }
-    })
+  // L'action et la navigation sont traitées séparément: si seule la navigation échoue, le message ne doit pas
+  // annoncer l'échec d'un enregistrement ou d'une suppression qui a réussi.
+  async saveOrg() {
+    this.errors = []
+    try {
+      this.org = await this.organizationService.save({ ...this.org })
+    } catch (error) {
+      this.reportError('Could not save the organization.', error)
+      return
+    }
+    if (this.isNew) {
+      await this.router.navigate(["organizations", this.org.id])
+        .catch(error => this.reportError('The organization is saved, but its page could not be opened.', error))
+    }
   }
 
-  deleteOrg() {
+  async deleteOrg() {
     if (this.org.id === undefined) return
-    this.organizationService.deleteById(this.org.id).then(() => {
-      this.router.navigate([""])
-    })
+    this.errors = []
+    try {
+      await this.organizationService.deleteById(this.org.id)
+    } catch (error) {
+      this.reportError('Could not delete the organization.', error)
+      return
+    }
+    await this.router.navigate([""])
+      .catch(error => this.reportError('The organization is deleted, but the home page could not be opened.', error))
+  }
+
+  private reportError(message: string, error: unknown) {
+    console.error(message, error)
+    this.errors.push(message)
   }
 }

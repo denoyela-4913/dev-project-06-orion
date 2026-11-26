@@ -14,13 +14,25 @@ import { Organization, OrganizationService } from '../organization.service';
 export class MainDashboardComponent implements OnInit {
   organizations: Organization[] = [];
   persons: Person[] = [];
+  errors: string[] = [];
 
   constructor(private personService: PersonService, private organizationService: OrganizationService) { }
 
 
   ngOnInit(): void {
-    this.personService.fetchAll().then(persons => this.persons = persons);
-    this.organizationService.fetchAll().then(orgs => this.organizations = orgs);
+    // Les deux listes sont chargées en parallèle: chacune traite son échec, et les deux messages peuvent s'afficher.
+    this.personService.fetchAll()
+      .then(persons => this.persons = persons)
+      .catch(error => this.reportError('Could not load the persons.', error));
+    this.organizationService.fetchAll()
+      .then(orgs => this.organizations = orgs)
+      .catch(error => this.reportError('Could not load the organizations.', error));
+  }
+
+  // Message à l'écran pour l'utilisateur, cause dans la console pour le diagnostic.
+  private reportError(message: string, error: unknown) {
+    console.error(message, error);
+    this.errors.push(message);
   }
 }
 
