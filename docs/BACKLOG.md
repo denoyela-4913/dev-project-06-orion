@@ -19,7 +19,6 @@
 
 Objectif: toutes les cases du schéma « faites », ou une entrée « en attente de décision ». Une PR par lot.
 
-- [ ] ci: stage lint (ESLint pour le front, hadolint pour les Dockerfile)
 - [ ] docker: images prêtes au déploiement (sonde de santé, adresse de l'API réglable) et Docker Compose
   (dev, staging, production)
 - [ ] ci: construction des images Docker dans la CI
@@ -40,6 +39,12 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 
 ### Autres tâches
 
+- [ ] front: passer les composants en `ChangeDetectionStrategy.OnPush` (règle ESLint
+  `prefer-on-push-component-change-detection` désactivée): les composants changent leur état après des promesses
+  et comptent sur la détection par défaut; à faire avec des signaux, composant par composant
+- [ ] ci (en attente de décision: vitesse ou ordre du schéma): le job `lint` précède les tests, comme sur le
+  schéma; chaque run réussi attend sa durée. Le lancer en parallèle des tests (les builds attendant les deux)
+  raccourcirait le chemin
 - [ ] ci: ajouter le cache npm (`cache:` de `setup-node`; le cache Gradle est fait, cf. « Fait »)
   - Pré-requis: mesurer les durées de run sans cache (`gh run view`), puis avec cache.
   - Mesure sans cache (premier run, 18/11/2026): test-back ~48 s, test-front ~59 s, build-front ~45 s,
@@ -125,9 +130,7 @@ la cible au moment de la migration si une version plus récente est sortie.
   - Vu à la lecture du code, non reproduit dans le navigateur:
     - tableau de bord: le lien « Create one » des organisations vise `organization/new` (singulier,
       `main-dashboard.component.html`). Aucune route ne correspond: la route `**` renvoie à l'accueil;
-    - page d'une personne: le `(click)` du bouton « + » est sur le `<span>` intérieur et non sur le `<button>`. Un
-      clic sur le bord du bouton, ou son activation au clavier, n'appelle pas `addSelectedOrganization()`. Le
-      bouton est aussi dans le formulaire sans `type="button"`;
+    - page d'une personne, bouton « + »: **corrigé** avec le lot lint (26/11);
     - page d'une personne: le message « Phone must be a valid phone number. » attend une erreur `tel` qu'aucun
       validateur ne produit.
 - [ ] sécurité: auditer le back et les images, puis scanner dans la CI
@@ -147,6 +150,12 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] ci: stage lint (ESLint pour le front, hadolint pour les Dockerfile)
+  - Job `lint` avant les tests: hadolint (image 2.15.1 épinglée par digest) et ESLint (10.15, angular-eslint 22.8,
+    typescript-eslint 8.73, `no-floating-promises`), zéro avertissement toléré. 23 écarts ESLint et 10 remarques
+    hadolint corrigés: `inject()`, types HAL, `USER` numérique, paquets Alpine épinglés à la mineure.
+  - Défaut corrigé au passage: sur la page d'une personne, le clic était sur le texte du bouton « + » et non sur le
+    bouton (clavier sans effet, bouton sans `type`). Test qui échoue sans le correctif.
 - [x] back: corriger les 2 code smells `java:S6813` (injection par champ, `InitialDataFixture.java` lignes 14 et 17)
   - Fait le 26/11: injection par constructeur dans `InitialDataFixture`.
 - [x] ci/back: ajouter Checkstyle et SpotBugs au build Gradle (décision du 26/11)
