@@ -19,9 +19,6 @@
 
 Objectif: toutes les cases du schéma « faites », ou une entrée « en attente de décision ». Une PR par lot.
 
-- [ ] docker: images prêtes au déploiement (sonde de santé, adresse de l'API réglable) et Docker Compose
-  (dev, staging, production)
-- [ ] ci: construction des images Docker dans la CI
 - [ ] ci/sécurité: scan Trivy (images, Dockerfile, dépendances), avec un scan hebdomadaire
 - [ ] cd: charts Helm avec des valeurs par environnement (dev, staging, production)
 - [ ] cd: Terraform, découpé en modules et en environnements
@@ -39,6 +36,11 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 
 ### Autres tâches
 
+- [ ] données (en attente de décision: base de données de production): HSQLDB interne au back limite à une instance
+  et à une coupure par mise à jour; PostgreSQL (et un outil de migration à la place de `ddl-auto=update`) à décider
+- [ ] ci: mettre en cache les couches Docker (le job `images` reconstruit tout à chaque run, tests du back compris)
+- [ ] back: `spring.jpa.open-in-view` est actif par défaut (avertissement au démarrage); à désactiver après
+  vérification des accès paresseux de Spring Data REST
 - [ ] front: passer les composants en `ChangeDetectionStrategy.OnPush` (règle ESLint
   `prefer-on-push-component-change-detection` désactivée): les composants changent leur état après des promesses
   et comptent sur la détection par défaut; à faire avec des signaux, composant par composant
@@ -150,6 +152,16 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] ci: construction des images Docker dans la CI
+  - Jobs `images` (front, back, standalone, transmises par artefact) et `compose-test` (les trois environnements).
+- [x] docker: images prêtes au déploiement (sonde de santé, adresse de l'API réglable) et Docker Compose
+  (dev, staging, production)
+  - Sondes de santé (Actuator, seul `health` exposé; `/healthz` côté front), adresse de l'API réglable au
+    démarrage (`/config.js`), proxy `/api` dans Caddy, données en fichier possible (`/data`). Compose: socle et un
+    fichier par environnement (`deploy/compose/`, `scripts/compose.sh`), test de déploiement `scripts/smoke_test.sh`.
+    Les trois environnements vérifiés en local (données conservées après recréation en staging, 403 sur une origine
+    étrangère, écriture en HTTPS en production). Défaut trouvé par ce test et corrigé: les volumes de Caddy
+    appartenaient à root. Documentation: `docs/DEPLOIEMENT.md`.
 - [x] ci: stage lint (ESLint pour le front, hadolint pour les Dockerfile)
   - Job `lint` avant les tests: hadolint (image 2.15.1 épinglée par digest) et ESLint (10.15, angular-eslint 22.8,
     typescript-eslint 8.73, `no-floating-promises`), zéro avertissement toléré. 23 écarts ESLint et 10 remarques
