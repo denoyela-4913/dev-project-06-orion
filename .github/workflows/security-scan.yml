@@ -1,0 +1,28 @@
+# Scan de sécurité hebdomadaire. Une vulnérabilité peut être publiée sans qu'aucun commit ne déclenche la CI :
+# ce passage reconstruit les images à partir de `main` et rescanne tout avec une base à jour. Un échec envoie
+# la notification GitHub habituelle d'un workflow en échec. Mêmes règles que le job `scan` de ci.yml.
+name: Scan de sécurité
+
+on:
+  schedule:
+    # Le lundi à 05 h 17 UTC. Une minute quelconque évite l'heure pile, où les tâches planifiées sont retardées.
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-26.04 # cf. justification dans ci.yml
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Scanner le dépôt (dépendances, secrets, configurations)
+        run: scripts/trivy.sh repo
+      - name: Construire les images
+        if: ${{ !cancelled() }}
+        run: |
+          for target in front back standalone; do docker build --target "$target" -t "microcrm-$target:ci" .; done
+      - name: Scanner les images
+        if: ${{ !cancelled() }}
+        run: scripts/trivy.sh image microcrm-front:ci microcrm-back:ci microcrm-standalone:ci

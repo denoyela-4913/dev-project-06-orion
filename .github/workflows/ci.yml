@@ -325,6 +325,29 @@ jobs:
         if: failure()
         run: docker ps -a --format '{{.Names}}' | xargs -r -n1 docker logs --tail 100
 
+  # --- Stage "scan" ---------------------------------------------------------
+  # Trivy sur les trois images construites par `images` (celles qui seront publiées) et sur le dépôt
+  # (dépendances, secrets, configurations). Bloquant sur une vulnérabilité critique ou haute qui a un correctif.
+  # Image de Trivy épinglée par digest dans scripts/trivy.sh, sans action tierce (cf. ce script). Un seul job
+  # pour ne télécharger la base de vulnérabilités qu'une fois.
+  scan:
+    needs: [images]
+    if: ${{ !cancelled() && needs.images.result == 'success' }}
+    runs-on: ubuntu-26.04 # cf. justification dans test-front
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: image-*
+          merge-multiple: true
+      - run: for image in image-*.tar.gz; do docker load -i "$image"; done
+      - name: Scanner le dépôt (dépendances, secrets, configurations)
+        run: scripts/trivy.sh repo
+      - name: Scanner les images
+        # Même si le scan du dépôt a échoué : on veut les deux résultats dans le même run.
+        if: ${{ !cancelled() }}
+        run: scripts/trivy.sh image microcrm-front:ci microcrm-back:ci microcrm-standalone:ci
+
   # --- Analyse de qualité ---------------------------------------------------
   # Trois projets SonarQube Cloud pour le même dépôt (support des monorepos), un scan par projet, en parallèle :
   # - `sonar-front` : front Angular, avec la couverture lcov du job `test-front` ;
