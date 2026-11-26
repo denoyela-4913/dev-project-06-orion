@@ -9,6 +9,7 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // Comportement commun à Person et Organization (identifiant, horodatages) et gestion de leur relation.
@@ -26,6 +27,26 @@ class EntityTests {
         assertTrue(person.getId() > 0);
         assertNotNull(person.getCreatedAt());
         assertNotNull(person.getUpdatedAt());
+    }
+
+    // `Date` est modifiable: changer la valeur lue ne doit pas changer l'horodatage de l'entité.
+    @Test
+    void whenATimestampIsModifiedByTheCaller_thenTheEntityKeepsItsValue() {
+        Person person = entityManager.persistFlushFind(new Person("John", "Doe", "jdoe@example.net"));
+        long created = person.getCreatedAt().getTime();
+        long updated = person.getUpdatedAt().getTime();
+
+        person.getCreatedAt().setTime(0);
+        person.getUpdatedAt().setTime(0);
+
+        assertEquals(created, person.getCreatedAt().getTime());
+        assertEquals(updated, person.getUpdatedAt().getTime());
+    }
+
+    @Test
+    void whenAnEntityIsNotSavedYet_thenItHasNoTimestamps() {
+        assertNull(new Organization().getCreatedAt());
+        assertNull(new Organization().getUpdatedAt());
     }
 
     @Test

@@ -34,11 +34,17 @@ public abstract class AuditedEntity {
     return id;
   }
 
+  // Copies: `Date` est modifiable, l'appelant ne doit pas pouvoir changer l'horodatage de l'entité
+  // (SpotBugs EI_EXPOSE_REP). Hibernate accède aux champs directement (@Id sur le champ), pas à ces méthodes.
   public Date getCreatedAt() {
-    return createdAt;
+    return copyOf(createdAt);
   }
 
   public Date getUpdatedAt() {
-    return updatedAt;
+    return copyOf(updatedAt);
+  }
+
+  private static Date copyOf(Date date) {
+    return date == null ? null : new Date(date.getTime());
   }
 }
