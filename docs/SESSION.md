@@ -14,9 +14,7 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
   `origin/main`, demande la couverture dans `test-front`), Trivy, hadolint et ShellCheck, puis SpotBugs. SonarQube
   n'exécute pas les tests: il analyse le code et importe la couverture. Ces outils n'ont pas été essayés sur le dépôt.
 - **Pas encore décidé**: rendre les Quality Gates bloquants (`sonar.qualitygate.wait=true`, un par projet Sonar), dans
-  une branche `ci/…`.
-  Le gate de `main` est maintenant vert; le commentaire de `ci.yml` qui justifie le gate non bloquant par son
-  échec est à corriger.
+  une branche `ci/…`. Le gate de `main` est vert.
 
 ## Où on en est
 
@@ -83,9 +81,8 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 
 La migration vers Vitest passe avant les lots restants (décidé le 26/11).
 
-Seuils de couverture (décidé le 26/11): 80 % pour le front et pour le back, tout le code et code nouveau, non
-bloquants tant que les deux parties ne les ont pas atteints (job `coverage` de la CI). Le passage en bloquant sera
-une PR dédiée (tâche au backlog).
+Seuils de couverture: 80 % pour le front et pour le back, tout le code et code nouveau (job `coverage` de la CI),
+**bloquants** depuis le 26/11 (front 97,5 %, back 93,9 % au passage).
 Sonar ne compte pas les templates HTML (vérifié sur `main` après la PR #26: front 78,5 %, back 67,9 %).
 
 1. Issues Sonar du front, une branche `front/…` par lot:

@@ -138,17 +138,16 @@ la cible au moment de la migration si une version plus récente est sortie.
     limité au niveau réseau ou proxy). Une authentification demande aussi des changements dans le front.
   - Une correction devra avoir des tests qui échouent d'abord (requête sans identification refusée).
 
-- [ ] ci: passer les seuils de couverture en mode bloquant, par une PR dédiée (décidé le 26/11)
-  - Condition d'ouverture: le front ET le back atteignent 80 % sur tout leur code (le job `coverage` le signale par
-    un avertissement). Au 26/11: front 78,1 %, back 67,8 %.
-  - Changement: `COVERAGE_BLOCKING: "true"` dans le job `coverage` de `ci.yml`, et commentaires à jour (`ci.yml`,
-    `docs/SESSION.md`). Les 4 taux deviennent bloquants: tout le code et code nouveau, pour le front et le back.
-  - La CI de cette PR tourne déjà en mode bloquant: elle doit être verte.
-  - Les Quality Gates Sonar (un par projet) ne sont pas concernés (`sonar.qualitygate.wait`, protection de
-    `main`: non décidés).
-
 ## Fait
 
+- [x] ci: seuils de couverture en mode bloquant, par une PR dédiée (26/11)
+  - `COVERAGE_BLOCKING: "true"` dans le job `coverage`. Les 4 taux sont bloquants: tout le code et code nouveau, pour
+    le front et le back. Au passage: front 97,5 % (242/248), back 93,9 % (77/82).
+  - Vérifié en local sur de vrais rapports avec `--blocking`: code de sortie 0 au seuil de 80 %, 1 avec
+    `--threshold 99`.
+  - Commentaire périmé de `ci.yml` corrigé (il parlait encore d'un seul gate Sonar commun aux deux parties).
+  - Les Quality Gates Sonar (un par projet) ne sont pas concernés (`sonar.qualitygate.wait`, protection de `main`:
+    non décidés). `main` n'étant pas protégée, un job en échec n'empêche pas à lui seul une fusion.
 - [x] ci: nom des projets Sonar et export d'un jalon en une commande (26/11)
   - `sonar.projectName` dans les trois `sonar-project.properties`: sans lui, le scanner reprenait le nom du projet
     Gradle et npm, et le front et le back s'affichaient tous deux « microcrm ».
