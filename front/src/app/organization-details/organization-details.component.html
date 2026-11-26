@@ -1,4 +1,7 @@
 <form name="org" #orgForm="ngForm">
+  @for (message of errors; track $index) {
+    <div class="notification is-danger" role="alert">{{ message }}</div>
+  }
   <div>
     <div class="level">
       <div class="level-left">
