@@ -11,7 +11,8 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
   ESLint (`angular-eslint`, `no-floating-promises`), puis `diff-cover` (couverture du code nouveau par rapport à
   `origin/main`, demande la couverture dans `test-front`), Trivy, hadolint et ShellCheck, puis SpotBugs. SonarQube
   n'exécute pas les tests: il analyse le code et importe la couverture. Ces outils n'ont pas été essayés sur le dépôt.
-- **Pas encore décidé**: rendre le Quality Gate bloquant (`sonar.qualitygate.wait=true`), dans une branche `ci/…`.
+- **Pas encore décidé**: rendre les Quality Gates bloquants (`sonar.qualitygate.wait=true`, un par projet Sonar), dans
+  une branche `ci/…`.
   Le gate de `main` est maintenant vert; le commentaire de `ci.yml` qui justifie le gate non bloquant par son
   échec est à corriger.
 
@@ -63,10 +64,15 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 - `back/bin/main/application.properties` est suivi par git et s'est trouvé modifié localement (probablement par
   l'IDE, non vérifié): restauré sans être commité. Retrait du suivi non décidé.
 - Dépôt fork: passer `--repo` (dépôt d'`origin`) à `gh pr create`, pour ne pas viser le dépôt d'OpenClassrooms.
-- Livrables mis à jour le 26/11 (branche `docs/livrables-quality-gates`): ordre tests → Sonar → build, durées
-  (127 s à `v0.0.2`, 181 s avec l'ordre actuel), gate vert sur `main`, schéma en 7 stages. Nouveau: un Quality Gate
-  par partie (front/back) proposé, non décidé (tâche au backlog). Mentions de Karma corrigées après la migration Vitest
-  (Modèle 2 §2.6 et schéma; §1.3 décrit l'état initial et garde Karma).
+- Trois projets Sonar (`_front`, `_back`, `_infra`) et trois scans parallèles depuis la PR #33 (26/11, détail et
+  mesures dans le backlog, « Fait »): run de `main` 131 s, gates OK sur la PR. L'ancien projet unique n'est plus analysé.
+  `scripts/sonar-export.sh -p front|back|infra` exporte un projet. À revérifier: statut du gate sur la branche `main`
+  des nouveaux projets (non affiché par l'API juste après la première analyse); un cliché `docs/quality/` par projet
+  pour le jalon `v0.1.0`.
+- Livrables mis à jour le 26/11 pour les trois projets Sonar, les seuils de couverture (job `coverage`) et Vitest.
+- Un commit de documentation (`ae078c6`) a été poussé par erreur dans la branche `back/dedupe-entities` (PR #32,
+  fusionnée): l'autre session avait changé de branche dans le dossier partagé. Doublon sans effet sur `main`.
+  Travailler dans un worktree (`git worktree add`) quand deux sessions utilisent le même dossier.
 
 ## Prochaine étape (ordre décidé)
 
