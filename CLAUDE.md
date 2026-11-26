@@ -30,12 +30,14 @@ cd front && npm ci --ignore-scripts && npm start
 
 # Tests
 cd back && ./gradlew clean build
-cd front && CHROME_BIN=/snap/bin/chromium npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox
-cd front && npm run build -- --optimization     # budget de bundle: avertissement à 850 kB (actuel ~805 kB)
+cd front && npx ng test --watch=false --coverage      # Vitest avec jsdom, sans navigateur
+cd front && npm run build -- --optimization     # budget de bundle: avertissement à 850 kB (actuel ~814 kB)
 ```
 
 ## Pièges connus
 
+- Vitest laisse les espions (`vi.spyOn`) en place d'un test à l'autre: `front/src/test-setup.ts` les restaure
+  après chaque test. Ne pas le retirer. Vitest n'a pas de LTS: suivre la dernière mineure, comme pour Gradle.
 - `~/.npmrc` de l'utilisateur contient `allow-scripts=…`: `ng update` échoue (EALLOWSCRIPTS). Le lancer avec
   `NPM_CONFIG_USERCONFIG=<fichier vide>`.
 - Dépendances Gradle verrouillées (STRICT): après un changement dans `back/build.gradle`, lancer

@@ -88,15 +88,14 @@ Puis ouvrir l'URL http://localhost:4200 dans votre navigateur.
 
 #### Client
 
-**Dépendances**
-
-- Google Chrome ou Chromium
+Les tests utilisent Vitest, avec un DOM simulé (jsdom): aucun navigateur n'est nécessaire.
 
 Dans votre terminal:
 
 ```shell
 cd front
-CHROME_BIN=</path/to/google/chrome> npm test
+npm test                              # relance les tests à chaque modification
+npm test -- --watch=false --coverage  # un seul passage, avec la couverture
 ```
 
 #### Serveur
