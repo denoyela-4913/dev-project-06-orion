@@ -88,6 +88,9 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
   scan de l'image, release et déploiement. SonarQube vient après les tests car il importe leur couverture (les
   rapports des tests sont réutilisés, sans relancer les tests) ; le build attend les analyses pour ne pas
   construire une version dont l'analyse a échoué. L'analyse de l'infra n'attend rien et part dès le début.
+- Lint : le job `lint` ne contient qu'**ESLint** et **hadolint**. **Checkstyle** et **SpotBugs** sont lancés par
+  `./gradlew build` dans le job `build-back`, après la compilation dont ils ont besoin. Conséquence acceptée :
+  leurs erreurs n'apparaissent qu'à l'étape de build, et ce job relance les tests du back.
 - Durée de référence : **127 s** au tag `v0.0.2` (Sonar en parallèle des tests, sans cache). Avec un seul scan
   Sonar entre les tests et le build : **181 s** sur `main` (run 45809708667, scan de 104 s). Avec trois scans
   parallèles : **131 s** sur `main` (run 45880516355), le plus long scan (back) durant 62 s.
@@ -165,7 +168,7 @@ déclencher manuellement une livraison en cas de panne de l'automatisation.
 ### 3.2.2 Étape 2 : Contrôles qualité et sécurité
 
 - **Description** : SonarQube avec couverture (un projet et un gate par partie, non bloquants) et seuils de couverture par partie (job `coverage`, non bloquant), Trivy (dépendances, Dockerfile, images), lint
-  (ESLint, Checkstyle/SpotBugs, hadolint).
+  (ESLint, hadolint), Checkstyle et SpotBugs dans le build Gradle.
 - **Responsables** : Dev, avec Ops pour les seuils Trivy.
 - **Livrables** : jobs `lint`, `trivy`, `sonar-front`, `sonar-back`, `sonar-infra` ; rapport des résultats ; seuils documentés.
 - **État** : SonarQube **fait**, en trois projets (front, back, infra) depuis le 26/11/2026, gates non

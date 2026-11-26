@@ -7,6 +7,8 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 
 ## Propositions en attente
 
+- **Décidé le 26/11**: le job `lint` (à créer) ne contient qu'ESLint et hadolint; Checkstyle et SpotBugs passeront
+  par `./gradlew build` dans `build-back`, qui n'est pas remplacé par `assemble`. Schéma et livrables à jour.
 - **Pas encore décidé**: contrôles sur les branches de dev, une branche `ci/…` par ajout, non bloquants au début:
   ESLint (`angular-eslint`, `no-floating-promises`), puis `diff-cover` (couverture du code nouveau par rapport à
   `origin/main`, demande la couverture dans `test-front`), Trivy, hadolint et ShellCheck, puis SpotBugs. SonarQube

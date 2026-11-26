@@ -2,6 +2,12 @@
 
 ## À faire
 
+- [ ] ci/back: ajouter Checkstyle et SpotBugs au build Gradle (décision du 26/11)
+  - Plugins rattachés à `check`: `./gradlew build` du job `build-back` les lance, sans job ni étape de plus. Ils
+    ne vont pas dans le job `lint`, qui ne contient qu'ESLint et hadolint.
+  - Mettre à jour `back/gradle.lockfile`. Décider s'ils sont bloquants au début: un défaut signalé par ces
+    plugins fait échouer le build avec leurs réglages par défaut, à vérifier à l'ajout.
+  - `Dockerfile` lance aussi `./gradlew build`: ces analyses s'exécuteront dans la construction de l'image.
 - [ ] ci: ajouter le cache npm (`cache:` de `setup-node`; le cache Gradle est fait, cf. « Fait »)
   - Pré-requis: mesurer les durées de run sans cache (`gh run view`), puis avec cache.
   - Mesure sans cache (premier run, 18/11/2026): test-back ~48 s, test-front ~59 s, build-front ~45 s,
@@ -228,7 +234,9 @@ la cible au moment de la migration si une version plus récente est sortie.
   Mêmes mesures Sonar sur PR qu'avant (191 lignes à couvrir, 93 non couvertes, couverture 48,2 %). Durée sur un
   run de PR: 201 s (run 45772862781) contre 246 s et 280 s avec l'ancien pipeline (runs 45719775318 et
   45771763791), `sonar` 91 s contre 132 s et 168 s. Un seul run mesuré, et la durée varie d'un run à l'autre.
-  Reste: `build-back` (`./gradlew build`) relance les tests du back
+  `build-back` (`./gradlew build`) relance les tests du back: conservé (décision du 26/11, cf. « ajouter Checkstyle
+  et SpotBugs »). `./gradlew assemble` a été essayé en local, sans commit: plus court (environ 1 s contre 8 s,
+  daemon déjà démarré), mais il ne lance pas `check`
 - [x] ci: cache Gradle de `setup-java` dans `test-back` et `build-back` (PR #21). Fichiers de la clé listés (le choix
   par défaut ignore `gradle.lockfile`), cache du JDK désactivé. Commande Gradle sans cache sur 7 runs: 34 à 55 s
   (`test-back`) et 41 à 54 s (`build-back`); avec cache restauré dans `build-back`: 28 s et 30 s (runs 45806595627
