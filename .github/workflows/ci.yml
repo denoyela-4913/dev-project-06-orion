@@ -49,11 +49,23 @@ jobs:
       # GitLab : `npx @angular/cli test`. `npm test` exécute le script "test" de package.json
       # (`ng test`) avec l'Angular CLI déjà installé par `npm ci` : la version est celle du
       # package-lock.json et rien n'est téléchargé à la volée (règles Sonar S6505 et S8543).
-      - run: npm test -- --no-watch --no-progress --browsers=ChromeHeadlessNoSandbox
+      # `--code-coverage` : produit le rapport lcov que le job `sonar` récupère, sans relancer les tests.
+      - run: npm test -- --no-watch --no-progress --code-coverage --browsers=ChromeHeadlessNoSandbox
         env:
           # GitLab : /opt/google/chrome/chrome (chemin propre à l'image Cypress).
           # Sur le runner GitHub, Chrome est installé à /usr/bin/google-chrome (confirmé au premier run).
           CHROME_BIN: /usr/bin/google-chrome
+      # Transmet la couverture au job `sonar` : chaque job a sa propre machine, rien n'est partagé sinon.
+      # Envoyé aussi sur les branches sans `sonar` : un envoi cassé se voit dès le run de push.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-front
+          # Chemin relatif à la racine du dépôt : `working-directory` ne s'applique qu'aux étapes `run`.
+          path: front/coverage/microcrm/lcov.info
+          # Échec si le fichier manque, au lieu d'un avertissement qui laisserait Sonar sans couverture.
+          if-no-files-found: error
+          # Durée minimale : l'artefact ne sert qu'à ce run (au-delà, relancer tout le workflow).
+          retention-days: 1
 
   test-back:
     # GitLab : image gradle:jdk17. Ici setup-java installe le JDK 21 (le code est compilé en Java 21).
@@ -70,6 +82,17 @@ jobs:
           distribution: temurin
           java-version: 21
       - run: ./gradlew test
+      # Pour le job `sonar` : classes compilées (sonar.java.binaries et sonar.java.test.binaries) et rapport
+      # JaCoCo. La racine de l'artefact est le dossier commun aux deux chemins, back/build.
+      # Réglages : cf. justification dans test-front.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: analysis-back
+          path: |
+            back/build/classes/java
+            back/build/reports/jacoco/test/jacocoTestReport.xml
+          if-no-files-found: error
+          retention-days: 1
 
   # --- Stage "build" --------------------------------------------------------
   # Ordre des stages : tests, puis analyse Sonar (job `sonar`, plus bas), puis build. GitHub n'a pas de
@@ -144,27 +167,33 @@ jobs:
           # Historique complet (recommandé par SonarSource): un clone superficiel dégrade l'attribution
           # du nouveau code et la détection des auteurs.
           fetch-depth: 0
-      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
-        with:
-          distribution: temurin # cf. justification dans test-back
-          java-version: 21
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24 # même version que test-front (cf. justification)
           package-manager-cache: false # cf. justification dans test-front
-      # Job autonome: il refait les tests avec couverture au lieu de récupérer des artefacts des autres
-      # jobs. Plus simple (pas d'actions upload/download à épingler), au prix de tests exécutés deux fois.
-      # À optimiser seulement si la durée de la CI le justifie (mesure de référence: docs/quality/ci-baseline).
-      - name: Tests back avec couverture (JaCoCo)
-        working-directory: back
-        run: ./gradlew test
-      - name: Tests front avec couverture (lcov)
+      # Les tests ne sont pas relancés, mais les dépendances restent nécessaires : l'analyse TypeScript lit
+      # les types dans node_modules, et des règles en dépendent (ex. promesses non gérées).
+      - run: npm ci --ignore-scripts # cf. justification dans test-front
         working-directory: front
+      # Résultats des jobs de tests (couverture et classes Java), replacés aux chemins attendus par
+      # sonar-project.properties. Pas de setup-java : les tests ne tournent plus ici et le scanner
+      # télécharge son propre JRE. L'artefact est limité à ce run et son empreinte est vérifiée.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: analysis-back
+          path: back/build
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage-front
+          path: front/coverage/microcrm
+      # `if-no-files-found` n'échoue que si AUCUN chemin de l'artefact ne correspond. Sans ce contrôle, un
+      # rapport ou un dossier de classes manquant ne ferait qu'un avertissement, et l'analyse serait faussée.
+      - name: Vérifier les résultats reçus des jobs de tests
         run: |
-          npm ci --ignore-scripts
-          npm test -- --no-watch --no-progress --code-coverage --browsers=ChromeHeadlessNoSandbox
-        env:
-          CHROME_BIN: /usr/bin/google-chrome
+          test -s back/build/reports/jacoco/test/jacocoTestReport.xml
+          test -d back/build/classes/java/main
+          test -d back/build/classes/java/test
+          test -s front/coverage/microcrm/lcov.info
       # Les chemins du lcov sont relatifs à front/ (`src/...`) alors que le scan part de la racine du dépôt.
       - name: Aligner les chemins lcov sur la racine du dépôt
         run: sed -i 's#^SF:src/#SF:front/src/#' front/coverage/microcrm/lcov.info
