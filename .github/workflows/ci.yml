@@ -49,11 +49,11 @@ jobs:
       # GitLab : `npx @angular/cli test`. `npm test` exécute le script "test" de package.json
       # (`ng test`) avec l'Angular CLI déjà installé par `npm ci` : la version est celle du
       # package-lock.json et rien n'est téléchargé à la volée (règles Sonar S6505 et S8543).
-      # `--coverage` : produit le rapport lcov que le job `sonar` récupère, sans relancer les tests.
+      # `--coverage` : produit le rapport lcov que le job `sonar-front` récupère, sans relancer les tests.
       # `--watch=false` : un seul passage, sans dépendre de la détection de l'environnement de CI.
       - run: npm test -- --watch=false --coverage
-      # Transmet la couverture au job `sonar` : chaque job a sa propre machine, rien n'est partagé sinon.
-      # Envoyé aussi sur les branches sans `sonar` : un envoi cassé se voit dès le run de push.
+      # Transmet la couverture au job `sonar-front` : chaque job a sa propre machine, rien n'est partagé sinon.
+      # Envoyé aussi sur les branches sans Sonar : un envoi cassé se voit dès le run de push.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-front
@@ -92,7 +92,7 @@ jobs:
           # Activé d'office avec `cache`: désactivé pour limiter ce changement aux dépendances Gradle.
           cache-jdk: false
       - run: ./gradlew test
-      # Pour le job `sonar` : classes compilées (sonar.java.binaries et sonar.java.test.binaries) et rapport
+      # Pour le job `sonar-back` : classes compilées (sonar.java.binaries et sonar.java.test.binaries) et rapport
       # JaCoCo. La racine de l'artefact est le dossier commun aux deux chemins, back/build.
       # Réglages : cf. justification dans test-front.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -107,7 +107,7 @@ jobs:
   # --- Seuils de couverture -------------------------------------------------
   # 80 % pour le front et pour le back, sur tout le code et sur le code nouveau (scripts/coverage_gate.py, à
   # partir des rapports des jobs de tests). Contrôle propre à Orion : le Quality Gate Sonar n'a qu'un taux sur
-  # le code nouveau, commun aux deux parties, et `sonar` ne tourne pas sur les branches de dev.
+  # le code nouveau, commun aux deux parties, et Sonar ne tourne pas sur les branches de dev.
   # NON BLOQUANT tant que le front et le back n'ont pas tous deux atteint 80 % : un taux insuffisant ne fait
   # qu'un avertissement. Ensuite, passer COVERAGE_BLOCKING à "true" (le job le rappelle) ; un taux sous le
   # seuil fera alors échouer ce job et empêchera les builds. Le passage est manuel : un blocage automatique
@@ -146,7 +146,7 @@ jobs:
           python3 scripts/coverage_gate.py "${options[@]}"
 
   # --- Stage "build" --------------------------------------------------------
-  # Ordre des stages : tests, puis analyse Sonar (job `sonar`, plus bas), puis build. GitHub n'a pas de
+  # Ordre des stages : tests, puis analyse Sonar (jobs `sonar-front`, `sonar-back` et `sonar-infra`, plus bas), puis build. GitHub n'a pas de
   # stages : "needs" reproduit ces dépendances (GitLab : "stages: test, build").
   # - Le Quality Gate Sonar n'est PAS bloquant pour l'instant : le scan n'attend pas son résultat
   #   (pas de `sonar.qualitygate.wait=true`). Décision du 26/11 : non bloquant tant que le front et le back
@@ -154,18 +154,20 @@ jobs:
   # - Le build attend aussi `coverage`, qui ne peut échouer sur un taux qu'une fois rendu bloquant.
   # - Un scan en échec technique (SonarCloud indisponible, jeton invalide) bloque en revanche le build :
   #   choix assumé pour garder une règle simple.
-  # - `sonar` ne tourne que sur les PR et `main` : sur les autres branches il est sauté, et le build doit
+  # - Les jobs Sonar ne tournent que sur les PR et `main` : sur les autres branches ils sont sautés, et le build doit
   #   quand même s'exécuter.
   build-front:
-    needs: [test-front, test-back, coverage, sonar]
-    # Cf. « Ordre des stages » ci-dessus: build si les deux tests ont réussi et si `sonar` a réussi ou a été
-    # sauté. `!cancelled()` est nécessaire: sans fonction de statut, GitHub saute aussi un job dont un
+    needs: [test-front, test-back, coverage, sonar-front, sonar-back, sonar-infra]
+    # Cf. « Ordre des stages » ci-dessus: build si les deux tests ont réussi et si les trois jobs Sonar ont réussi ou ont été
+    # sautés. `!cancelled()` est nécessaire: sans fonction de statut, GitHub saute aussi un job dont un
     # `needs` a été sauté.
     if: >-
       !cancelled() &&
       needs.test-front.result == 'success' && needs.test-back.result == 'success' &&
       needs.coverage.result == 'success' &&
-      (needs.sonar.result == 'success' || needs.sonar.result == 'skipped')
+      (needs.sonar-front.result == 'success' || needs.sonar-front.result == 'skipped') &&
+      (needs.sonar-back.result == 'success' || needs.sonar-back.result == 'skipped') &&
+      (needs.sonar-infra.result == 'success' || needs.sonar-infra.result == 'skipped')
     runs-on: ubuntu-26.04 # cf. justification dans test-front
     defaults:
       run:
@@ -182,15 +184,17 @@ jobs:
       - run: npm run build -- --optimization
 
   build-back:
-    needs: [test-front, test-back, coverage, sonar]
-    # Cf. « Ordre des stages » ci-dessus: build si les deux tests ont réussi et si `sonar` a réussi ou a été
-    # sauté. `!cancelled()` est nécessaire: sans fonction de statut, GitHub saute aussi un job dont un
+    needs: [test-front, test-back, coverage, sonar-front, sonar-back, sonar-infra]
+    # Cf. « Ordre des stages » ci-dessus: build si les deux tests ont réussi et si les trois jobs Sonar ont réussi ou ont été
+    # sautés. `!cancelled()` est nécessaire: sans fonction de statut, GitHub saute aussi un job dont un
     # `needs` a été sauté.
     if: >-
       !cancelled() &&
       needs.test-front.result == 'success' && needs.test-back.result == 'success' &&
       needs.coverage.result == 'success' &&
-      (needs.sonar.result == 'success' || needs.sonar.result == 'skipped')
+      (needs.sonar-front.result == 'success' || needs.sonar-front.result == 'skipped') &&
+      (needs.sonar-back.result == 'success' || needs.sonar-back.result == 'skipped') &&
+      (needs.sonar-infra.result == 'success' || needs.sonar-infra.result == 'skipped')
     runs-on: ubuntu-26.04 # cf. justification dans test-front
     defaults:
       run:
@@ -213,14 +217,20 @@ jobs:
       - run: ./gradlew build
 
   # --- Analyse de qualité ---------------------------------------------------
-  # Remplace l'analyse automatique de SonarQube Cloud par un scan lancé ici, ce qui permet d'envoyer la
-  # couverture de tests (JaCoCo pour le back, lcov pour le front). Configuration dans sonar-project.properties.
-  sonar:
-    # Après les tests : inutile d'analyser un code dont les tests échouent.
-    needs: [test-front, test-back]
-    # Seulement sur les PR et sur main, comme l'analyse automatique précédente: pas d'analyse des autres
-    # branches (non garanti par le plan gratuit). Les PR venant d'un fork n'ont pas accès au secret
-    # SONAR_TOKEN: elles sont exclues pour ne pas échouer systématiquement.
+  # Trois projets SonarQube Cloud pour le même dépôt (support des monorepos), un scan par projet, en parallèle :
+  # - `sonar-front` : front Angular, avec la couverture lcov du job `test-front` ;
+  # - `sonar-back` : back Java, avec la couverture JaCoCo et les classes du job `test-back` ;
+  # - `sonar-infra` : Dockerfile, workflows, scripts et le reste du dépôt, sans couverture (outils, pas l'application).
+  # Chaque projet a son Quality Gate et ses notes. Le périmètre de chacun est décrit dans le
+  # `sonar-project.properties` de son dossier de base (front/, back/ et racine pour l'infra).
+  # Seulement sur les PR et sur main, comme l'analyse automatique précédente: pas d'analyse des autres
+  # branches (non garanti par le plan gratuit). Les PR venant d'un fork n'ont pas accès au secret
+  # SONAR_TOKEN: elles sont exclues pour ne pas échouer systématiquement.
+  # Historique complet (`fetch-depth: 0`, recommandé par SonarSource): un clone superficiel dégrade l'attribution
+  # du nouveau code et la détection des auteurs.
+  sonar-front:
+    # Après le test du front : inutile d'analyser un code dont les tests échouent.
+    needs: [test-front]
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
@@ -228,8 +238,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Historique complet (recommandé par SonarSource): un clone superficiel dégrade l'attribution
-          # du nouveau code et la détection des auteurs.
           fetch-depth: 0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -239,34 +247,82 @@ jobs:
       # les types dans node_modules, et des règles en dépendent (ex. promesses non gérées).
       - run: npm ci --ignore-scripts # cf. justification dans test-front
         working-directory: front
-      # Résultats des jobs de tests (couverture et classes Java), replacés aux chemins attendus par
-      # sonar-project.properties. Pas de setup-java : les tests ne tournent plus ici et le scanner
-      # télécharge son propre JRE. L'artefact est limité à ce run et son empreinte est vérifiée.
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: analysis-back
-          path: back/build
+      # Couverture du job `test-front`, replacée au chemin attendu par front/sonar-project.properties.
+      # L'artefact est limité à ce run et son empreinte est vérifiée.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: coverage-front
           path: front/coverage/microcrm
-      # `if-no-files-found` n'échoue que si AUCUN chemin de l'artefact ne correspond. Sans ce contrôle, un
-      # rapport ou un dossier de classes manquant ne ferait qu'un avertissement, et l'analyse serait faussée.
-      - name: Vérifier les résultats reçus des jobs de tests
-        run: |
-          test -s back/build/reports/jacoco/test/jacocoTestReport.xml
-          test -d back/build/classes/java/main
-          test -d back/build/classes/java/test
-          test -s front/coverage/microcrm/lcov.info
-      # Les chemins du lcov sont relatifs à front/ (`src/...`) alors que le scan part de la racine du dépôt.
-      - name: Aligner les chemins lcov sur la racine du dépôt
-        run: sed -i 's#^SF:src/#SF:front/src/#' front/coverage/microcrm/lcov.info
+      # Sans ce contrôle, un rapport manquant ne ferait qu'un avertissement et l'analyse serait faussée.
+      - name: Vérifier la couverture reçue du job de test
+        run: test -s front/coverage/microcrm/lcov.info
       - uses: SonarSource/sonarqube-scan-action@59202af334b4ba7b5db01b701b8e79f8b3bef0f4 # v8.5.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          # Organisation et clé du projet déduites du dépôt GitHub (convention d'un projet importé depuis
-          # GitHub: <propriétaire>_<dépôt>) pour ne pas les écrire en dur.
+          # Dossier de base du scan: le `sonar-project.properties` de ce dossier décrit le périmètre de cette partie.
+          projectBaseDir: front
+          # Organisation et clé déduites du dépôt GitHub (<propriétaire>_<dépôt>_<partie>, modèle de la
+          # documentation Sonar pour les monorepos) pour ne pas les écrire en dur.
           args: >
             -Dsonar.organization=${{ github.repository_owner }}
-            -Dsonar.projectKey=${{ github.repository_owner }}_${{ github.event.repository.name }}
+            -Dsonar.projectKey=${{ github.repository_owner }}_${{ github.event.repository.name }}_front
+
+  sonar-back:
+    # Après le test du back.
+    needs: [test-back]
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-26.04 # cf. justification dans test-front
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      # Résultats du job `test-back` (couverture et classes Java), replacés aux chemins attendus par
+      # back/sonar-project.properties. Pas de setup-java : les tests ne tournent plus ici et le scanner
+      # télécharge son propre JRE.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: analysis-back
+          path: back/build
+      # `if-no-files-found` n'échoue que si AUCUN chemin de l'artefact ne correspond. Sans ce contrôle, un
+      # rapport ou un dossier de classes manquant ne ferait qu'un avertissement, et l'analyse serait faussée.
+      - name: Vérifier les résultats reçus du job de test
+        run: |
+          test -s back/build/reports/jacoco/test/jacocoTestReport.xml
+          test -d back/build/classes/java/main
+          test -d back/build/classes/java/test
+      - uses: SonarSource/sonarqube-scan-action@59202af334b4ba7b5db01b701b8e79f8b3bef0f4 # v8.5.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          # Dossier de base du scan: le `sonar-project.properties` de ce dossier décrit le périmètre de cette partie.
+          projectBaseDir: back
+          # Organisation et clé déduites du dépôt GitHub (<propriétaire>_<dépôt>_<partie>, modèle de la
+          # documentation Sonar pour les monorepos) pour ne pas les écrire en dur.
+          args: >
+            -Dsonar.organization=${{ github.repository_owner }}
+            -Dsonar.projectKey=${{ github.repository_owner }}_${{ github.event.repository.name }}_back
+
+  sonar-infra:
+    # Pas de `needs` : ce périmètre n'a ni test ni compilation à attendre, il part dès le début du run.
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-26.04 # cf. justification dans test-front
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: SonarSource/sonarqube-scan-action@59202af334b4ba7b5db01b701b8e79f8b3bef0f4 # v8.5.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          # Dossier de base du scan: le `sonar-project.properties` de ce dossier décrit le périmètre de cette partie.
+          projectBaseDir: .
+          # Organisation et clé déduites du dépôt GitHub (<propriétaire>_<dépôt>_<partie>, modèle de la
+          # documentation Sonar pour les monorepos) pour ne pas les écrire en dur.
+          args: >
+            -Dsonar.organization=${{ github.repository_owner }}
+            -Dsonar.projectKey=${{ github.repository_owner }}_${{ github.event.repository.name }}_infra
