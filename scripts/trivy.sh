@@ -15,7 +15,7 @@ set -euo pipefail
 TRIVY_IMAGE="aquasec/trivy@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb"
 
 usage() { echo "Usage: $0 repo | image <nom>..." >&2; exit 2; }
-[ $# -ge 1 ] || usage
+[[ $# -ge 1 ]] || usage
 mode=$1
 shift
 
@@ -30,14 +30,14 @@ gate=(--quiet --severity "CRITICAL,HIGH" --ignore-unfixed --exit-code 1)
 
 case $mode in
   repo)
-    [ $# -eq 0 ] || usage
+    [[ $# -eq 0 ]] || usage
     skip="front/node_modules,front/dist,front/coverage,front/.angular,back/build,back/bin,back/.gradle,docs,learning"
     run() { trivy -v "$root":/repo:ro "$TRIVY_IMAGE" fs --scanners vuln,secret,misconfig --skip-dirs "$skip" "$@" /repo; }
     run "${report[@]}"
     run "${gate[@]}"
     ;;
   image)
-    [ $# -ge 1 ] || usage
+    [[ $# -ge 1 ]] || usage
     failed=0
     for name in "$@"; do
       echo "=== $name"
