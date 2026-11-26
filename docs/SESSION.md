@@ -66,7 +66,8 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 - Dépôt fork: passer `--repo` (dépôt d'`origin`) à `gh pr create`, pour ne pas viser le dépôt d'OpenClassrooms.
 - Trois projets Sonar (`_front`, `_back`, `_infra`) et trois scans parallèles depuis la PR #33 (26/11, détail et
   mesures dans le backlog, « Fait »): run de `main` 131 s, gates OK sur la PR. L'ancien projet unique n'est plus analysé.
-  `scripts/sonar-export.sh -p front|back|infra` exporte un projet. À revérifier: statut du gate sur la branche `main`
+  `scripts/sonar-export.sh -p front|back|infra` exporte un projet; `scripts/sonar-export-release.sh <tag>` les trois
+  d'un coup (jalon `v0.1.0`: créer le tag, attendre la CI de `main`, lancer le script). À revérifier: statut du gate sur la branche `main`
   des nouveaux projets (non affiché par l'API juste après la première analyse); un cliché `docs/quality/` par projet
   pour le jalon `v0.1.0`.
 - Livrables mis à jour le 26/11 pour les trois projets Sonar, les seuils de couverture (job `coverage`) et Vitest.

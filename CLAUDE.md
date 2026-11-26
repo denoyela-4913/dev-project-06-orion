@@ -48,5 +48,7 @@ cd front && npm run build -- --optimization     # budget de bundle: avertissemen
 - Sonar: trois projets, `denoyela-4913_dev-project-06-orion_front`, `_back` et `_infra` (Dockerfile, workflows,
   scripts), un scan chacun (`sonar-front`, `sonar-back`, `sonar-infra`), seulement sur PR et `main`. Le projet
   historique `denoyela-4913_dev-project-06-orion` n'est plus analysé depuis le 26/11/2026 (référence des clichés
-  `docs/quality/`). `scripts/sonar-export.sh -p front|back|infra` exporte l'état (`docs/quality/`).
+  `docs/quality/`). `scripts/sonar-export.sh -p front|back|infra` exporte l'état d'un projet (`docs/quality/`);
+  `scripts/sonar-export-release.sh <tag>` exporte les trois d'un coup sous `docs/quality/<tag>/`, après avoir
+  vérifié que la dernière analyse de `main` porte sur le commit du tag.
 - Tuer un serveur par port (`kill $(lsof -ti :8080)`), jamais par `pkill -f`.
