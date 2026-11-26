@@ -67,7 +67,9 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
   `bin/main/application.properties`, versionné depuis le commit initial, apparaissait modifié à chaque recopie de la
   source. Dans un dossier où il est encore modifié: `git restore back/bin/main/application.properties` avant de
   mettre `main` à jour (git supprime alors le fichier; l'IDE le recrée, ignoré).
-- Dépôt fork: passer `--repo` (dépôt d'`origin`) à `gh pr create`, pour ne pas viser le dépôt d'OpenClassrooms.
+- Dépôt fork: sur ce poste, le dépôt par défaut de `gh` est celui d'`origin` (`gh repo set-default --view`, vérifié
+  le 26/11, PR #30): `--repo` n'est pas nécessaire. Le passer à `gh pr create` sur un poste sans ce réglage, pour ne
+  pas viser le dépôt d'OpenClassrooms.
 - Trois projets Sonar (`_front`, `_back`, `_infra`) et trois scans parallèles depuis la PR #33 (26/11, détail et
   mesures dans le backlog, « Fait »): run de `main` 131 s, gates OK sur la PR. L'ancien projet unique n'est plus analysé.
   `scripts/sonar-export.sh -p front|back|infra` exporte un projet; `scripts/sonar-export-release.sh <tag>` les trois
@@ -78,24 +80,30 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 - Un commit de documentation (`ae078c6`) a été poussé par erreur dans la branche `back/dedupe-entities` (PR #32,
   fusionnée): l'autre session avait changé de branche dans le dossier partagé. Doublon sans effet sur `main`.
   Travailler dans un worktree (`git worktree add`) quand deux sessions utilisent le même dossier.
+- Issues Sonar du front, lots 2 et 3 terminés le 26/11, détail dans le backlog: PR #30 (labels, `<th>`,
+  `Number.parseInt`, `ngOnInit`), PR #32 (duplication `Person` / `Organization`), PR #37 (fichiers de démarrage
+  d'Angular exclus de la couverture, décidé le 26/11), PR #39 (tests des services du front).
+- `main` après la PR #39 (`9614697`, run 45902475261 vert), gates OK pour les trois projets: front 97,6 % de
+  couverture et 0 code smell; back 93,9 % et 2 code smells (`java:S6813`); infra 0 code smell. Pour les trois:
+  0 bug, 0 vulnérabilité, 0 hotspot, 0 % de duplication.
+- Après la fusion des PR du front, relancer `npm ci --ignore-scripts` si les `node_modules` datent d'avant Vitest.
+- Vu une fois le 26/11, machine très chargée (charge moyenne autour de 57): `ng test --coverage` en échec
+  (`Timeout waiting for worker to respond`, aucun test exécuté). Réussi ensuite, charge retombée.
 
 ## Prochaine étape (ordre décidé)
 
-La migration vers Vitest passe avant les lots restants (décidé le 26/11).
+Les trois lots d'issues Sonar du front sont terminés.
 
-Seuils de couverture (décidé le 26/11): 80 % pour le front et pour le back, tout le code et code nouveau, non
-bloquants tant que les deux parties ne les ont pas atteints (job `coverage` de la CI). Le passage en bloquant sera
-une PR dédiée (tâche au backlog).
-Sonar ne compte pas les templates HTML (vérifié sur `main` après la PR #26: front 78,5 %, back 67,9 %).
+1. Jalon `v0.1.0`: créer le tag, attendre la CI de `main`, lancer `scripts/sonar-export-release.sh v0.1.0` (un
+   cliché par projet dans `docs/quality/`).
+2. Seuils de couverture en mode bloquant, par une PR dédiée (tâche au backlog): la condition est remplie, le job
+   `coverage` de `main` le signale (run 45902475261). Vérifier qu'aucune autre session ne s'en occupe.
+3. Puis le reste de `docs/BACKLOG.md`: cache npm, `sonar.java.libraries`, 2 `java:S6813`
+   (`InitialDataFixture.java`), scan de sécurité dans la CI, étude nginx, maintenance de
+   `ro.polak:spring-boot-data-fixtures`.
 
-1. Issues Sonar du front, une branche `front/…` par lot:
-   1. promesses non gérées `typescript:S9383`: fait
-   2. **prochain lot**: labels de formulaire (`Web:InputWithoutLabelCheck` ×7, `Web:S6853` ×6), `<th>` du tableau (`Web:S5256`),
-      `Number.parseInt` (`S7773` ×2), opération asynchrone dans le constructeur (`S7059`)
-   3. tests pour monter la couverture; duplication `Organization.java` / `Person.java`
-2. Jalon `v0.1.0`: tag + cliché Sonar dans `docs/quality/` (reporté après les corrections du front).
-3. Puis le reste de `docs/BACKLOG.md`: cache npm,
-   `sonar.java.libraries`, 2 `java:S6813` (`InitialDataFixture.java`), scan de sécurité dans la CI, étude nginx, maintenance de `ro.polak:spring-boot-data-fixtures`.
+Seuils de couverture (décidé le 26/11): 80 % pour le front et pour le back, tout le code et code nouveau (job
+`coverage` de la CI, non bloquant pour l'instant). Sonar ne compte pas les templates HTML.
 
 ## Questions ouvertes
 
