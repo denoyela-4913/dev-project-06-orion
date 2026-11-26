@@ -36,6 +36,10 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 - Livrables 01 et 02, `schema_pipeline_ci_cd.png`, `scripts/build-livrables.sh` et `docs/inputs/` (sujet, mails,
   modèles) sont dans `main`. L'utilisateur a décidé de garder `docs/inputs/` dans le dépôt (26/11). Fichiers
   `*:Zone.Identifier` retirés et ignorés (`.gitignore`).
+- PR #19 fusionnée en rebase le 26/11 (`770a887`): `sonar` réutilise les résultats des jobs de tests (artefacts).
+  Analyse complète de `main` (run 45780226856): gate OK, 21 bugs, 11 code smells, 3 vulnérabilités, couverture
+  47,1 %, duplication 1,5 %, soit les mêmes totaux qu'avant (issues non comparées une par une). Durée du run: 200 s
+  (`sonar` 83 s), contre 295 s après la PR #17.
 - `429 Too Many Requests` de Maven Central, vu trois fois: runs 45718448702, 45772345591 et 45806595627 (premier
   run du cache, encore vide; la relance a réussi). Cache Gradle ajouté (PR #21): limite les téléchargements, sans
   supprimer le risque quand le cache est vide ou périmé.
