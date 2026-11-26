@@ -2,6 +2,45 @@
 
 ## À faire
 
+### Priorité (donnée par l'utilisateur le 26/11): sécurité et accélération de la CI
+
+- [ ] sécurité: auditer les dépendances du back et les images Docker, puis scanner dans la CI (cf. l'entrée
+  « auditer le back et les images » plus bas)
+- [ ] ci: éviter que le scan Sonar télécharge la distribution Gradle (étape « Detecting build system
+  information », 27 à 38 s mesurées sur les runs à un seul scan après la PR #19, contre 8 s avant). À remesurer
+  avec les trois scans parallèles (PR #33) avant de corriger
+- [ ] ci: cache npm (cf. l'entrée plus bas; gain attendu faible: `npm ci` prend 4 à 8 s par job)
+- [ ] sécurité (en attente de décision: réglage du dépôt GitHub, hors des fichiers versionnés): protéger `main` en
+  exigeant les jobs de CI. Aujourd'hui `main` n'a ni protection ni règle: une PR en échec reste fusionnable
+- [ ] sécurité: le journal de l'action de scan Sonar signale que la sous-clé de signature du scanner est révoquée
+  (motif: remplacement), la vérification réussissant quand même. Non étudié
+
+### Pipeline CI/CD cible (schéma `docs/livrables/schema_pipeline_ci_cd.png`), mandat du 26/11 au soir
+
+Objectif: toutes les cases du schéma « faites », ou une entrée « en attente de décision ». Une PR par lot.
+
+- [ ] ci: stage lint (ESLint pour le front, hadolint pour les Dockerfile)
+- [ ] ci/back: Checkstyle et SpotBugs (cf. l'entrée plus bas)
+- [ ] docker: images prêtes au déploiement (sonde de santé, adresse de l'API réglable) et Docker Compose
+  (dev, staging, production)
+- [ ] ci: construction des images Docker dans la CI
+- [ ] ci/sécurité: scan Trivy (images, Dockerfile, dépendances), avec un scan hebdomadaire
+- [ ] cd: charts Helm avec des valeurs par environnement (dev, staging, production)
+- [ ] cd: Terraform, découpé en modules et en environnements
+- [ ] ci: release sur `main` (version SemVer et tag, images publiées sur GHCR, notes de release)
+- [ ] cd: déploiement de démonstration, test de santé HTTP, notification du résultat
+- [ ] cd: retour arrière automatique (`helm rollback`) et sauvegarde des données
+- [ ] cd: livraison manuelle de secours
+- [ ] tests: compléter les tests unitaires, fonctionnels et de bout en bout
+- [ ] docs: documentation CI/CD et déploiement à jour, schéma à jour
+- [ ] docs: fiches et flashcards sur le projet, dont les processus CI et CD (`learning/`)
+- [ ] docs: audit et état des lieux de la nuit (à écrire vers 04h00 le 27/11, tenu à jour jusqu'à la fin)
+- [ ] docs: `README.md` périmé (Spring Boot 3, Angular 17, OpenJDK 17, `npx @angular/cli serve`, GitLab CI)
+- [ ] ci (en attente de décision: supprimer ou porter): `.gitlab-ci.yml` d'origine n'est plus fonctionnel pour
+  les tests du front (options de Karma, cf. `docs/KARMA.md`)
+
+### Autres tâches
+
 - [ ] ci/back: ajouter Checkstyle et SpotBugs au build Gradle (décision du 26/11)
   - Plugins rattachés à `check`: `./gradlew build` du job `build-back` les lance, sans job ni étape de plus. Ils
     ne vont pas dans le job `lint`, qui ne contient qu'ESLint et hadolint.

@@ -5,6 +5,14 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 
 **Dernière mise à jour: 26/11/2026**
 
+## Priorité et mandat en cours
+
+- **Priorité de l'utilisateur (26/11)**: sécurité et accélération de la CI (détail dans le backlog).
+- **Mandat de nuit (26/11 au soir, jusqu'au 27/11 avant 06h00)**: pipeline CI/CD complet du schéma, Docker,
+  Compose, Terraform, Helm (dev, staging, production), documentation, fiches et flashcards, tests. Une PR par
+  lot, fusionnée en rebase (autorisation donnée pour ce mandat seulement). Une PR bloquée est mise de côté avec
+  une entrée « en attente de décision » au backlog. Aucune branche ne reste après fusion.
+
 ## Propositions en attente
 
 - **Décidé le 26/11**: le job `lint` (à créer) ne contient qu'ESLint et hadolint; Checkstyle et SpotBugs passeront
@@ -104,5 +112,8 @@ Seuils de couverture (décidé le 26/11): 80 % pour le front et pour le back, to
 ## Questions ouvertes
 
 - GitHub au lieu de GitLab (le mail 2 demande un lien GitLab public): à confirmer avec le mentor (risque R2).
-- Ancienne branche `docs/backlog-functional-bugs` (locale et distante): à supprimer? (l'utilisateur n'a pas répondu)
+- Branches supprimées le 26/11 au soir (demande d'un dépôt sans branche qui traîne; `git branch <nom> <sha>` pour
+  restaurer tant que git conserve le commit): `docs/backlog-functional-bugs` (`4f0ac28`, ses deux bugs sont corrigés
+  depuis la PR #14), `ci/blocking-coverage` (`d777b45`, PR #41 fermée, remplacée par la #42),
+  `docs/learning-devops-outils` (`dc8170a`) et `docs/quality-sonar-ci-baseline` (`1aa359f`), déjà intégrées à `main`.
 - Règle `ignore` de Dependabot pour Docker: non confirmée (il n'a pas encore ouvert de PR).
