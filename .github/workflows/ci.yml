@@ -132,6 +132,33 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  # --- Contrôle de l'infrastructure ------------------------------------------
+  # Chart Helm et scripts d'exploitation, sans cluster. Ce n'est pas le job `lint` (réservé à ESLint et
+  # hadolint) : il vérifie que ce qui servira au déploiement se construit pour les trois environnements.
+  infra-check:
+    runs-on: ubuntu-26.04 # cf. justification dans test-front
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
+        with:
+          # Helm 4 : la branche 3 n'est plus maintenue au-delà de 11/2026. Version fixe (pas « latest »).
+          version: v4.3.2
+      - name: Chart Helm, pour les trois environnements
+        run: |
+          for environment in dev staging production; do
+            helm lint deploy/helm/microcrm --strict --values "deploy/helm/microcrm/values-$environment.yaml"
+            helm template microcrm deploy/helm/microcrm \
+              --values "deploy/helm/microcrm/values-$environment.yaml" > /dev/null
+          done
+      - name: Le chart refuse plusieurs instances du back
+        run: |
+          if helm template microcrm deploy/helm/microcrm --set back.replicas=2 > /dev/null 2>&1; then
+            echo "::error::le chart devrait refuser back.replicas=2" >&2
+            exit 1
+          fi
+      - name: Syntaxe des scripts d'exploitation
+        run: for script in scripts/*.sh; do bash -n "$script"; done
+
   # --- Seuils de couverture -------------------------------------------------
   # 80 % pour le front et pour le back, sur tout le code et sur le code nouveau (scripts/coverage_gate.py, à
   # partir des rapports des jobs de tests). Contrôle propre à Orion, en plus des Quality Gates Sonar : il porte
