@@ -4,3 +4,6 @@
 /front/node_modules
 /front/.angular
 /docs
+/e2e
+/deploy
+/learning
