@@ -96,7 +96,7 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
 | Type | Outil | Déclenchement | Cible |
 |---|---|---|---|
 | Unitaires back | JUnit (Gradle) | chaque push | couverture du code nouveau ≥ 80 % |
-| Unitaires front | Karma / Jasmine (remplacement à l'étude) | chaque push | couverture du code nouveau ≥ 80 % |
+| Unitaires front | Vitest (via `ng test`, DOM simulé jsdom, sans navigateur) | chaque push | couverture du code nouveau ≥ 80 % |
 | Intégration back | Spring Boot Test | chaque push | endpoints principaux |
 | Scripts d'automatisation | pytest, Bash Unit, ShellCheck | chaque push | chaque script testé |
 | Sécurité | SonarQube, Trivy | PR, `main`, hebdomadaire | 0 vulnérabilité critique/haute |
