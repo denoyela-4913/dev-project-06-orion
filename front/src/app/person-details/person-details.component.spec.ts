@@ -114,4 +114,29 @@ describe('IndividualDetailsComponent', () => {
       expect(personService.fetchById).toHaveBeenCalledWith(2);
     });
   });
+
+  // Sonar Web:InputWithoutLabelCheck et Web:S6853: un lecteur d'écran ne peut annoncer un champ que si un
+  // <label for> pointe vers son id.
+  it('should give every form control a label', () => {
+    const controls: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('input, select, textarea'));
+
+    expect(controls.length).toBeGreaterThan(0);
+    for (const control of controls) {
+      expect(control.id, `control "${control.getAttribute('name')}" has no id`).not.toBe('');
+      expect(fixture.nativeElement.querySelector(`label[for="${control.id}"]`),
+        `control "${control.id}" has no label`).not.toBeNull();
+    }
+  });
+
+  // Sonar Web:S5256: un tableau de données a besoin d'en-têtes de colonnes.
+  it('should give every table a header cell', () => {
+    component.person.organizations = [{ id: 1, name: 'Orion', createdAt: new Date(), persons: [] }];
+    fixture.detectChanges();
+
+    const tables: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('table'));
+    expect(tables.length).toBeGreaterThan(0);
+    for (const table of tables) {
+      expect(table.querySelector('th')).not.toBeNull();
+    }
+  });
 });

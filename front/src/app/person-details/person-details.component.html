@@ -38,7 +38,7 @@
       <div class="columns">
         <div class="column">
           <div class="field">
-            <label class="label">First name *</label>
+            <label class="label" for="firstName">First name *</label>
             <div class="control">
               <input
               class="input {{
@@ -50,6 +50,7 @@
                 type="text"
                 placeholder="John"
                 [(ngModel)]="person.firstName"
+                id="firstName"
                 name="firstName"
                 #firstName="ngModel"
                 />
@@ -67,7 +68,7 @@
               }
             </div>
             <div class="field">
-              <label class="label">Last name *</label>
+              <label class="label" for="lastName">Last name *</label>
               <div class="control">
                 <input
               class="input {{
@@ -79,6 +80,7 @@
                   type="text"
                   placeholder="Doe"
                   [(ngModel)]="person.lastName"
+                  id="lastName"
                   name="lastName"
                   #lastName="ngModel"
                   />
@@ -96,7 +98,7 @@
                 }
               </div>
               <div class="field">
-                <label class="label">Email</label>
+                <label class="label" for="email">Email</label>
                 <div class="control">
                   <input
               class="input {{
@@ -108,6 +110,7 @@
                     email
                     placeholder="jdoe@gmail.com"
                     [(ngModel)]="person.email"
+                    id="email"
                     name="email"
                     #email="ngModel"
                     />
@@ -125,7 +128,7 @@
                   }
                 </div>
                 <div class="field">
-                  <label class="label">Phone</label>
+                  <label class="label" for="phone">Phone</label>
                   <div class="control">
                     <input
               class="input {{
@@ -134,6 +137,7 @@
                   : ''
               }}"
                       [(ngModel)]="person.phone"
+                      id="phone"
                       name="phone"
                       #phone="ngModel"
                       type="tel"
@@ -155,13 +159,14 @@
                 </div>
                 <div class="column">
                   <div class="field">
-                    <label class="label">Bio</label>
+                    <label class="label" for="bio">Bio</label>
                     <div class="control">
                       <textarea
               class="textarea {{
                 bio.invalid && (bio.dirty || bio.touched) ? 'is-danger' : ''
               }}"
                         [(ngModel)]="person.bio"
+                        id="bio"
                         name="bio"
                         #bio="ngModel"
                       ></textarea>
@@ -172,10 +177,12 @@
               <div class="columns">
                 <div class="column is-6">
                   <h3 class="title is-size-3">Organizations</h3>
+                  <label class="is-sr-only" for="organization-to-add">Organization to add</label>
                   <div class="field has-addons">
                     <div class="control is-expanded">
                       <div class="select is-large is-fullwidth">
                         <select
+                          id="organization-to-add"
                           [(ngModel)]="selectedOrganization"
                           [ngModelOptions]="{ standalone: true }"
                           >
@@ -199,6 +206,12 @@
                       </p>
                     </div>
                     <table class="table is-fullwidth">
+                      <thead>
+                        <tr>
+                          <th class="is-sr-only">Organization</th>
+                          <th class="is-sr-only">Actions</th>
+                        </tr>
+                      </thead>
                       <tbody>
                         @for (org of person.organizations; track org.id) {
                           <tr>
