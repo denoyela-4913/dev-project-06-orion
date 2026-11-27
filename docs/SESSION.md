@@ -5,6 +5,14 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 
 **Dernière mise à jour: 27/11/2026**
 
+## Lot en cours: staging avant la release (branche `ci/staging-promotion`)
+
+Demandé le 27/11: trois images dans un job (`standalone` réutilise les étapes), démarrage de `standalone` testé, mêmes
+empreintes en staging et en production, staging identique à la production, release seulement après le staging,
+production par changement de statut de la release. Réalisé et vérifié en local, **non commité** (accord à demander).
+À savoir avant la fusion: `candidate`, `release` et `promote.yml` ne s'exécutent que sur `main`; la fusion de commits
+`build`, `feat`, `fix` ou `perf` publie une pré-version. Fonctionnement: `docs/DEPLOIEMENT.md`, §6.
+
 ## Priorité et mandat
 
 - **Priorité de l'utilisateur (26/11)**: sécurité et accélération de la CI.
@@ -24,7 +32,7 @@ format de téléphone; ordre ou parallélisme du job `lint`; sort de `.gitlab-ci
   publiée `v0.2.2`, les trois Quality Gates Sonar OK (non bloquants). Bilan, preuves et réserves:
   [`docs/AUDIT-2026-11-27.md`](AUDIT-2026-11-27.md).
 - **Une fusion sur `main` contenant `feat`, `fix`, `perf`, `build` ou un changement cassant publie une version et
-  des images publiques.**
+  des images publiques.** (Avec le lot en cours: des images candidates, puis une pré-version après le staging.)
 - Historique détaillé (mesures, incidents, branches supprimées): [`docs/HISTORIQUE-SESSIONS.md`](HISTORIQUE-SESSIONS.md),
   à ne consulter qu'au besoin.
 

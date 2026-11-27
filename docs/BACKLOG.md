@@ -57,7 +57,16 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
   les versions de kind, Helm et Terraform
 - [ ] données (en attente de décision: base de données de production): HSQLDB interne au back limite à une instance
   et à une coupure par mise à jour; PostgreSQL (et un outil de migration à la place de `ddl-auto=update`) à décider
-- [ ] ci: mettre en cache les couches Docker (le job `images` reconstruit tout à chaque run, tests du back compris)
+- [ ] ci: mettre en cache les couches Docker d'un run à l'autre (le job `images` reconstruit tout à chaque run). Autre
+  piste à essayer: prêter le cache Gradle du runner à `docker build` en lecture seule (`GRADLE_RO_DEP_CACHE`)
+- [ ] ci (priorité accélération, en attente de décision: ordre du schéma): ne plus faire attendre `images` après les
+  jobs Sonar (les ajouter aux `needs` de `candidate`); gain estimé d'environ 70 s sur les PR et `main`
+- [ ] cd: la livraison manuelle avec `publish` reconstruit et publie avant tout staging, sans pré-version ni
+  empreintes: à aligner sur la règle « staging d'abord », ou à limiter au redéploiement d'une version existante
+- [ ] cd: nettoyer les étiquettes `candidate-*` sur GHCR; empêcher de promouvoir une pré-version plus ancienne que la
+  version en production
+- [ ] docs: mettre à jour le schéma du pipeline (`.drawio` et `.png`) et les livrables (candidate, staging,
+  pré-version, production), puis régénérer les PDF et CSV de `learning/` si le hook ne l'a pas fait
 - [ ] back: `spring.jpa.open-in-view` est actif par défaut (avertissement au démarrage); à désactiver après
   vérification des accès paresseux de Spring Data REST
 - [ ] front: passer les composants en `ChangeDetectionStrategy.OnPush` (règle ESLint
@@ -154,6 +163,14 @@ la cible au moment de la migration si une version plus récente est sortie.
   - Une correction devra avoir des tests qui échouent d'abord (requête sans identification refusée).
 
 ## Fait
+
+- [x] ci/cd: staging avant la release et même binaires en production (branche `ci/staging-promotion`, 27/11)
+  - Un seul job `images`; `standalone` réutilise les étapes compilées et son démarrage est testé; `bootJar` dans le
+    Dockerfile.
+  - Jobs `candidate`, `staging`, `release` (pré-version) et workflow `promote.yml`; images désignées par empreinte.
+  - Staging identique à la production (Helm, Terraform, Compose), contrôlé par `scripts/check_parity.sh`.
+  - Essayé en local sur un cluster jetable: dev, staging (secours compris) et production avec les mêmes empreintes.
+    **Pas encore essayé**: les jobs `candidate` et `release` sur GitHub, et le déclenchement de `promote.yml`.
 
 - [x] docs: audit et état des lieux de la nuit (à écrire vers 04h00 le 27/11, tenu à jour jusqu'à la fin)
   - `docs/AUDIT-2026-11-27.md`: preuves par case du schéma, PR, effets visibles, défauts et erreurs, décisions prises

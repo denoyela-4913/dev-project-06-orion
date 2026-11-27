@@ -8,8 +8,8 @@
 | Unitaires et intégration back | JUnit, `@DataJpaTest`, MockMvc | entités, dépôts, validation, CORS, sondes de santé | `back/src/test/java` | `test-back` |
 | Fonctionnels back | `@SpringBootTest` sur un port réel, client HTTP | scénarios de l'API avec les appels du front : cycle de vie, liens, suppression, refus | `ApiScenarioTests` | `test-back` |
 | Bout en bout | Playwright, Chromium | l'application assemblée (front, proxy, back) pilotée dans un navigateur | `e2e/tests` | `e2e` |
-| Déploiement | `scripts/smoke_test.sh` | santé, routes, API, écriture, refus d'une origine étrangère | – | `compose-test`, `deploy-demo` |
-| Secours | `scripts/test_recovery.sh` | restauration, annulation, retour arrière | – | `deploy-demo` |
+| Déploiement | `scripts/smoke_test.sh` | santé, routes, API, écriture, refus d'une origine étrangère | – | `compose-test` (dont `standalone`), `staging`, production |
+| Secours | `scripts/test_recovery.sh` | restauration, annulation, retour arrière | – | `staging` |
 | Scripts | `unittest` | couverture (`coverage_gate.py`), version et notes (`release.py`) | `scripts/test_*.py` | `coverage` |
 | Terraform | `terraform test` (fournisseur simulé) | garde-fous du module `platform` | `modules/platform/tests` | `infra-check` |
 
