@@ -17,7 +17,6 @@
 
 Objectif: toutes les cases du schéma « faites », ou une entrée « en attente de décision ». Une PR par lot.
 
-- [ ] ci: release sur `main` (version SemVer et tag, images publiées sur GHCR, notes de release)
 - [ ] cd: déploiement de démonstration, test de santé HTTP, notification du résultat
 - [ ] cd: retour arrière automatique (`helm rollback`) et sauvegarde des données
 - [ ] cd: livraison manuelle de secours
@@ -31,6 +30,8 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 
 ### Autres tâches
 
+- [ ] cd (en attente de décision: visibilité des paquets): les paquets GHCR créés par la CI peuvent être privés par
+  défaut; les rendre publics (réglage GitHub) si les images doivent être lues sans authentification
 - [ ] cd (en attente de décision: hébergement): créer un environnement permanent (cluster, domaine, certificat,
   stockage). Terraform devrait alors aussi créer le cluster, avec un état distant, chiffré et verrouillé à la place
   de l'état local
@@ -152,6 +153,10 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] ci: release sur `main` (version SemVer et tag, images publiées sur GHCR, notes de release)
+  - Job `release`: version SemVer calculée par `scripts/release.py` (13 tests), images testées et scannées
+    publiées sur GHCR (`scripts/publish_images.sh`, refuse d'écraser une version; un premier essai local a montré
+    que le contrôle laissait passer la republication, corrigé), release GitHub avec tag, notes et paquet du chart.
 - [x] cd: Terraform, découpé en modules et en environnements
   - `deploy/terraform/`: modules `platform` (espace de noms « restricted », quota, valeurs par défaut; testé avec un
     fournisseur simulé) et `microcrm` (release Helm), un dossier et un état par environnement, fournisseurs
