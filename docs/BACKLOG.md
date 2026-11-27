@@ -17,7 +17,6 @@
 
 Objectif: toutes les cases du schéma « faites », ou une entrée « en attente de décision ». Une PR par lot.
 
-- [ ] cd: Terraform, découpé en modules et en environnements
 - [ ] ci: release sur `main` (version SemVer et tag, images publiées sur GHCR, notes de release)
 - [ ] cd: déploiement de démonstration, test de santé HTTP, notification du résultat
 - [ ] cd: retour arrière automatique (`helm rollback`) et sauvegarde des données
@@ -32,6 +31,9 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 
 ### Autres tâches
 
+- [ ] cd (en attente de décision: hébergement): créer un environnement permanent (cluster, domaine, certificat,
+  stockage). Terraform devrait alors aussi créer le cluster, avec un état distant, chiffré et verrouillé à la place
+  de l'état local
 - [ ] cd: sauvegardes planifiées et stockées hors de la machine qui les lance (aujourd'hui: à la demande et avant
   chaque mise à jour, en local); procédure de rétention. Lié au choix de l'hébergement
 - [ ] ci: suivre les mises à jour des images de Trivy et de Playwright (références par digest dans
@@ -150,6 +152,11 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] cd: Terraform, découpé en modules et en environnements
+  - `deploy/terraform/`: modules `platform` (espace de noms « restricted », quota, valeurs par défaut; testé avec un
+    fournisseur simulé) et `microcrm` (release Helm), un dossier et un état par environnement, fournisseurs
+    verrouillés. CI (`infra-check`): format, validation des trois environnements, tests. `apply` vérifié sur minikube.
+    Aucune ressource payante n'est créée: Terraform suppose un cluster existant.
 - [x] cd: charts Helm avec des valeurs par environnement (dev, staging, production)
   - Chart `deploy/helm/microcrm` avec `values-dev`, `values-staging` et `values-production`; pods sans root,
     lecture seule, compatibles « restricted »; back limité à une instance (le chart refuse davantage). Vérifié en
