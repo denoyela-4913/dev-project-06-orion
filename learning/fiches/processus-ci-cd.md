@@ -83,7 +83,8 @@ Terraform et Helm. Sur staging, il éprouve la sauvegarde, la restauration et le
 empreinte : ce qui a été validé est exactement ce qui est mis en production.
 
 > **Limite à connaître.** Un cluster jetable prouve que le déploiement **fonctionne** ; il n'y a pas encore
-> d'environnement permanent que l'on puisse visiter.
+> d'environnement permanent que l'on puisse visiter. La promotion ne sait donc qu'**installer** : mettre à niveau
+> une production existante, avec sauvegarde et retour arrière, passe par `scripts/deploy.sh`.
 
 ## Les secours
 

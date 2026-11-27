@@ -139,6 +139,21 @@ Installation puis mise à jour avec sauvegarde ; restauration (les données revi
 dont l'image n'existe pas (annulée par Helm, service et données intacts) ; version qui démarre mais échoue au test
 (retour arrière automatique puis vérification). Ces essais utilisaient Helm 3.22 ; la CI utilise Helm 4.
 
+### Retour arrière de la production entre deux versions publiées (27/11/2026)
+
+Essai sur un cluster kind jetable d'un runner GitHub (Helm 4.3.2, run `46061833182`, workflow temporaire non
+fusionné), avec les valeurs de production :
+
+| Scénario | Résultat |
+|---|---|
+| installation de `0.2.2`, puis mise à niveau vers les empreintes de `0.2.4` par `deploy.sh` | sauvegarde faite, données conservées |
+| `rollback.sh` vers la version précédente | images `0.2.2` rétablies, test de déploiement réussi, données écrites avant et après la montée présentes |
+| `test_recovery.sh production` : restauration, version qui ne démarre pas, version qui échoue au test | réussis, `0.2.4` en place à la fin |
+| `deploy_demo.sh` (la méthode de `promote.yml`) sur cette production installée | **échec** : `namespaces "microcrm-production" already exists` |
+
+Aucune des deux versions ne modifie le schéma de la base : un retour arrière après un changement de schéma n'a pas
+été essayé. Le retour arrière du **staging** est éprouvé à chaque run avec staging (`test_recovery.sh`).
+
 ## 5. Terraform
 
 Terraform prépare l'environnement (espace de noms au niveau `restricted`, quota) puis y installe le chart. Code
@@ -182,6 +197,16 @@ gh release edit vX.Y.Z --prerelease=false --latest
 - Si le déploiement en production échoue, la release **garde son statut** : l'échec est signalé par la
   notification. Relancer le workflow une fois la cause corrigée.
 - Une release sans `images-digests.env` (antérieure à ce fonctionnement, ou créée à la main) n'est pas déployée.
+
+**Première promotion : `v0.2.4`, le 27/11/2026** (run `46061528997`, réussi). La production a exécuté les deux
+empreintes de `images-digests.env`, le test de déploiement a réussi.
+
+> **`promote.yml` ne sait qu'installer, pas mettre à niveau.** Il passe par `deploy_demo.sh` : Terraform avec un
+> état temporaire, sur un cluster neuf, détruit après vérification. Sur une production déjà installée, il échoue
+> (essai ci-dessus). Il ne fait **ni sauvegarde, ni retour arrière après un test de santé en échec** : seule reste
+> l'annulation par Helm quand les pods ne deviennent pas prêts (`atomic`), sans version précédente à retrouver sur un
+> cluster neuf. Pour mettre à niveau une production existante, utiliser `deploy.sh` avec les empreintes. La
+> correction de la promotion est à décider avec l'hébergement (backlog).
 
 `scripts/candidate_images.sh` envoie les candidates puis ajoute l'étiquette de version ; il vérifie que l'empreinte
 n'a pas changé et refuse de réattribuer une version à d'autres images. Pas d'étiquette `latest` sur les images.

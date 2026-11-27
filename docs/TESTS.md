@@ -9,7 +9,7 @@
 | Fonctionnels back | `@SpringBootTest` sur un port réel, client HTTP | scénarios de l'API avec les appels du front : cycle de vie, liens, suppression, refus | `ApiScenarioTests` | `test-back` |
 | Bout en bout | Playwright, Chromium | l'application assemblée (front, proxy, back) pilotée dans un navigateur | `e2e/tests` | `e2e` |
 | Déploiement | `scripts/smoke_test.sh` | santé, routes, API, écriture, refus d'une origine étrangère | – | `compose-test`, `staging`, production |
-| Secours | `scripts/test_recovery.sh` | restauration, annulation, retour arrière | – | `staging` |
+| Secours | `scripts/test_recovery.sh` | restauration, annulation, retour arrière | – | `staging` (production : essai ponctuel du 27/11, cf. `DEPLOIEMENT.md`) |
 | Scripts | `unittest` | couverture (`coverage_gate.py`), version et notes (`release.py`), lancement des conteneurs et construction des images | `scripts/test_*.py` | `coverage` |
 | Terraform | `terraform test` (fournisseur simulé) | garde-fous du module `platform` | `modules/platform/tests` | `infra-check` |
 

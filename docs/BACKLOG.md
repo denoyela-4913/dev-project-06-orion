@@ -2,6 +2,12 @@
 
 ## À faire
 
+- [ ] cd (à décider, avec l'hébergement): `promote.yml` ne sait qu'installer. Sur une production existante il échoue
+  (« namespaces "microcrm-production" already exists », essai du 27/11) et il ne fait ni sauvegarde ni retour arrière
+  après un test en échec. Options: (A) état Terraform distant et verrouillé, plus sauvegarde, test et
+  `rollback.sh` autour de l'`apply` (après un retour arrière, l'état Terraform diffère du cluster); (B) mise à niveau
+  par `deploy.sh` (sauvegarde et retour arrière déjà éprouvés), Terraform réservé à la plateforme (le module
+  `microcrm` ne gérerait plus la release). Le schéma (case 9, « retour arrière + sauvegarde ») est à corriger
 ### Actions demandées par l'utilisateur le 27/11
 
 - [ ] docs: justifier le maintien de Caddy (décision du 27/11, remplacement par nginx abandonné)
@@ -172,6 +178,9 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] cd: promotion, retour arrière de production et de staging essayés (27/11). `v0.2.4` promue (run
+  46061528997); retour arrière entre `0.2.4` et `0.2.2` et secours en production (run 46061833182); staging éprouvé
+  par la CI. Détail: `docs/DEPLOIEMENT.md`, §4 et §6
 - [x] ci: jobs `build-front` et `build-back` supprimés; Checkstyle et SpotBugs dans `test-back` (`check --continue`),
   résultats importés dans Sonar (branche `ci/qualite-dans-les-tests`, 27/11). Reste: schéma et livrables
 - [x] docker/ci: suppression de la cible `standalone`; images construites à partir des artefacts des jobs de tests
@@ -190,7 +199,7 @@ la cible au moment de la migration si une version plus récente est sortie.
   - Jobs `candidate`, `staging`, `release` (pré-version) et workflow `promote.yml`; images désignées par empreinte.
   - Staging identique à la production (Helm, Terraform, Compose), contrôlé par `scripts/check_parity.sh`.
   - Essayé en local sur un cluster jetable: dev, staging (secours compris) et production avec les mêmes empreintes.
-    **Pas encore essayé**: les jobs `candidate` et `release` sur GitHub, et le déclenchement de `promote.yml`.
+    Depuis: `candidate`, `release` (`v0.2.3`, `v0.2.4`) et `promote.yml` (`v0.2.4`) ont réussi sur GitHub (27/11).
 
 - [x] docs: audit et état des lieux de la nuit (à écrire vers 04h00 le 27/11, tenu à jour jusqu'à la fin)
   - `docs/AUDIT-2026-11-27.md`: preuves par case du schéma, PR, effets visibles, défauts et erreurs, décisions prises
