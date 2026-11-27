@@ -105,7 +105,7 @@ si ce test échoue. Il ne dépend pas de la CI : c'est la **livraison manuelle d
 |---|---|
 | `scripts/verify_deployment.sh <espace>` | test de déploiement d'une release installée |
 | `scripts/rollback.sh <espace> [release] [révision]` | retour arrière puis vérification |
-| `scripts/backup.sh <espace> [release]` | sauvegarde à froid du volume dans `backups/` (coupure d'une à deux minutes) |
+| `scripts/backup.sh <espace> [release]` | sauvegarde à froid du volume dans `backups/` (coupure d'environ une minute) |
 | `CONFIRM=oui scripts/restore.sh <archive> <espace>` | **remplace** les données par l'archive |
 
 Un retour arrière ne touche pas aux données : si une version a modifié le schéma, restaurer la sauvegarde. Les
