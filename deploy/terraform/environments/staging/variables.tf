@@ -15,6 +15,15 @@ variable "image_tag" {
   type        = string
 }
 
+variable "image_digests" {
+  description = "Empreintes sha256 des images (images-digests.env d'une release). Vides : désignées par image_tag."
+  type = object({
+    back  = string
+    front = string
+  })
+  default = { back = "", front = "" }
+}
+
 variable "image_repository_prefix" {
   description = "Préfixe du registre avec le « / » final. Vide : images déjà présentes dans le cluster."
   type        = string

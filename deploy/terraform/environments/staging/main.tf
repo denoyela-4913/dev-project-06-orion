@@ -6,12 +6,13 @@ module "platform" {
   namespace   = "microcrm-staging"
   environment = "staging"
 
+  # Identique à la production (scripts/check_parity.sh).
   quota = {
-    pods            = 10
-    requests_cpu    = "1"
-    requests_memory = "2Gi"
-    limits_memory   = "3Gi"
-    storage         = "5Gi"
+    pods            = 20
+    requests_cpu    = "2"
+    requests_memory = "3Gi"
+    limits_memory   = "6Gi"
+    storage         = "20Gi"
   }
 }
 
@@ -22,6 +23,7 @@ module "microcrm" {
   environment             = "staging"
   image_tag               = var.image_tag
   image_repository_prefix = var.image_repository_prefix
+  image_digests           = var.image_digests
   image_pull_secrets      = var.image_pull_secrets
   public_url              = var.public_url
   ingress_host            = var.ingress_host

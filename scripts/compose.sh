@@ -15,12 +15,15 @@ shift
 dir="$(cd "$(dirname "$0")/../deploy/compose" && pwd)"
 case $env_name in
   dev) files=(compose.yaml compose.dev.yaml) ;;
-  staging) files=(compose.yaml compose.hardened.yaml compose.staging.yaml) ;;
-  production) files=(compose.yaml compose.hardened.yaml compose.production.yaml) ;;
+  # Mêmes fichiers pour les deux : seul le fichier env diffère.
+  staging | production) files=(compose.yaml compose.hardened.yaml) ;;
   *) usage ;;
 esac
 
 args=()
 for file in "${files[@]}"; do args+=(-f "$dir/$file"); done
 # Un nom de projet par environnement : volumes et réseaux séparés.
-exec docker compose -p "microcrm-$env_name" --env-file "$dir/env/$env_name.env" "${args[@]}" "$@"
+# COMPOSE_ENV_FILE et COMPOSE_PROJECT: réservés à scripts/check_parity.sh, qui compare deux environnements à
+# valeurs égales.
+exec docker compose -p "${COMPOSE_PROJECT:-microcrm-$env_name}" \
+  --env-file "${COMPOSE_ENV_FILE:-$dir/env/$env_name.env}" "${args[@]}" "$@"

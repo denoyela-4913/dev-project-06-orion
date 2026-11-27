@@ -30,7 +30,7 @@ spec:
         {{- include "microcrm.podSecurityContext" . | nindent 8 }}
       containers:
         - name: front
-          image: {{ include "microcrm.image" (dict "root" . "name" .Values.images.front) | quote }}
+          image: {{ include "microcrm.image" (dict "root" . "name" .Values.images.front "digest" .Values.images.digests.front) | quote }}
           imagePullPolicy: {{ .Values.images.pullPolicy }}
           securityContext:
             allowPrivilegeEscalation: false

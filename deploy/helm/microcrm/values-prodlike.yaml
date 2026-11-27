@@ -1,0 +1,18 @@
+# Staging ET production : tout ce qui définit le comportement et la taille de l'application. Le staging doit être
+# identique à la production : un réglage de ces deux environnements s'écrit ici, jamais dans values-staging.yaml
+# ou values-production.yaml, qui ne portent que les valeurs propres à une installation. scripts/check_parity.sh
+# le vérifie.
+back:
+  persistence:
+    enabled: true
+    size: 5Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+front:
+  replicas: 3
+ingress:
+  enabled: true

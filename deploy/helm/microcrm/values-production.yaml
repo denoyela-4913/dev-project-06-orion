@@ -1,19 +1,6 @@
-# Production : données conservées, trois instances du front, plus de mémoire pour le back. `publicUrl` et
-# `ingress.host` sont à fixer au domaine réel (aucun hébergement n'est encore choisi, cf. docs/BACKLOG.md).
+# Production : valeurs propres à cette installation seulement ; le reste vient de values-prodlike.yaml.
+# À fixer au domaine réel (aucun hébergement n'est encore choisi, cf. docs/BACKLOG.md).
 publicUrl: https://microcrm.example.com
-back:
-  persistence:
-    enabled: true
-    size: 5Gi
-  resources:
-    requests:
-      cpu: 250m
-      memory: 512Mi
-    limits:
-      memory: 1Gi
-front:
-  replicas: 3
 ingress:
-  enabled: true
   host: microcrm.example.com
   tlsSecretName: microcrm-tls

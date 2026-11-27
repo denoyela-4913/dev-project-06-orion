@@ -1,5 +1,5 @@
-# Valeurs communes. Chaque environnement les complète : values-dev.yaml, values-staging.yaml,
-# values-production.yaml.
+# Valeurs communes. dev les complète avec values-dev.yaml ; staging et production avec values-prodlike.yaml
+# (identique pour les deux), puis values-<environnement>.yaml.
 
 images:
   # Préfixe du registre, avec le « / » final (ex. ghcr.io/<propriétaire>/<dépôt>/). Vide : images locales.
@@ -9,6 +9,12 @@ images:
   front: microcrm-front
   # Version des images. Vide : appVersion du chart.
   tag: ""
+  # Empreintes `sha256:…` des images. Renseignée, l'empreinte désigne l'image à la place de la version : les pods
+  # exécutent alors exactement ces binaires, quel que soit le sort de l'étiquette. Utilisé pour déployer en
+  # staging puis en production les mêmes images.
+  digests:
+    back: ""
+    front: ""
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []

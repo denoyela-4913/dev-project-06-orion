@@ -15,7 +15,9 @@ deploy/terraform/
 ```
 
 Chaque environnement a son dossier, donc **son propre état** : une erreur en dev ne peut pas modifier la
-production. Les environnements diffèrent par leur quota (`main.tf`) et par `values-<environnement>.yaml` du chart.
+production. `dev` a son propre quota et ses réglages. **`staging` est identique à `production`** (même quota, même
+`values-prodlike.yaml` du chart) : seules diffèrent les valeurs propres à une installation (origine publique,
+domaine, Secret TLS). `scripts/check_parity.sh` le vérifie en CI.
 
 ## Utilisation
 

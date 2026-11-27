@@ -22,6 +22,7 @@ module "microcrm" {
   environment             = "production"
   image_tag               = var.image_tag
   image_repository_prefix = var.image_repository_prefix
+  image_digests           = var.image_digests
   image_pull_secrets      = var.image_pull_secrets
   public_url              = var.public_url
   ingress_host            = var.ingress_host
