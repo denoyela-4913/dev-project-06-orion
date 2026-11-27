@@ -1,7 +1,7 @@
 ---
 title: "Normalisation du processus de développement et plan de mise en œuvre de la chaîne CI"
 subtitle: "Projet Orion – Option B – version 01"
-date: "26/11/2026"
+date: "27/11/2026"
 ---
 
 # 1. Introduction
@@ -77,7 +77,8 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
 
 ## 2.5 Intégration continue
 
-- Déclenchement : à chaque push de branche et à chaque pull request.
+- Déclenchement : à chaque push de branche et à chaque pull request, sauf si seuls des fichiers de
+  documentation changent (`**.md`, `docs/`, `learning/`), qu'aucun job ne lit.
 - Fréquence d'intégration : au moins une PR par jour de travail sur une fonctionnalité ; branches de moins de
   quelques jours.
 - Critère de réussite : tous les jobs obligatoires verts (lint, tests, build, scans).
@@ -85,7 +86,8 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
   GitHub, GitHub Actions, GHCR (voir 3.5, risque R2 pour le lien GitLab attendu par le sujet).
 - Ordre des jobs : lint, puis tests avec couverture, puis, en parallèle, les trois analyses SonarQube (une par
   projet : front, back et infra, voir 2.6) et le contrôle des seuils de couverture (job `coverage`), puis build,
-  bout en bout et scan, release et déploiement. SonarQube vient après les tests car il importe leur couverture (les
+  vérification des images (bout en bout, Compose, démarrage de l'image tout en un, scan) ; puis, selon le
+  contexte, images candidates, staging, pré-version, et enfin production (voir 2.9). SonarQube vient après les tests car il importe leur couverture (les
   rapports des tests sont réutilisés, sans relancer les tests) ; le build attend les analyses pour ne pas
   construire une version dont l'analyse a échoué. L'analyse de l'infra n'attend rien et part dès le début.
 - Lint : le job `lint` ne contient qu'**ESLint** et **hadolint**. **Checkstyle** et **SpotBugs** sont lancés par
@@ -96,7 +98,9 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
   parallèles : **131 s** sur `main` (run 45880516355), le plus long scan (back) durant 62 s. Pipeline complet,
   avec images, scan, release et déploiement de démonstration (27/11/2026) : **631 s** sur `main`
   (run 45926860668, dont 272 s de déploiement), 597 s sur une PR et **264 s** sur une branche, où le déploiement
-  n'est pas lancé.
+  n'est pas lancé. Premier run avec images candidates, staging par empreinte et pré-version : **660 s** sur `main`
+  (run 46038466728, `v0.2.3`, dont 262 s pour le job `staging`), 617 s sur la PR (run 46037022861) et 285 s sur la
+  branche (run 46036298145). Une seule mesure de chaque.
 
 ## 2.6 Tests
 
@@ -107,7 +111,7 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
 | Intégration back | Spring Boot Test | chaque push | endpoints principaux |
 | Fonctionnels back | Spring Boot sur un port réel, client HTTP | chaque push | scénarios de l'API tels que le front les appelle |
 | Bout en bout | Playwright (Chromium), contre l'application construite | chaque push | principaux parcours utilisateur |
-| Scripts d'automatisation | `unittest` (Python) ; syntaxe Bash vérifiée ; scripts de déploiement et de secours exécutés par le déploiement de démonstration | chaque push (secours : PR et `main`) | scripts Python testés, scripts de déploiement éprouvés |
+| Scripts d'automatisation | `unittest` (Python) ; syntaxe Bash vérifiée ; scripts de déploiement et de secours exécutés par le job `staging` | chaque push (secours : PR et `main`) | scripts Python testés, scripts de déploiement éprouvés |
 | Sécurité | SonarQube, Trivy | PR, `main`, hebdomadaire | 0 vulnérabilité critique/haute |
 | Déploiement | script de test de déploiement (santé HTTP) | après déploiement | application répond |
 
@@ -155,13 +159,31 @@ ajouter.
 - `docs/quality/` : clichés SonarQube par jalon (`v0.0.1`, `v0.0.2`, …).
 - Documentation CI/CD complète : template fourni, complété au fil des étapes.
 
+## 2.9 Livraison et mise en production
+
+- **Construire une fois, promouvoir ensuite.** Les images validées en staging sont celles qui passent en
+  production : elles sont désignées par leur **empreinte** (`sha256`), qui change dès que le contenu change. Aucune
+  reconstruction n'a lieu entre les deux.
+- **Staging identique à la production.** Mêmes fichiers Compose, même base de valeurs Helm, mêmes quotas
+  Terraform. Seules diffèrent les valeurs propres à une installation (adresse publique, certificat). La CI le
+  vérifie (`scripts/check_parity.sh`, job `infra-check`).
+- **Pas de version sans staging validé.** Sur `main`, quand les commits le justifient, la CI envoie des images
+  candidates sur GHCR, les déploie en staging par leur empreinte, puis, seulement en cas de succès, pose la version
+  sur ces mêmes empreintes et crée une **pré-version** GitHub (tag, notes, chart Helm, empreintes).
+- **Mise en production par décision humaine.** Passer la pré-version au statut de release déclenche le workflow
+  `promote.yml`, qui déploie en production les empreintes jointes à la release.
+- **Limites actuelles.** La production est un cluster jetable créé par la CI ; la livraison manuelle de secours
+  avec publication reconstruit les images et ne passe pas par cette validation ; un déploiement de production en
+  échec ne remet pas la release au statut de pré-version ; rien n'empêche de promouvoir une pré-version ancienne.
+
 # 3. Plan de mise en œuvre
 
 ## 3.1 Objectifs
 
-Obtenir une chaîne CI/CD qui, à chaque PR : vérifie (lint, tests, SonarQube, Trivy), construit les images,
-les publie et les déploie sur l'environnement de démonstration, avec notification du résultat et possibilité de
-déclencher manuellement une livraison en cas de panne de l'automatisation.
+Obtenir une chaîne CI/CD qui, à chaque PR, vérifie (lint, tests, SonarQube, Trivy), construit les images et les
+déploie en staging ; puis, après fusion, publie une version validée en staging, que l'on passe en production sans
+la reconstruire. Le résultat est notifié, et une livraison peut être déclenchée manuellement en cas de panne de
+l'automatisation.
 
 ## 3.2 Étapes
 
@@ -195,22 +217,24 @@ déclencher manuellement une livraison en cas de panne de l'automatisation.
 
 ### 3.2.4 Étape 4 : Livraison automatisée de l'image
 
-- **Description** : publication des images dans un registre, versionnement SemVer automatique, livraison
-  manuelle de secours.
+- **Description** : publication des images dans un registre, versionnement SemVer automatique, pré-version après
+  validation en staging, livraison manuelle de secours.
 - **Responsables** : Dev et Ops.
-- **Livrables** : images dans le registre ; tag de version ; notes de release.
-- **État** : **fait** (premières versions `v0.1.0` à `v0.2.2` le 27/11/2026 : images sur GHCR, tag, notes, chart
-  Helm). La livraison manuelle de secours a été lancée une fois sans publication.
+- **Livrables** : images dans le registre ; tag de version ; notes de release ; empreintes des images.
+- **État** : **fait** (versions `v0.1.0` à `v0.2.2` le 27/11/2026 : images sur GHCR, tag, notes, chart Helm ; puis
+  `v0.2.3`, première **pré-version** publiée après validation en staging, avec les empreintes). La livraison manuelle de secours a été lancée une fois sans publication.
 
 ### 3.2.5 Étape 5 : Déploiement automatisé
 
-- **Description** : déploiement sur l'environnement de démonstration (Docker, puis Kubernetes + Helm, puis
+- **Description** : déploiement en staging puis en production (Docker, puis Kubernetes + Helm, puis
   Terraform + Ansible, cf. partie 2) ; test de déploiement ; procédure de rollback ; sauvegarde.
 - **Responsables** : Ops.
 - **Livrables** : charts Helm, fichiers Terraform, playbooks Ansible, pipeline CD.
 - **État** : **fait en démonstration** : Docker Compose, chart Helm (dev, staging, production), Terraform
   (modules et environnements), pipeline CD, test de santé, retour arrière, sauvegarde et restauration, sur un
-  cluster **jetable** créé par la CI. **Il n'y a pas encore d'environnement permanent** (hébergement à décider).
+  cluster **jetable** créé par la CI. Le staging, identique à la production hors valeurs d'installation, a validé
+  `v0.2.3` par ses empreintes. Le passage en production (`promote.yml`) est écrit et essayé en local, mais **pas
+  encore exécuté sur GitHub**. **Il n'y a pas encore d'environnement permanent** (hébergement à décider).
   Ansible n'est pas utilisé : aucune machine n'est à configurer.
 
 ## 3.3 Ressources nécessaires
@@ -262,11 +286,13 @@ processus automatisé, répétable et mesurable.
   distant, sauvegardes planifiées).
 - Protéger l'API (authentification ou restriction réseau) avant toute exposition, et protéger la branche `main`.
 - Décider le passage des Quality Gates en mode bloquant.
+- Aligner la livraison manuelle de secours sur la règle « staging d'abord ».
+- Séparer la base de données du back, pour pouvoir lancer plusieurs réplicas.
 - Raccourcir le pipeline ; ajouter ShellCheck à la CI, les tests de charge, le monitoring et les métriques DORA.
 - Réviser ce document à chaque jalon.
 
 # Annexe : schéma du pipeline cible
 
-Vert : fait ; orange : à faire ; les cases de secours gardent une bordure rouge (retour arrière) ou grise (livraison manuelle). Source modifiable : `schema_pipeline_ci_cd.drawio`.
+Vert : fait ; orange : écrit, pas encore exécuté ; les cases de secours gardent une bordure rouge (retour arrière) ou grise (livraison manuelle). Source modifiable : `schema_pipeline_ci_cd.drawio`.
 
 ![Pipeline CI/CD cible d'Orion](schema_pipeline_ci_cd.png){width=9.4in}
