@@ -55,41 +55,29 @@ jobs:
         working-directory: front
 
   # --- Stage "test" ---------------------------------------------------------
+  # Les deux jobs de tests passent par l'étape de compilation du Dockerfile (scripts/ci_test.sh) : elle est
+  # construite, les tests tournent dans un conteneur de cette étape, et son produit (front compilé, JAR) est transmis
+  # au job `images`, qui ne le régénère pas. Les versions de Node, du JDK et de Gradle sont ainsi écrites une seule
+  # fois, dans le Dockerfile. Contrepartie : pas de cache des dépendances d'un run à l'autre dans ces deux jobs
+  # (cf. docs/BACKLOG.md, cache des couches Docker).
   test-front:
     needs: [lint] # un défaut de lint évite de lancer les tests (ordre du schéma)
-    # GitLab : image cypress/browsers (apporte Chrome). Ici les tests tournent avec Vitest dans Node, avec un
-    # DOM simulé (jsdom) : aucun navigateur n'est nécessaire (cf. docs/KARMA.md).
+    # Les tests tournent avec Vitest dans Node, avec un DOM simulé (jsdom) : aucun navigateur n'est nécessaire (cf.
+    # docs/KARMA.md ; GitLab utilisait l'image cypress/browsers pour Chrome).
     # `ubuntu-26.04` au lieu de `ubuntu-latest` : le label « latest » change de version sans
     # modification du dépôt (GitHub l'a fait migrer vers 26.04). Version fixe = builds reproductibles ;
     # 26.04 est celle sur laquelle la CI a été validée, et c'est une version LTS.
     runs-on: ubuntu-26.04
-    # Remplace les "cd front" de GitLab, sans répéter la commande à chaque step.
-    defaults:
-      run:
-        working-directory: front
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - run: scripts/ci_test.sh front
+      # Le front compilé dans la même étape que celle qui vient d'être testée : repris tel quel par `images`.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          # Version fixe (GitLab : "node" = latest). Angular ne supporte que
-          # certaines versions de Node ; "latest" peut casser le build sans
-          # changement de code. 24 est une LTS (fin de support 30/04/2028) supportée par
-          # Angular 22, et la même que l'image du Dockerfile.
-          node-version: 24
-          # Depuis setup-node v5, un cache npm automatique peut s'activer selon le contenu de
-          # package.json. Désactivé explicitement : décision de ne pas mettre de cache avant d'avoir
-          # mesuré son gain (cf. docs/BACKLOG.md et docs/quality/ci-baseline).
-          package-manager-cache: false
-      # `--ignore-scripts` : n'exécute pas les scripts d'installation (preinstall/postinstall) des
-      # ~900 paquets, vecteur classique d'attaque de la chaîne d'approvisionnement (règle Sonar S6505).
-      # Vérifié: installation, build et tests passent sans ces scripts.
-      - run: npm ci --ignore-scripts
-      # GitLab : `npx @angular/cli test`. `npm test` exécute le script "test" de package.json
-      # (`ng test`) avec l'Angular CLI déjà installé par `npm ci` : la version est celle du
-      # package-lock.json et rien n'est téléchargé à la volée (règles Sonar S6505 et S8543).
-      # `--coverage` : produit le rapport lcov que le job `sonar-front` récupère, sans relancer les tests.
-      # `--watch=false` : un seul passage, sans dépendre de la détection de l'environnement de CI.
-      - run: npm test -- --watch=false --coverage
+          name: dist-front
+          path: artifacts/front
+          if-no-files-found: error
+          retention-days: 1
       # Transmet la couverture au job `sonar-front` : chaque job a sa propre machine, rien n'est partagé sinon.
       # Envoyé aussi sur les branches sans Sonar : un envoi cassé se voit dès le run de push.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -104,33 +92,17 @@ jobs:
 
   test-back:
     needs: [lint]
-    # GitLab : image gradle:jdk17. Ici setup-java installe le JDK 21 (le code est compilé en Java 21).
     runs-on: ubuntu-26.04 # cf. justification dans test-front
-    defaults:
-      run:
-        working-directory: back
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+      - run: scripts/ci_test.sh back
+      # Le JAR compilé dans la même étape que celle qui vient d'être testée : repris tel quel par `images`.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          # Temurin : distribution OpenJDK courante, la plus utilisée ;
-          # version 21 = celle de build.gradle (sourceCompatibility = '21'), LTS jusqu'en 12/2029.
-          distribution: temurin
-          java-version: 21
-          # Cache des dépendances Gradle et de la distribution du wrapper: évite de tout retélécharger à chaque
-          # job, et limite l'exposition aux « 429 Too Many Requests » de Maven Central (sans la supprimer: un
-          # cache absent ou périmé impose de télécharger).
-          cache: gradle
-          # Fichiers qui forment la clé du cache. Liste explicite car le choix par défaut ignore
-          # gradle.lockfile (`**/*.gradle*` ne le couvre pas): le cache ne suivrait pas une mise à jour du verrou.
-          cache-dependency-path: |
-            back/build.gradle
-            back/settings.gradle
-            back/gradle.lockfile
-            back/gradle/wrapper/gradle-wrapper.properties
-          # Activé d'office avec `cache`: désactivé pour limiter ce changement aux dépendances Gradle.
-          cache-jdk: false
-      - run: ./gradlew test
+          name: dist-back
+          path: artifacts/back
+          if-no-files-found: error
+          retention-days: 1
       # Pour le job `sonar-back` : classes compilées (sonar.java.binaries et sonar.java.test.binaries) et rapport
       # JaCoCo. La racine de l'artefact est le dossier commun aux deux chemins, back/build.
       # Réglages : cf. justification dans test-front.
@@ -307,16 +279,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
-          distribution: temurin # cf. justification dans test-back
+          # Temurin : distribution OpenJDK courante ; version 21 = celle de build.gradle, LTS jusqu'en 12/2029.
+          distribution: temurin
           java-version: 21
-          # Mêmes réglages et même clé que test-back, qui s'exécute avant (cf. justification dans test-back):
-          # ce job réutilise son cache, y compris dans le run qui vient de le créer.
+          # Cache des dépendances Gradle et de la distribution du wrapper: évite de tout retélécharger à chaque
+          # run, et limite l'exposition aux « 429 Too Many Requests » de Maven Central (sans la supprimer: un
+          # cache absent ou périmé impose de télécharger).
           cache: gradle
+          # Fichiers qui forment la clé du cache. Liste explicite car le choix par défaut ignore
+          # gradle.lockfile (`**/*.gradle*` ne le couvre pas): le cache ne suivrait pas une mise à jour du verrou.
           cache-dependency-path: |
             back/build.gradle
             back/settings.gradle
             back/gradle.lockfile
             back/gradle/wrapper/gradle-wrapper.properties
+          # Activé d'office avec `cache`: désactivé pour limiter ce cache aux dépendances Gradle.
           cache-jdk: false
       # `build` et non `assemble` (décision du 26/11) : `build` lance `check`, auquel Checkstyle et SpotBugs sont
       # rattachés (cf. back/build.gradle, bloquants avec zéro écart). Ils s'exécutent ici, sur le code compilé,
@@ -324,9 +301,11 @@ jobs:
       # `test-back`, tournent une seconde fois.
       - run: ./gradlew build
 
-  # Les images front et back, construites avec les mêmes conditions que les builds applicatifs. Chaque image est
-  # transmise aux jobs suivants par artefact : ce qui est testé, scanné puis publié est la même image, pas une
-  # reconstruction. Commande `docker` du runner, sans action tierce. Pas de cache de couches d'un run à l'autre.
+  # Les images front et back, construites avec les mêmes conditions que les builds applicatifs. Elles ne
+  # recompilent rien : le front compilé et le JAR sont les artefacts des jobs de tests, qui remplacent les étapes
+  # `front-dist` et `back-dist` du Dockerfile (scripts/build_images.sh, qui échoue si une compilation a lieu quand
+  # même). Chaque image est transmise aux jobs suivants par artefact : ce qui est testé, scanné puis publié est la
+  # même image, pas une reconstruction. Commande `docker` du runner, sans action tierce.
   images:
     needs: [test-front, test-back, coverage, sonar-front, sonar-back, sonar-infra]
     if: >-
@@ -339,17 +318,20 @@ jobs:
     runs-on: ubuntu-26.04 # cf. justification dans test-front
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Construire les images
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist-front
+          path: artifacts/front
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist-back
+          path: artifacts/back
+      - name: Construire les images à partir des artefacts
         env:
           # Labels OCI : le registre rattache le paquet au dépôt et au commit d'origine.
-          SOURCE: ${{ github.server_url }}/${{ github.repository }}
-          REVISION: ${{ github.sha }}
-        run: |
-          for target in front back; do
-            docker build --target "$target" -t "microcrm-$target:ci" \
-              --label "org.opencontainers.image.source=$SOURCE" \
-              --label "org.opencontainers.image.revision=$REVISION" .
-          done
+          IMAGE_SOURCE: ${{ github.server_url }}/${{ github.repository }}
+          IMAGE_REVISION: ${{ github.sha }}
+        run: scripts/build_images.sh artifacts
       - name: Exporter les images
         run: |
           for target in front back; do
