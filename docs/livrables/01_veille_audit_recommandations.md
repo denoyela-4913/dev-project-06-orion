@@ -345,11 +345,10 @@ livraison. Le processus Ops est extrêmement limité et entièrement manuel.
 - **Raisonnement** : détecter rapidement les problèmes de syntaxe, de style et certaines failles de sécurité
   avant même les tests (pour ESLint et hadolint) ; les avertissements `FromAsCasing` au build Docker en sont un exemple.
 - **Implémentation** : job `lint` en première étape, limité à ESLint et hadolint (feedback en moins d'une
-  minute) ; plugins Gradle Checkstyle et SpotBugs, rattachés à `check`, donc lancés par `./gradlew build` dans le
-  job `build-back`. Gradle compile avant ces analyses ([plugin
+  minute) ; plugins Gradle Checkstyle et SpotBugs, rattachés à `check`, donc lancés par `./gradlew check` dans le
+  job `test-back`, après la compilation dont ils ont besoin ([plugin
   Checkstyle](https://docs.gradle.org/current/userguide/checkstyle_plugin.html), [SpotBugs avec
-  Gradle](https://spotbugs.readthedocs.io/en/stable/gradle.html)) : les placer avant les tests obligerait à
-  compiler une fois de plus.
+  Gradle](https://spotbugs.readthedocs.io/en/stable/gradle.html)). Leurs rapports sont importés dans SonarQube.
 - **Impacts** : code plus lisible et plus maintenable ; échecs rapides et peu coûteux.
 
 ### 4.2.4 Épingler et mettre à jour les briques (version + digest SHA)
