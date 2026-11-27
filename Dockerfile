@@ -38,8 +38,8 @@ COPY ./back /src
 
 WORKDIR /src
 
-# `bootJar` et non `build` : le JAR seul. Les tests, Checkstyle et SpotBugs sont exécutés par les jobs `test-back`
-# et `build-back` de la CI ; les relancer ici n'ajoutait aucun contrôle.
+# `bootJar` et non `build` : le JAR seul. Les tests, Checkstyle et SpotBugs sont exécutés par le job `test-back` de la
+# CI, à partir de cette étape ; les lancer ici empêcherait de construire une image à la main après un écart.
 RUN ./gradlew bootJar
 
 # Le JAR, et lui seul (cf. `front-dist`).

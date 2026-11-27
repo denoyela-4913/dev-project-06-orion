@@ -31,7 +31,7 @@ jobs:
   # --- Stage "lint" ---------------------------------------------------------
   # Contrôles rapides, sans compilation, avant les tests (stage 1 du schéma) : ESLint pour le front, hadolint
   # pour le Dockerfile, et rien d'autre (décision du 26/11). Checkstyle et SpotBugs ont besoin du code compilé :
-  # ils s'exécutent dans `build-back` avec `./gradlew build`.
+  # ils s'exécutent dans `test-back` avec `./gradlew check` (scripts/ci_test.sh).
   lint:
     runs-on: ubuntu-26.04 # cf. justification dans test-front
     steps:
@@ -224,84 +224,17 @@ jobs:
           python3 scripts/coverage_gate.py "${options[@]}"
 
   # --- Stage "build" --------------------------------------------------------
-  # Ordre des stages : tests, puis analyse Sonar (jobs `sonar-front`, `sonar-back` et `sonar-infra`, plus bas), puis build. GitHub n'a pas de
-  # stages : "needs" reproduit ces dépendances (GitLab : "stages: test, build").
+  # La compilation a lieu dans les jobs de tests ; ce stage assemble les images.
+  # Ordre des stages : tests, puis analyse Sonar (jobs `sonar-front`, `sonar-back` et `sonar-infra`, plus bas), puis
+  # images. GitHub n'a pas de stages : "needs" reproduit ces dépendances (GitLab : "stages: test, build").
   # - Le Quality Gate Sonar n'est PAS bloquant pour l'instant : le scan n'attend pas son résultat
   #   (pas de `sonar.qualitygate.wait=true`) ; le rendre bloquant n'est pas encore décidé.
-  # - Le build attend aussi `coverage`, qui échoue si un taux de couverture est sous le seuil.
-  # - Un scan en échec technique (SonarCloud indisponible, jeton invalide) bloque en revanche le build :
+  # - Les images attendent aussi `coverage`, qui échoue si un taux de couverture est sous le seuil.
+  # - Un scan en échec technique (SonarCloud indisponible, jeton invalide) bloque en revanche les images :
   #   choix assumé pour garder une règle simple.
-  # - Les jobs Sonar ne tournent que sur les PR et `main` : sur les autres branches ils sont sautés, et le build doit
-  #   quand même s'exécuter.
-  build-front:
-    needs: [test-front, test-back, coverage, sonar-front, sonar-back, sonar-infra]
-    # Cf. « Ordre des stages » ci-dessus: build si les deux tests ont réussi et si les trois jobs Sonar ont réussi ou ont été
-    # sautés. `!cancelled()` est nécessaire: sans fonction de statut, GitHub saute aussi un job dont un
-    # `needs` a été sauté.
-    if: >-
-      !cancelled() &&
-      needs.test-front.result == 'success' && needs.test-back.result == 'success' &&
-      needs.coverage.result == 'success' &&
-      (needs.sonar-front.result == 'success' || needs.sonar-front.result == 'skipped') &&
-      (needs.sonar-back.result == 'success' || needs.sonar-back.result == 'skipped') &&
-      (needs.sonar-infra.result == 'success' || needs.sonar-infra.result == 'skipped')
-    runs-on: ubuntu-26.04 # cf. justification dans test-front
-    defaults:
-      run:
-        working-directory: front
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24 # même version que test-front (cf. justification)
-          package-manager-cache: false # cf. justification dans test-front
-      - run: npm ci --ignore-scripts # cf. justification dans test-front
-      # GitLab : `npx @angular/cli build`. `npm run build` exécute `ng build` avec la version
-      # du package-lock.json, sans téléchargement à la volée (cf. test-front).
-      - run: npm run build -- --optimization
-
-  build-back:
-    needs: [test-front, test-back, coverage, sonar-front, sonar-back, sonar-infra]
-    # Cf. « Ordre des stages » ci-dessus: build si les deux tests ont réussi et si les trois jobs Sonar ont réussi ou ont été
-    # sautés. `!cancelled()` est nécessaire: sans fonction de statut, GitHub saute aussi un job dont un
-    # `needs` a été sauté.
-    if: >-
-      !cancelled() &&
-      needs.test-front.result == 'success' && needs.test-back.result == 'success' &&
-      needs.coverage.result == 'success' &&
-      (needs.sonar-front.result == 'success' || needs.sonar-front.result == 'skipped') &&
-      (needs.sonar-back.result == 'success' || needs.sonar-back.result == 'skipped') &&
-      (needs.sonar-infra.result == 'success' || needs.sonar-infra.result == 'skipped')
-    runs-on: ubuntu-26.04 # cf. justification dans test-front
-    defaults:
-      run:
-        working-directory: back
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
-        with:
-          # Temurin : distribution OpenJDK courante ; version 21 = celle de build.gradle, LTS jusqu'en 12/2029.
-          distribution: temurin
-          java-version: 21
-          # Cache des dépendances Gradle et de la distribution du wrapper: évite de tout retélécharger à chaque
-          # run, et limite l'exposition aux « 429 Too Many Requests » de Maven Central (sans la supprimer: un
-          # cache absent ou périmé impose de télécharger).
-          cache: gradle
-          # Fichiers qui forment la clé du cache. Liste explicite car le choix par défaut ignore
-          # gradle.lockfile (`**/*.gradle*` ne le couvre pas): le cache ne suivrait pas une mise à jour du verrou.
-          cache-dependency-path: |
-            back/build.gradle
-            back/settings.gradle
-            back/gradle.lockfile
-            back/gradle/wrapper/gradle-wrapper.properties
-          # Activé d'office avec `cache`: désactivé pour limiter ce cache aux dépendances Gradle.
-          cache-jdk: false
-      # `build` et non `assemble` (décision du 26/11) : `build` lance `check`, auquel Checkstyle et SpotBugs sont
-      # rattachés (cf. back/build.gradle, bloquants avec zéro écart). Ils s'exécutent ici, sur le code compilé,
-      # et non dans le job de lint (ESLint et hadolint seulement). Coût accepté : les tests, déjà exécutés par
-      # `test-back`, tournent une seconde fois.
-      - run: ./gradlew build
-
+  # - Les jobs Sonar ne tournent que sur les PR et `main` : sur les autres branches ils sont sautés, et les images
+  #   doivent quand même être construites. `!cancelled()` est nécessaire : sans fonction de statut, GitHub saute aussi
+  #   un job dont un `needs` a été sauté.
   # Les images front et back, construites avec les mêmes conditions que les builds applicatifs. Elles ne
   # recompilent rien : le front compilé et le JAR sont les artefacts des jobs de tests, qui remplacent les étapes
   # `front-dist` et `back-dist` du Dockerfile (scripts/build_images.sh, qui échoue si une compilation a lieu quand
@@ -462,10 +395,9 @@ jobs:
   # « candidate », et leurs empreintes sont transmises au staging puis à la release. Une candidate n'est pas une
   # version : ni tag Git, ni release, ni étiquette de version.
   candidate:
-    needs: [build-front, build-back, images, compose-test, e2e, scan, infra-check]
+    needs: [images, compose-test, e2e, scan, infra-check]
     if: >-
       !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-      needs.build-front.result == 'success' && needs.build-back.result == 'success' &&
       needs.images.result == 'success' && needs.compose-test.result == 'success' &&
       needs.scan.result == 'success' && needs.infra-check.result == 'success' && needs.e2e.result == 'success'
     runs-on: ubuntu-26.04 # cf. justification dans test-front
