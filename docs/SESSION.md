@@ -5,11 +5,13 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 
 **Dernière mise à jour: 27/11/2026**
 
-## Lot en cours: qualité dans les tests (branche `ci/qualite-dans-les-tests`, worktree `../orion-artefacts-wt`)
+## Dernier lot: qualité dans les tests, puis essais de promotion et de retour arrière (27/11)
 
-Lot précédent fusionné (PR #59, pré-version `v0.2.4`): `standalone` supprimée, images construites à partir des
-artefacts des tests, scripts `run_*.sh`. Ce lot: `build-front` et `build-back` supprimés, Checkstyle et SpotBugs
-dans `test-back`, résultats dans Sonar. Commit, PR et fusion autorisés par l'utilisateur pour ce lot.
+PR #59 et #60 fusionnées: `standalone` supprimée, images construites à partir des artefacts des tests, scripts
+`run_*.sh`, `build-front` et `build-back` supprimés, Checkstyle et SpotBugs dans `test-back` et dans Sonar.
+`v0.2.4` **promue** (dernière release): première exécution de `promote.yml`, réussie. Retours arrière de production
+et de staging réussis. Trouvé: `promote.yml` ne sait qu'installer (backlog, décision à prendre).
+Documentation: branche `ci/promotion-documentee`, fusion autorisée par l'utilisateur.
 Schéma du pipeline et livrables **non mis à jour**: une autre session les modifie (`../orion-staging-wt`, non
 commité, en retard sur `main`). `ci/local-scripts` reste à reprendre (backlog).
 
