@@ -36,11 +36,18 @@ docker run --rm -i hadolint/hadolint:v2.15.1-alpine hadolint - < Dockerfile
 cd back && ./gradlew clean build
 cd front && npx ng test --watch=false --coverage      # Vitest avec jsdom, sans navigateur
 python3 -m unittest discover -s scripts && python3 scripts/coverage_gate.py --base origin/main   # après les tests
+scripts/compose.sh dev up -d --build --wait && scripts/e2e.sh   # bout en bout ; arrêt : scripts/compose.sh dev down
+scripts/trivy.sh repo                                           # sécurité (Docker requis)
 cd front && npm run build -- --optimization     # budget de bundle: avertissement à 850 kB (actuel ~814 kB)
 ```
 
 ## Pièges connus
 
+- Sonar refuse `[ … ]` dans les scripts Bash (utiliser `[[ … ]]`) et tout chemin de fichier venant de la ligne de
+  commande en Python. Une PR avec une nouvelle issue ne se fusionne pas sans correction.
+- Heredoc non protégé (`<<YAML`): un accent grave ou `$(…)` dans un commentaire y est **exécuté**.
+- Chromium (snap) ne voit pas `/tmp`: pour `learning/build.sh` et le hook de commit, travailler sous le dossier
+  personnel. `/tmp` est en mémoire vive (tmpfs).
 - Vitest laisse les espions (`vi.spyOn`) en place d'un test à l'autre: `front/src/test-setup.ts` les restaure
   après chaque test. Ne pas le retirer. Vitest n'a pas de LTS: suivre la dernière mineure, comme pour Gradle.
 - `~/.npmrc` de l'utilisateur contient `allow-scripts=…`: `ng update` échoue (EALLOWSCRIPTS). Le lancer avec
