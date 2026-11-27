@@ -12,7 +12,8 @@ puis la déploie. Cette fiche suit un commit, du poste du développeur au déplo
 4. La PR relance la CI, avec les analyses SonarQube (SAST, *Static Application Security Testing*, analyse
    statique de sécurité).
 5. Fusion en **rebase** : l'historique de `main` reste linéaire.
-6. La CI de `main` publie une version si les commits le justifient, puis la déploie en démonstration.
+6. La CI de `main` prépare des images candidates, les valide en staging, puis publie une **pré-version** si les
+   commits le justifient. Le passage en production est un changement de statut de cette release.
 
 ## Les étapes, dans l'ordre
 
@@ -23,8 +24,10 @@ puis la déploie. Cette fiche suit un commit, du poste du développeur au déplo
 | 3. qualité | `sonar-front`, `sonar-back`, `sonar-infra`, `coverage` | la qualité et la couverture suffisent-elles ? | couverture : bloquante ; Quality Gate Sonar : non bloquant |
 | 4. build | `build-front`, `build-back`, `images`, `compose-test` | l'application se construit-elle et démarre-t-elle ? | pas de release |
 | 5. bout en bout et scan | `e2e`, `scan` | les parcours fonctionnent-ils ? une vulnérabilité grave est-elle corrigeable ? | pas de release |
-| 6. release (`main`) | `release` | que publie-t-on, sous quel numéro ? | pas de déploiement |
-| 7. déploiement (PR et `main`) | `deploy-demo`, `notify` | la version se déploie-t-elle, et sait-on revenir en arrière ? | notification d'échec |
+| 6. candidate (`main`) | `candidate` | quelles images, quel numéro ? | pas de release |
+| 7. staging (PR et `main`) | `staging` | la version se déploie-t-elle, et sait-on revenir en arrière ? | pas de release |
+| 8. pré-version (`main`) | `release`, `notify` | que publie-t-on ? | notification d'échec |
+| 9. production | `promote.yml` | une personne a-t-elle décidé la mise en production ? | notification d'échec |
 
 > **Pourquoi cet ordre ?** Les contrôles les moins chers d'abord : échouer en 20 secondes coûte moins qu'échouer
 > après 5 minutes. Le prix : quand tout va bien, chaque étape attend la précédente.
@@ -50,9 +53,9 @@ de couverture (pour Sonar), puis les images (`docker save`). L'image **testée**
 
 ## La durée, un compromis
 
-Avec la CD, un run est passé d'environ 2 minutes à 10 ou 11 : le déploiement de démonstration en prend à lui seul
+Avec la CD, un run est passé d'environ 2 minutes à 10 ou 11 : le déploiement de démonstration en prenait à lui seul
 4 à 5. D'où le choix de ne le lancer que sur les PR et `main` (un push de branche : environ 4 minutes). Pistes
-pour aller plus loin : mettre en cache les couches Docker, éviter de rejouer les tests dans l'image.
+pour aller plus loin : mettre en cache les couches Docker. L'image ne rejoue plus les tests (`bootJar`).
 
 ## La release
 
@@ -66,13 +69,17 @@ Versioning*, versionnement sémantique `MAJEUR.MINEUR.CORRECTIF`) :
 | `!` ou `BREAKING CHANGE:` | majeure (mineure tant que la version est en 0.x) |
 | `docs`, `ci`, `test`, `chore`, `style`, `refactor` seuls | rien |
 
-Les images vont sur **GHCR** (*GitHub Container Registry*), puis la release GitHub crée le tag, les notes et le
-paquet du chart. Le tag vient en dernier : il n'existe que pour une version complète.
+Les images vont sur **GHCR** (*GitHub Container Registry*). Elles y arrivent d'abord comme **candidates**. Après
+validation en staging, la version est ajoutée aux **mêmes empreintes** (`sha256:…`), puis la release GitHub est
+créée en **pré-version** avec le tag, les notes, le chart et les empreintes. La passer au statut de release
+déclenche la mise en production.
 
 ## Le déploiement
 
-`deploy-demo` crée un cluster **kind** (*Kubernetes in Docker*) jetable, et y déploie dev, staging et production
-avec Terraform et Helm. Sur staging, il éprouve la sauvegarde, la restauration et les retours arrière.
+Le job `staging` crée un cluster **kind** (*Kubernetes in Docker*) jetable, et y déploie dev puis staging avec
+Terraform et Helm. Sur staging, il éprouve la sauvegarde, la restauration et les retours arrière. Le staging est
+**identique à la production**, hors valeurs propres à l'installation, et les deux désignent les images par leur
+empreinte : ce qui a été validé est exactement ce qui est mis en production.
 
 > **Limite à connaître.** Un cluster jetable prouve que le déploiement **fonctionne** ; il n'y a pas encore
 > d'environnement permanent que l'on puisse visiter.

@@ -13,6 +13,10 @@ Un seul `Dockerfile`, trois cibles :
 | `back` | JRE 21 et le JAR Spring Boot | 8080 | déploiement |
 | `standalone` | les deux, lancés par supervisord | 80, 443, 8080 | démonstration en un seul conteneur |
 
+Le Dockerfile ne produit que le JAR (`./gradlew bootJar`) : les tests, Checkstyle et SpotBugs sont exécutés par la
+CI. En CI, un seul job construit les trois images : `standalone` réutilise les étapes compilées pour `front` et
+`back`, et contient donc les mêmes binaires. Son démarrage est testé par `scripts/smoke_standalone.sh <image>`.
+
 Toutes tournent sous l'utilisateur non root `10001`. Images de base épinglées par digest, paquets Alpine
 épinglés à la mineure.
 
@@ -45,8 +49,9 @@ Seul `health` est exposé par Actuator, sans détail (`HealthTests`).
 
 ## 2. Docker Compose
 
-Fichiers dans `deploy/compose/` : un socle (`compose.yaml`), un fichier par environnement, un fichier de
-protections commun à staging et production, et les variables dans `env/`. Le script `scripts/compose.sh` choisit
+Fichiers dans `deploy/compose/` : un socle (`compose.yaml`), un fichier pour dev, un fichier **commun à staging et
+production** (`compose.hardened.yaml`), et les variables dans `env/`. Staging et production utilisent les mêmes
+fichiers : seules les valeurs d'une installation (domaine, origine publique, ports) diffèrent. Le script `scripts/compose.sh` choisit
 les bons fichiers et isole chaque environnement (nom de projet `microcrm-<env>`).
 
 ```bash
@@ -57,7 +62,7 @@ scripts/compose.sh dev down                      # arrêt ; ajouter -v pour effa
 
 | | dev | staging | production |
 |---|---|---|---|
-| Accès | HTTP local 4280 | HTTP local 4281 | HTTPS 443 (80 redirige) |
+| Accès | HTTP local 4280 | HTTPS local 4443 (certificat interne) | HTTPS 443 (80 redirige) |
 | Back publié | oui (8080) | non | non |
 | Données | en mémoire | volume `back-data` | volume `back-data` |
 | Protections (lecture seule, droits retirés, mémoire limitée, redémarrage) | non | oui | oui |
@@ -75,13 +80,17 @@ l'application, réglage `/api`, lecture de l'API, puis création et suppression 
 
 ## 4. Kubernetes avec Helm
 
-Chart : `deploy/helm/microcrm/`. Une valeur commune (`values.yaml`) et un fichier par environnement.
+Chart : `deploy/helm/microcrm/`. Une valeur commune (`values.yaml`), un fichier partagé par staging et production
+(`values-prodlike.yaml`), et un fichier par environnement. **Le staging est identique à la production** :
+`values-staging.yaml` et `values-production.yaml` ne portent que l'origine publique, le domaine et le Secret TLS.
+`scripts/check_parity.sh` le vérifie en CI pour Helm, Terraform et Compose. Un réglage de ces deux environnements
+s'écrit donc dans le fichier partagé.
 
 | | dev | staging | production |
 |---|---|---|---|
-| Instances front / back | 1 / 1 | 2 / 1 | 3 / 1 |
-| Données | en mémoire | volume 1 Gi | volume 5 Gi |
-| Ingress et TLS | non | non | oui (domaine à fixer) |
+| Instances front / back | 1 / 1 | 3 / 1 | 3 / 1 |
+| Données | en mémoire | volume 5 Gi | volume 5 Gi |
+| Ingress et TLS (coupé sur le cluster de démonstration) | non | oui (domaine à fixer) | oui (domaine à fixer) |
 | NetworkPolicy (back joignable du front seul) | non | oui | oui |
 
 Tous les pods tournent sans root, système de fichiers en lecture seule, sans aucune capacité Linux, avec un
@@ -127,10 +136,19 @@ découpé en deux modules et un dossier par environnement, chacun avec son état
 Essai en local (minikube, 27/11/2026) : `apply` de staging, pods prêts et test de déploiement réussi (hors écriture,
 qui a révélé le défaut d'origine corrigé dans le Caddyfile).
 
-## 6. Releases
+## 6. De la candidate à la production
 
-Sur `main`, le job `release` publie une version quand les commits depuis le dernier tag le justifient
-(`scripts/release.py`, tests dans `scripts/test_release.py`) :
+Les images sont construites **une seule fois**. À partir du staging, elles sont désignées par leur **empreinte**
+(`sha256:…`) : les pods de staging et de production exécutent les mêmes binaires.
+
+| Étape | Job ou workflow | Ce qui se passe |
+|---|---|---|
+| 1. candidate (`main`) | `candidate` | si les commits justifient une version : envoi sur GHCR des images testées et scannées, sous l'étiquette `candidate-<commit>`, et relevé de leurs empreintes |
+| 2. validation | `staging` | dev puis staging déployés ; avec une candidate, le cluster tire les images depuis GHCR **par leur empreinte** |
+| 3. pré-version (`main`) | `release` | **seulement si le staging a réussi** : étiquette `X.Y.Z` ajoutée aux mêmes empreintes, puis **pré-version** GitHub (tag `vX.Y.Z`, notes, chart Helm, `images-digests.env`) |
+| 4. production | `promote.yml` | déclenché quand **une personne** change le statut de la pré-version en release ; déploie les empreintes de `images-digests.env`, sans rien reconstruire |
+
+Version (`scripts/release.py`, tests dans `scripts/test_release.py`) :
 
 | Commits depuis le dernier tag | Version |
 |---|---|
@@ -139,33 +157,47 @@ Sur `main`, le job `release` publie une version quand les commits depuis le dern
 | `fix`, `perf`, `build` | correctif |
 | seulement `docs`, `ci`, `test`, `chore`, `style`, `refactor` | pas de release |
 
-Il publie sur GHCR `ghcr.io/<propriétaire>/<dépôt>/microcrm-{front,back,standalone}:X.Y.Z` (les images testées et
-scannées dans le même run, sans reconstruction ; pas d'étiquette `latest`), puis crée la release GitHub : tag
-`vX.Y.Z`, notes générées depuis les commits et paquet du chart Helm. Pour connaître la prochaine version sans rien
-publier : `python3 scripts/release.py` (écrit `release-notes.md`, ignoré par git).
+### Passer une version en production
 
-Si l'envoi s'interrompt, relancer le job : à partir de la deuxième tentative, les images déjà envoyées sont
-remplacées (cas vu à la première release). Les paquets de `v0.1.0` se lisent sans authentification (vérifié le
-27/11/2026).
+Sur la page de la release, décocher *Set as a pre-release* et cocher *Set as the latest release*, ou :
+
+```bash
+gh release edit vX.Y.Z --prerelease=false --latest
+```
+
+- Promouvoir la version **la plus récente** validée : rien n'empêche de promouvoir une pré-version plus ancienne,
+  qui serait alors déployée.
+- Si le déploiement en production échoue, la release **garde son statut** : l'échec est signalé par la
+  notification. Relancer le workflow une fois la cause corrigée.
+- Une release sans `images-digests.env` (antérieure à ce fonctionnement, ou créée à la main) n'est pas déployée.
+
+`scripts/candidate_images.sh` envoie les candidates puis ajoute l'étiquette de version ; il vérifie que l'empreinte
+n'a pas changé et refuse de réattribuer une version à d'autres images. Pas d'étiquette `latest` sur les images.
+Les étiquettes `candidate-*` restent sur GHCR, publiques comme les versions : leur nettoyage n'est pas automatisé.
+Pour connaître la prochaine version sans rien publier : `python3 scripts/release.py` (écrit `release-notes.md`,
+ignoré par git).
 
 ## 7. Déploiement de démonstration
 
-Le job `deploy-demo` crée un cluster **kind** dans le runner et lance `scripts/deploy_demo.sh` : pour dev, staging
-puis production, `terraform apply`, test de déploiement par port-forward, puis `terraform destroy`. Sur staging,
-`scripts/test_recovery.sh` éprouve en plus la sauvegarde et la restauration, l'annulation d'une version qui ne
-démarre pas et le retour arrière d'une version qui échoue au test. Après une release, les images sont relues
-depuis GHCR.
+Les jobs `staging` (dev puis staging) et le workflow de production créent chacun un cluster **kind** dans le runner
+et lancent `scripts/deploy_demo.sh` : pour chaque environnement, `terraform apply`, contrôle que les pods désignent
+les empreintes attendues quand elles sont fournies, test de déploiement par port-forward, puis `terraform destroy`.
+Sur staging, `scripts/test_recovery.sh` éprouve en plus la sauvegarde et la restauration, l'annulation d'une version
+qui ne démarre pas et le retour arrière d'une version qui échoue au test. Sur une PR, les images du run sont
+chargées dans le cluster : **le déploiement par empreinte ne s'exécute que sur `main`**.
 
 **Ce que cela prouve, et ses limites** : le chart, le code Terraform, les images et les procédures de secours
-fonctionnent sur un vrai cluster Kubernetes. Mais ce cluster est **jetable** : il n'y a pas d'environnement de
-démonstration permanent, ni de domaine, de certificat public ou de stockage durable. Le choix d'un hébergement
-est en attente (backlog).
+fonctionnent sur un vrai cluster Kubernetes. Mais ces clusters sont **jetables**, y compris la « production » : il
+n'y a pas d'environnement permanent, ni de domaine, de certificat public ou de stockage durable. Le choix d'un
+hébergement est en attente (backlog).
 
-Rejouer en local sur un cluster de test (les images doivent y être chargées) :
+Rejouer en local sur un cluster de test (sans empreintes, les images doivent y être chargées) :
 
 ```bash
 KUBE_CONTEXT=<contexte de test> scripts/deploy_demo.sh <version> [préfixe de registre]
 ```
+
+Variables facultatives : `ENVIRONMENTS="dev staging"`, `BACK_DIGEST` et `FRONT_DIGEST` (ensemble).
 
 ### Notification
 
@@ -174,6 +206,9 @@ prévient les personnes abonnées) et appelle le webhook du secret `NOTIFY_WEBHO
 `{"text": …}`). Un workflow en échec déclenche en plus la notification habituelle de GitHub.
 
 ### Livraison manuelle de secours
+
+**Limite** : avec *publish*, ce secours reconstruit les images et les publie **avant** tout déploiement, sans release
+ni `images-digests.env`. Il ne respecte pas la règle « staging d'abord » et ne passe pas par `promote.yml`.
 
 | Situation | Que faire |
 |---|---|
@@ -187,10 +222,12 @@ prévient les personnes abonnées) et appelle le webhook du secret `NOTIFY_WEBHO
 | 1. lint | `lint` |
 | 2. test et couverture | `test-front`, `test-back`, et `infra-check` (chart, scripts, Terraform) |
 | 3. qualité | `sonar-front`, `sonar-back`, `sonar-infra`, `coverage` |
-| 4. build | `build-front`, `build-back` (avec Checkstyle et SpotBugs), `images`, `compose-test` |
+| 4. build | `build-front`, `build-back` (avec Checkstyle et SpotBugs), `images`, `compose-test` (dont `standalone`) |
 | 5. scan | `scan` ; rescan hebdomadaire : workflow *Scan de sécurité* |
-| 6. release (`main`) | `release` |
-| 7. déploiement de démonstration | `deploy-demo`, `notify` |
+| 6. candidate (`main`) | `candidate` |
+| 7. validation en staging (PR et `main`) | `staging` |
+| 8. pré-version (`main`) | `release`, `notify` |
+| 9. production (changement de statut de la release) | workflow *Passage en production* |
 
 ## 9. Limites connues
 

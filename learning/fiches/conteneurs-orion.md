@@ -52,12 +52,12 @@ Avec `/api`, le navigateur ne parle qu'au front : le back n'a pas besoin d'être
 |---|---|
 | `compose.yaml` | les deux services, leurs sondes, l'ordre de démarrage |
 | `compose.dev.yaml` | ports locaux, back publié |
-| `compose.hardened.yaml` | lecture seule, droits retirés, mémoire limitée, volume de données |
-| `compose.staging.yaml`, `compose.production.yaml` | ports et HTTPS |
+| `compose.hardened.yaml` | staging **et** production : lecture seule, droits retirés, mémoire limitée, volume de données, HTTPS |
+| `env/<environnement>.env` | les seules valeurs propres à une installation : domaine, origine publique, ports |
 
 ```bash
 scripts/compose.sh staging up -d --build --wait
-scripts/smoke_test.sh http://localhost:4281
+SMOKE_INSECURE=1 scripts/smoke_test.sh https://localhost:4443
 ```
 
 > **Piège vécu.** Un volume neuf monté sur un dossier **absent de l'image** appartient à root : Caddy, non root,

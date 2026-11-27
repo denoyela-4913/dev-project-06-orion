@@ -11,7 +11,7 @@
 | Bugs et style du Java | SpotBugs et Checkstyle (`./gradlew build`) | oui |
 | TypeScript, templates, Dockerfile | job `lint` (ESLint, hadolint) | oui |
 | Versions figées | verrous, images et actions épinglées par SHA ou digest, Dependabot | – |
-| Droits de la CI | écriture réservée aux jobs `release` (dépôt, registre), `notify` (commentaire) et à la livraison manuelle (registre) | – |
+| Droits de la CI | écriture réservée aux jobs `candidate` (registre), `release` (dépôt, registre), `notify` et au passage en production (commentaire), et à la livraison manuelle (registre) | – |
 | Conteneurs | utilisateur non root, aucune capacité Linux, lecture seule en staging, production et Kubernetes ; niveau « restricted » imposé par Terraform | – |
 
 En local : `scripts/trivy.sh repo` et `scripts/trivy.sh image <image>…` (Docker suffit).

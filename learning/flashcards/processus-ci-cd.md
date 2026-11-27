@@ -12,8 +12,8 @@ R: Continuous Delivery (livraison continue : toujours prêt à publier) ou Conti
 
 ---
 
-Q: Quelles sont les sept étapes du pipeline d'Orion ?
-R: lint, test et couverture, qualité (Sonar et seuils), build (applications, images, Compose), bout en bout et scan (Playwright, Trivy), release (sur `main`), déploiement de démonstration (PR et `main`).
+Q: Quelles sont les étapes du pipeline d'Orion ?
+R: lint, test et couverture, qualité (Sonar et seuils), build (applications, images, Compose), bout en bout et scan (Playwright, Trivy), images candidates (`main`), staging (PR et `main`), pré-version (`main`), puis production au changement de statut de la release.
 
 ---
 
@@ -67,13 +67,23 @@ R: Deux runs rapprochés calculeraient le même numéro de version.
 
 ---
 
-Q: Que fait le job `deploy-demo` ?
-R: Sur un cluster kind jetable : déploiement de dev, staging et production avec Terraform et Helm, test de santé, et épreuve des secours sur staging.
+Q: Que fait le job `staging` ?
+R: Sur un cluster kind jetable : déploiement de dev puis staging avec Terraform et Helm, test de santé, et épreuve des secours sur staging. C'est la validation exigée avant la release.
 
 ---
 
 Q: Quelle est la limite du déploiement de démonstration d'Orion ?
 R: Le cluster est jetable : pas d'environnement permanent, ni domaine ni certificat public. L'hébergement reste à décider.
+
+---
+
+Q: Comment Orion garantit-il que la production exécute les images validées en staging ?
+R: Les deux les désignent par leur empreinte `sha256:…`, jointe à la release. Rien n'est reconstruit.
+
+---
+
+Q: Comment une version passe-t-elle en production dans Orion ?
+R: Une personne change le statut de la pré-version en release, ce qui déclenche le workflow de passage en production.
 
 ---
 

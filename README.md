@@ -71,9 +71,11 @@ Détail : [`docs/TESTS.md`](./docs/TESTS.md).
 
 ![Pipeline CI/CD](./docs/livrables/schema_pipeline_ci_cd.png)
 
-À chaque push : lint, tests, couverture, analyses, construction et test des images, scan de sécurité, et
-déploiement de démonstration sur un cluster jetable. Sur `main`, une version est publiée quand les commits le
-justifient (images sur GHCR, release GitHub). Détail : [`docs/DEPLOIEMENT.md`](./docs/DEPLOIEMENT.md).
+À chaque push : lint, tests, couverture, analyses, construction et test des images, scan de sécurité. Sur les PR et
+`main`, dev et staging sont déployés sur un cluster jetable. Sur `main`, quand les commits le justifient et que le
+staging est validé, une **pré-version** est publiée (images sur GHCR, release GitHub). La passer au statut de
+release déploie en production les mêmes images, désignées par leur empreinte. Le schéma ci-dessus ne montre pas
+encore ces étapes. Détail : [`docs/DEPLOIEMENT.md`](./docs/DEPLOIEMENT.md).
 
 ## Images Docker
 
