@@ -145,7 +145,8 @@ scannées dans le même run, sans reconstruction ; pas d'étiquette `latest`), p
 publier : `python3 scripts/release.py` (écrit `release-notes.md`, ignoré par git).
 
 Si l'envoi s'interrompt, relancer le job : à partir de la deuxième tentative, les images déjà envoyées sont
-remplacées. Un nouveau paquet GHCR peut être privé par défaut : sa visibilité se règle dans GitHub (backlog).
+remplacées (cas vu à la première release). Les paquets de `v0.1.0` se lisent sans authentification (vérifié le
+27/11/2026).
 
 ## 7. Déploiement de démonstration
 
