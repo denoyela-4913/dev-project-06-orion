@@ -2,7 +2,7 @@
 # But: sauvegarder les données du back d'une release (volume HSQLDB) dans une archive locale.
 # Fonctionnement: sauvegarde à froid, car copier les fichiers d'une base en cours d'écriture ne garantit pas leur
 # cohérence. Le back est arrêté (0 instance), un pod temporaire monte le volume et son contenu est copié, puis le
-# back est relancé, même si la copie échoue. Coupure de service d'une à deux minutes.
+# back est relancé, même si la copie échoue. Coupure de service le temps de la copie et du redémarrage du back.
 # Usage: scripts/backup.sh <espace de noms> [release]
 # Paramètres: BACKUP_DIR (défaut ./backups). Sans volume (données en mémoire), le script le dit et réussit.
 set -euo pipefail

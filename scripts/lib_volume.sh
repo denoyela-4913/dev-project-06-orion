@@ -31,6 +31,10 @@ metadata:
   name: $volume_pod
 spec:
   restartPolicy: Never
+  # La commande sleep ignore le signal d'arrêt: sans ce délai court, Kubernetes attendrait 30 s à chaque
+  # suppression du pod, autant de coupure de service en plus. Les copies sont alors déjà terminées.
+  # (Pas d'accent grave dans ce bloc: le shell l'exécuterait.)
+  terminationGracePeriodSeconds: 1
   automountServiceAccountToken: false
   securityContext:
     runAsNonRoot: true
