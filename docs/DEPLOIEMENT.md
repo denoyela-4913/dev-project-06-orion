@@ -160,7 +160,7 @@ Aucune des deux versions ne modifie le schéma de la base : un retour arrière a
 README). Essai sur un runner GitHub jetable (minikube 1.39.0, run `46070319151`, workflow temporaire non fusionné),
 réussi : installation en dev et accès par `open`, seconde installation refusée, mise à niveau après un changement de
 code, désinstallation ; en staging, installation, mise à niveau avec sauvegarde, `rollback.sh`, désinstallation ;
-puis `scripts/ci_local.sh test images staging` (secours compris). Non essayés sur un poste de développeur.
+puis `scripts/ci_local.sh test images staging` (secours compris ; `test` est depuis devenu `test-front` et `test-back`). Non essayés sur un poste de développeur.
 
 ## 5. Terraform
 
@@ -261,6 +261,8 @@ ni `images-digests.env`. Il ne respecte pas la règle « staging d'abord » et n
 | GitHub Actions est indisponible | depuis un poste : `scripts/build_images.sh`, `scripts/trivy.sh image …`, `docker login ghcr.io`, `scripts/publish_images.sh ghcr.io/<propriétaire>/<dépôt>/ X.Y.Z`, puis `scripts/deploy.sh <env> X.Y.Z --set images.repositoryPrefix=…` |
 
 ## 8. Dans la CI
+
+Un job rejouable lance le script de même nom dans `scripts/ci/` (cf. README, « Tester la CI à la main »).
 
 | Étape du schéma | Jobs |
 |---|---|

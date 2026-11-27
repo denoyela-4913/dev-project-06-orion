@@ -106,21 +106,39 @@ déploiement et retour arrière en cas d'échec. Secours à la main : `scripts/r
 `uninstall` en staging, le volume de données est conservé.
 
 **Terraform** (dev puis staging créés, vérifiés et détruits, secours compris) :
-`scripts/ci_local.sh images staging`. Autres clusters et détails : [`docs/DEPLOIEMENT.md`](./docs/DEPLOIEMENT.md).
+`scripts/ci_local.sh test-front test-back images staging` (ou `images staging` : le Dockerfile compile). Autres clusters et détails : [`docs/DEPLOIEMENT.md`](./docs/DEPLOIEMENT.md).
 
 ## Tester la CI à la main
+
+**Un job rejouable porte le nom de son script** : le job `compose-test` de la CI lance `scripts/ci/compose-test.sh`,
+et `scripts/ci_local.sh compose-test` lance le même.
+
+| Job et script de `scripts/ci/` | Contrôle | Après |
+|---|---|---|
+| `lint` | hadolint, ESLint | – |
+| `test-front`, `test-back` | tests dans l'étape de compilation (back : avec Checkstyle et SpotBugs) | – |
+| `coverage` | tests des scripts, seuils de couverture | les deux tests |
+| `infra-check` | Helm, parité, ShellCheck, Terraform | – |
+| `images` | images front et back | – |
+| `compose-test` | déploiement des trois environnements | `images` |
+| `e2e` | parcours dans un navigateur | `images` |
+| `scan` | Trivy sur le dépôt et les images | `images` |
+| `staging` | dev et staging avec Terraform, secours compris | `images` ; minikube |
+
+`sonar-*`, `candidate`, `release` et `notify` dépendent de GitHub et ne se rejouent pas. Les contrôles s'écrivent
+dans les scripts, pas dans `ci.yml`, qui ne décrit que les déclencheurs, les outils, les artefacts et les droits.
 
 **Sur le poste**, avant de pousser :
 
 ```shell
-scripts/ci_local.sh all              # lint, tests, couverture, infra, images, Compose, bout en bout, scan
-scripts/ci_local.sh test coverage    # ou seulement certaines étapes
+scripts/ci_local.sh all                               # tous les jobs rejouables sauf staging
+scripts/ci_local.sh test-front test-back coverage     # ou seulement certains jobs
 scripts/ci_local.sh images e2e
-scripts/ci_local.sh images staging   # dev et staging avec Terraform sur minikube
+scripts/ci_local.sh images staging                    # sur minikube
 ```
 
-Les outils manquants sont signalés avant de commencer. `images` reprend les produits de `test` s'il fait partie de
-la même commande ; sinon le Dockerfile compile, pour ne jamais tester un ancien produit. Les ports de Compose
+Les outils manquants sont signalés avant de commencer. `images` reprend les produits des tests si `test-front` et
+`test-back` font partie de la même commande ; sinon le Dockerfile compile, pour ne jamais tester un ancien produit. Les ports de Compose
 doivent être libres. Ni Sonar ni la publication ne sont rejoués.
 
 **Sur GitHub**, sur la branche choisie, sans PR et sans rien publier (le staging est joué, pas les analyses Sonar) :
@@ -130,8 +148,8 @@ gh workflow run ci.yml --ref <branche>     # ou onglet Actions, « Run workflow 
 gh run watch
 ```
 
-Un seul morceau : `scripts/ci_test.sh <front|back>` (tests dans l'étape de compilation) et
-`scripts/build_images.sh [artifacts]` (images). Autres commandes de test : [`docs/TESTS.md`](./docs/TESTS.md).
+Chaque script de `scripts/ci/` se lance aussi seul. `ci_test.sh <front|back>` et `build_images.sh [artifacts]` sont
+les outils qu'ils appellent. Autres commandes de test : [`docs/TESTS.md`](./docs/TESTS.md).
 
 ## Référence des scripts
 
@@ -142,7 +160,8 @@ Un seul morceau : `scripts/ci_test.sh <front|back>` (tests dans l'étape de comp
 | `compose.sh` | Compose par environnement | `<env> <commande compose>` |
 | `helm-deploy.sh` | Helm sur minikube (`lib_minikube.sh`) | `install\|upgrade\|status\|open\|uninstall <dev\|staging>` ; `SKIP_BUILD`, `LOCAL_PORT` |
 | `install-*.sh`, `upgrade-*.sh` | raccourcis de `helm-deploy.sh` | aucun |
-| `ci_local.sh` | rejouer la CI | `all` ou liste d'étapes |
+| `ci_local.sh` | rejouer la CI | `all` ou noms de jobs |
+| `ci/<job>.sh` | ce que fait le job de même nom (`lib_ci.sh`) | aucun ; variables en tête de fichier |
 | `ci_test.sh` | tests dans l'étape de compilation, produit extrait | `<front\|back>` |
 | `build_images.sh` | images front et back | `[dossier des artefacts]` ; `IMAGE_TAG` |
 | `deps.sh` | dépendances : installation verrouillée, verrous, retards | `install\|lock\|outdated [front\|back\|all]` |
