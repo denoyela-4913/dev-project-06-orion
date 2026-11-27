@@ -12,8 +12,9 @@ PR #59 et #60 fusionnées: `standalone` supprimée, images construites à partir
 `v0.2.4` **promue** (dernière release): première exécution de `promote.yml`, réussie. Retours arrière de production
 et de staging réussis. Trouvé: `promote.yml` ne sait qu'installer (backlog, décision à prendre).
 Documentation: branche `ci/promotion-documentee`, fusion autorisée par l'utilisateur.
-Schéma du pipeline et livrables **non mis à jour**: une autre session les modifie (`../orion-staging-wt`, non
-commité, en retard sur `main`). `ci/local-scripts` reste à reprendre (backlog).
+Schéma et livrables mis à jour (branche `docs/reprise-livrables`), à partir du travail non commité du worktree
+`../orion-staging-wt`: celui-ci est **périmé**, ne pas le commiter. En cours ensuite: reprise de `ci/local-scripts`.
+Commit, PR et fusion autorisés par l'utilisateur pour ces deux lots.
 
 ## Dernier lot: staging avant la release (branche `ci/staging-release`)
 
