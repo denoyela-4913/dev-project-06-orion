@@ -23,7 +23,7 @@ label=$3
 file=$4
 [[ $prefix == */ ]] || usage
 
-targets=(front back standalone)
+targets=(front back)
 
 # Empreinte d'une référence présente dans le registre.
 digest_of() { docker buildx imagetools inspect "$1" --format '{{.Manifest.Digest}}'; }
@@ -47,7 +47,7 @@ case $action in
     # Le fichier est lu ligne par ligne et vérifié, jamais exécuté.
     declare -A digests=()
     while IFS='=' read -r target digest; do
-      [[ $target =~ ^(front|back|standalone)$ && $digest =~ ^sha256:[0-9a-f]{64}$ ]] ||
+      [[ $target =~ ^(front|back)$ && $digest =~ ^sha256:[0-9a-f]{64}$ ]] ||
         fail "ligne invalide dans $file: $target=$digest"
       digests[$target]=$digest
     done <"$file"

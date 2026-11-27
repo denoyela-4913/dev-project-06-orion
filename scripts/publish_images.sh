@@ -20,7 +20,7 @@ source_tag=${3:-ci}
 # Les noms d'images n'acceptent pas les majuscules, que les noms de comptes GitHub peuvent contenir.
 prefix=${prefix,,}
 
-targets=(front back standalone)
+targets=(front back)
 for target in "${targets[@]}"; do
   docker image inspect "microcrm-$target:$source_tag" >/dev/null 2>&1 ||
     { echo "Image locale absente: microcrm-$target:$source_tag" >&2; exit 1; }

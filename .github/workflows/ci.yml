@@ -324,12 +324,9 @@ jobs:
       # `test-back`, tournent une seconde fois.
       - run: ./gradlew build
 
-  # Les trois images du Dockerfile, construites avec les mêmes conditions que les builds applicatifs. Un seul job,
-  # donc un seul constructeur Docker : `standalone`, construite en dernier, réutilise les étapes déjà compilées
-  # pour `front` et `back` (cache local). Elle contient ainsi les mêmes binaires que les images testées, au lieu
-  # d'une seconde compilation sur une autre machine. Chaque image est transmise aux jobs suivants par artefact :
-  # ce qui est testé, scanné puis publié est la même image, pas une reconstruction. Commande `docker` du runner,
-  # sans action tierce. Pas de cache de couches d'un run à l'autre pour l'instant.
+  # Les images front et back, construites avec les mêmes conditions que les builds applicatifs. Chaque image est
+  # transmise aux jobs suivants par artefact : ce qui est testé, scanné puis publié est la même image, pas une
+  # reconstruction. Commande `docker` du runner, sans action tierce. Pas de cache de couches d'un run à l'autre.
   images:
     needs: [test-front, test-back, coverage, sonar-front, sonar-back, sonar-infra]
     if: >-
@@ -347,16 +344,15 @@ jobs:
           # Labels OCI : le registre rattache le paquet au dépôt et au commit d'origine.
           SOURCE: ${{ github.server_url }}/${{ github.repository }}
           REVISION: ${{ github.sha }}
-        # `standalone` en dernier : ses étapes `front` et `back` viennent alors du cache.
         run: |
-          for target in front back standalone; do
+          for target in front back; do
             docker build --target "$target" -t "microcrm-$target:ci" \
               --label "org.opencontainers.image.source=$SOURCE" \
               --label "org.opencontainers.image.revision=$REVISION" .
           done
       - name: Exporter les images
         run: |
-          for target in front back standalone; do
+          for target in front back; do
             docker save "microcrm-$target:ci" | gzip > "image-$target.tar.gz"
           done
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -375,18 +371,9 @@ jobs:
           retention-days: 1
           # Déjà compressée par gzip.
           compression-level: 0
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: image-standalone
-          path: image-standalone.tar.gz
-          if-no-files-found: error
-          retention-days: 1
-          # Déjà compressée par gzip.
-          compression-level: 0
 
-  # Test de déploiement des images avec Docker Compose, dans les trois environnements, puis de l'image
-  # `standalone` seule : santé, application, API à travers le front, écriture avec l'origine du navigateur
-  # (scripts/smoke_test.sh).
+  # Test de déploiement des images avec Docker Compose, dans les trois environnements : santé, application, API à
+  # travers le front, écriture avec l'origine du navigateur (scripts/smoke_test.sh).
   compose-test:
     needs: [images]
     # `!cancelled()` : sans fonction de statut, ce job serait sauté quand un job plus haut a été sauté (Sonar sur
@@ -404,13 +391,9 @@ jobs:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: image-back
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: image-standalone
       - run: |
           docker load -i image-front.tar.gz
           docker load -i image-back.tar.gz
-          docker load -i image-standalone.tar.gz
       - name: Environnement dev
         run: |
           scripts/compose.sh dev up -d --no-build --wait --wait-timeout 180
@@ -426,8 +409,6 @@ jobs:
           scripts/compose.sh production up -d --no-build --wait --wait-timeout 180
           SMOKE_INSECURE=1 scripts/smoke_test.sh https://localhost
           scripts/compose.sh production down -v
-      - name: Image standalone (démarrage de Caddy et du back dans un seul conteneur)
-        run: scripts/smoke_standalone.sh microcrm-standalone:ci
       - name: Journaux en cas d'échec
         if: failure()
         run: docker ps -a --format '{{.Names}}' | xargs -r -n1 docker logs --tail 100
@@ -469,7 +450,7 @@ jobs:
           retention-days: 7
 
   # --- Stage "scan" ---------------------------------------------------------
-  # Trivy sur les trois images construites par `images` (celles qui seront publiées) et sur le dépôt
+  # Trivy sur les deux images construites par `images` (celles qui seront publiées) et sur le dépôt
   # (dépendances, secrets, configurations). Bloquant sur une vulnérabilité critique ou haute qui a un correctif.
   # Image de Trivy épinglée par digest dans scripts/trivy.sh, sans action tierce (cf. ce script). Un seul job
   # pour ne télécharger la base de vulnérabilités qu'une fois.
@@ -489,7 +470,7 @@ jobs:
       - name: Scanner les images
         # Même si le scan du dépôt a échoué : on veut les deux résultats dans le même run.
         if: ${{ !cancelled() }}
-        run: scripts/trivy.sh image microcrm-front:ci microcrm-back:ci microcrm-standalone:ci
+        run: scripts/trivy.sh image microcrm-front:ci microcrm-back:ci
 
   # --- Stage "candidate" (main seulement) -------------------------------------
   # Version SemVer calculée à partir des commits conventionnels depuis le dernier tag (scripts/release.py) ; sans
@@ -514,7 +495,6 @@ jobs:
       tag: ${{ steps.plan.outputs.tag }}
       front-digest: ${{ steps.push.outputs.front }}
       back-digest: ${{ steps.push.outputs.back }}
-      standalone-digest: ${{ steps.push.outputs.standalone }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -679,9 +659,8 @@ jobs:
           VERSION: ${{ needs.candidate.outputs.version }}
           FRONT_DIGEST: ${{ needs.candidate.outputs.front-digest }}
           BACK_DIGEST: ${{ needs.candidate.outputs.back-digest }}
-          STANDALONE_DIGEST: ${{ needs.candidate.outputs.standalone-digest }}
         run: |
-          printf '%s\n' "front=$FRONT_DIGEST" "back=$BACK_DIGEST" "standalone=$STANDALONE_DIGEST" > images-digests.env
+          printf '%s\n' "front=$FRONT_DIGEST" "back=$BACK_DIGEST" > images-digests.env
           echo "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
           # `github.run_attempt` > 1 : relance après un envoi interrompu, la version partielle est remplacée.
           FORCE=$(( GITHUB_RUN_ATTEMPT > 1 )) scripts/candidate_images.sh tag "ghcr.io/$GITHUB_REPOSITORY/" \

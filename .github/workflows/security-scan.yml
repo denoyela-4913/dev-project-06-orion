@@ -22,7 +22,7 @@ jobs:
       - name: Construire les images
         if: ${{ !cancelled() }}
         run: |
-          for target in front back standalone; do docker build --target "$target" -t "microcrm-$target:ci" .; done
+          for target in front back; do docker build --target "$target" -t "microcrm-$target:ci" .; done
       - name: Scanner les images
         if: ${{ !cancelled() }}
-        run: scripts/trivy.sh image microcrm-front:ci microcrm-back:ci microcrm-standalone:ci
+        run: scripts/trivy.sh image microcrm-front:ci microcrm-back:ci
