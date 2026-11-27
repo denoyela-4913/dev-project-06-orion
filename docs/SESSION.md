@@ -5,13 +5,20 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 
 **Dernière mise à jour: 27/11/2026**
 
-## Lot en cours: staging avant la release (branche `ci/staging-promotion`)
+## Dernier lot: staging avant la release (branche `ci/staging-release`)
 
 Demandé le 27/11: trois images dans un job (`standalone` réutilise les étapes), démarrage de `standalone` testé, mêmes
 empreintes en staging et en production, staging identique à la production, release seulement après le staging,
-production par changement de statut de la release. Réalisé et vérifié en local, **non commité** (accord à demander).
+production par changement de statut de la release. Ajout: `paths-ignore` (pas de CI pour `**.md`, `docs/`,
+`learning/`). Commit, PR et fusion en rebase autorisés par l'utilisateur pour ce lot.
 À savoir avant la fusion: `candidate`, `release` et `promote.yml` ne s'exécutent que sur `main`; la fusion de commits
 `build`, `feat`, `fix` ou `perf` publie une pré-version. Fonctionnement: `docs/DEPLOIEMENT.md`, §6.
+
+**Mis de côté: branche `ci/local-scripts` (locale, non poussée, non fusionnée).** Scripts de lancement et Helm,
+`ci_local.sh`, ShellCheck dans la CI, `workflow_dispatch` et section « Scripts » du README. L'installation Helm sur
+minikube par ces scripts n'a pas abouti et son nettoyage a été interrompu: vérifier l'espace `microcrm-dev`, puis
+valider avant fusion. L'option `MINIKUBE_PROFILE` envisagée n'a pas été écrite. L'ancienne branche locale
+`ci/staging-promotion` mélange les deux travaux: ne pas la pousser.
 
 ## Priorité et mandat
 
@@ -23,7 +30,7 @@ production par changement de statut de la release. Réalisé et vérifié en loc
 ## En attente d'une décision de l'utilisateur
 
 Détail dans le backlog: hébergement (environnement permanent, état Terraform distant, sauvegardes); protection de
-l'API; protection de `main`; Quality Gates Sonar bloquants; base de données de production; canal de notification;
+l'API; protection de `main`; Quality Gates Sonar bloquants; séparation de la base (détails); canal de notification;
 format de téléphone; ordre ou parallélisme du job `lint`; sort de `.gitlab-ci.yml`.
 
 ## Où on en est
@@ -46,6 +53,9 @@ format de téléphone; ordre ou parallélisme du job `lint`; sort de `.gitlab-ci
 
 ## Prochaine étape (proposée, non décidée)
 
+0. Valider la branche `ci/local-scripts`, puis la proposer en PR.
+- Séparation de la base (besoin donné le 27/11): plan en 5 PR dans le backlog, après la fusion du lot staging;
+  deux réponses attendues (`standalone`, données à conserver).
 1. Prendre les décisions ci-dessus, en commençant par la sécurité (API, `main`).
 2. Corriger les 7 vulnérabilités moyennes des images (backlog).
 3. Accélération: détection Gradle du scan `sonar-back` (31 s), cache des couches Docker.
