@@ -21,6 +21,9 @@ de `test-back`.
 
 ## Lancer les tests
 
+Toute la CI sur le poste : `scripts/ci_local.sh all` ; sur GitHub, à la main : `gh workflow run ci.yml --ref
+<branche>` (cf. README, « Tester la CI à la main »).
+
 ```bash
 cd back && ./gradlew clean build                     # unitaires, fonctionnels, Checkstyle, SpotBugs
 cd front && npx ng test --watch=false --coverage

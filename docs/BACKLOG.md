@@ -8,6 +8,7 @@
   `rollback.sh` autour de l'`apply` (après un retour arrière, l'état Terraform diffère du cluster); (B) mise à niveau
   par `deploy.sh` (sauvegarde et retour arrière déjà éprouvés), Terraform réservé à la plateforme (le module
   `microcrm` ne gérerait plus la release). Le schéma (case 9) signale cette limite
+
 ### Actions demandées par l'utilisateur le 27/11
 
 - [ ] docs: justifier le maintien de Caddy (décision du 27/11, remplacement par nginx abandonné)
@@ -15,9 +16,6 @@
   - À écrire dans `docs/DEPLOIEMENT.md` (et les livrables si concernés). ELK n'est pas en place dans le dépôt:
     vérifier l'argument avant de le rédiger (format des journaux de Caddy, activation des journaux d'accès absente
     du `Caddyfile`, collecte vers ELK) et le comparer honnêtement à nginx.
-- [ ] outillage: la branche `ci/local-scripts` est à reprendre après ce lot: `ci_local.sh` construit et teste encore
-  `standalone` (et appelle `smoke_standalone.sh`, supprimé), ne passe pas par `ci_test.sh` et `build_images.sh`; son
-  `app.sh` (Compose) recoupe `run_all.sh`
 
 ### Priorité (donnée par l'utilisateur le 26/11): sécurité et accélération de la CI
 
@@ -41,8 +39,7 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
   digest d'`alpine:3.24` s'il les contient (rôle de Dependabot), sinon décider d'un `apk upgrade` à la construction
   (au prix de la reproductibilité). Niveau moyen: traitement planifié (document de normalisation, §2.7). Le job
   `scan` ne bloque pas à ce niveau
-- [ ] ci: exécuter ShellCheck dans la CI (passé à la main pendant le mandat; le job `lint` reste réservé à ESLint et
-  hadolint: à placer dans `infra-check`)
+- [x] ci: ShellCheck dans la CI (`scripts/lint_scripts.sh`, job `infra-check`, 27/11)
 - [ ] ci (priorité accélération): la détection du projet Gradle par le scan de `sonar-back` prend encore 31 s
   (« Build system information detected in 31260ms », run 45926860668) malgré le cache de la distribution: 39 s
   avant. Le job est passé de 84-91 s à 63-74 s. Piste à essayer: restaurer aussi les dépendances Gradle
@@ -70,7 +67,7 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 - [ ] cd: sauvegardes planifiées et stockées hors de la machine qui les lance (aujourd'hui: à la demande et avant
   chaque mise à jour, en local); procédure de rétention. Lié au choix de l'hébergement
 - [ ] ci: suivre les mises à jour des images de Trivy et de Playwright (références par digest dans
-  `scripts/trivy.sh` et `scripts/e2e.sh`, que Dependabot ne voit pas), ainsi que celle de hadolint (`ci.yml`) et
+  `scripts/trivy.sh`, `scripts/e2e.sh` et `scripts/lint_scripts.sh`, que Dependabot ne voit pas), ainsi que celle de hadolint (`ci.yml`) et
   les versions de kind, Helm et Terraform
 - [ ] données: séparer la base du back pour pouvoir lancer plusieurs réplicas du back avec une seule base
   - Besoin donné par l'utilisateur le 27/11. HSQLDB, interne au processus, limite à une instance et à une coupure
@@ -98,8 +95,6 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
     permanent). La question sur `standalone` est close: la cible est supprimée.
 - [ ] back (à vérifier, non testé): `Organization.persons` est en `CascadeType.ALL`; d'après le code, supprimer
   une organisation pourrait supprimer ses personnes. Écrire d'abord un test qui le montre
-- [ ] outillage: valider la branche `ci/local-scripts` (scripts de lancement et Helm sur minikube, CI locale,
-  ShellCheck, lancement manuel de la CI). Installation Helm à rejouer jusqu'au bout avant la PR
 - [ ] ci: mettre en cache les couches Docker d'un run à l'autre (le job `images` reconstruit tout à chaque run). Autre
   piste à essayer: prêter le cache Gradle du runner à `docker build` en lecture seule (`GRADLE_RO_DEP_CACHE`)
 - [ ] ci (priorité accélération, en attente de décision: ordre du schéma): ne plus faire attendre `images` après les
