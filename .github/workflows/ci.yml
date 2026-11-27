@@ -146,7 +146,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
         with:
-          # Helm 4 : la branche 3 n'est plus maintenue au-delà de 11/2026. Version fixe (pas « latest »).
+          # Helm 4 : la branche 3 ne reçoit plus de correctifs de sécurité après le 10/02/2027
+          # (https://helm.sh/blog/helm-v3-end-of-life/), avant le seuil du projet (05/2027). Version fixe.
           version: v4.3.2
       - name: Chart Helm, pour les trois environnements
         run: |
