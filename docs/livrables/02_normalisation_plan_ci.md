@@ -1,7 +1,7 @@
 ---
 title: "Normalisation du processus de développement et plan de mise en œuvre de la chaîne CI"
 subtitle: "Projet Orion – Option B – version 01"
-date: "27/11/2026"
+date: "28/11/2026"
 ---
 
 # 1. Introduction
@@ -81,6 +81,10 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
   documentation changent (`**.md`, `docs/`, `learning/`), qu'aucun job ne lit. La CI se lance aussi à la main sur
   la branche choisie (sans rien publier), et se rejoue sur un poste avec `scripts/ci_local.sh` (hors SonarQube et
   publication).
+- **Mêmes contrôles sur le poste et dans la CI** (28/11/2026) : un job rejouable lance le script de même nom
+  (`scripts/ci/<job>.sh`), que `ci_local.sh <job>` lance aussi. Les contrôles s'écrivent dans ces scripts ; le
+  workflow décrit les déclencheurs, les outils, les artefacts et les droits. Un test vérifie la correspondance des
+  noms. Les analyses SonarQube et la publication, qui dépendent de GitHub, ne se rejouent pas.
 - Fréquence d'intégration : au moins une PR par jour de travail sur une fonctionnalité ; branches de moins de
   quelques jours.
 - Critère de réussite : tous les jobs obligatoires verts (lint, tests, build, scans).
@@ -220,7 +224,7 @@ l'automatisation.
   déploiement, la sauvegarde et la notification des résultats ; tests des scripts.
 - **Responsables** : Ops (Bash, Ansible) avec un Dev pour Python.
 - **Livrables** : dossier `scripts/` documenté dans le README (but, fonctionnement, paramètres).
-- **État** : **fait** pour l'exécution des tests, le déploiement, la sauvegarde, la restauration, le retour arrière,
+- **État** : **fait** pour l'exécution des tests (un script par job rejouable, voir 2.5), le déploiement, la sauvegarde, la restauration, le retour arrière,
   la notification, la release et les dépendances (en-tête de chaque script et tableau du README : but,
   fonctionnement, paramètres) ; ShellCheck bloquant dans la CI (job `infra-check`).
 
