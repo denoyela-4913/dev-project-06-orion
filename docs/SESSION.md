@@ -5,31 +5,17 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 
 **Dernière mise à jour: 27/11/2026**
 
-## Dernier lot: qualité dans les tests, puis essais de promotion et de retour arrière (27/11)
+## Dernier lot: documentation et scripts (27/11)
 
-PR #59 et #60 fusionnées: `standalone` supprimée, images construites à partir des artefacts des tests, scripts
-`run_*.sh`, `build-front` et `build-back` supprimés, Checkstyle et SpotBugs dans `test-back` et dans Sonar.
-`v0.2.4` **promue** (dernière release): première exécution de `promote.yml`, réussie. Retours arrière de production
-et de staging réussis. Trouvé: `promote.yml` ne sait qu'installer (backlog, décision à prendre).
-Documentation: branche `ci/promotion-documentee`, fusion autorisée par l'utilisateur.
-Schéma et livrables mis à jour (branche `docs/reprise-livrables`), à partir du travail non commité du worktree
-`../orion-staging-wt`: celui-ci est **périmé**, ne pas le commiter. En cours ensuite: reprise de `ci/local-scripts`.
-Commit, PR et fusion autorisés par l'utilisateur pour ces deux lots.
-
-## Dernier lot: staging avant la release (branche `ci/staging-release`)
-
-Demandé le 27/11: trois images dans un job (`standalone` réutilise les étapes), démarrage de `standalone` testé, mêmes
-empreintes en staging et en production, staging identique à la production, release seulement après le staging,
-production par changement de statut de la release. Ajout: `paths-ignore` (pas de CI pour `**.md`, `docs/`,
-`learning/`). Commit, PR et fusion en rebase autorisés par l'utilisateur pour ce lot.
-À savoir avant la fusion: `candidate`, `release` et `promote.yml` ne s'exécutent que sur `main`; la fusion de commits
-`build`, `feat`, `fix` ou `perf` publie une pré-version. Fonctionnement: `docs/DEPLOIEMENT.md`, §6.
-
-**Mis de côté: branche `ci/local-scripts` (locale, non poussée, non fusionnée).** Scripts de lancement et Helm,
-`ci_local.sh`, ShellCheck dans la CI, `workflow_dispatch` et section « Scripts » du README. L'installation Helm sur
-minikube par ces scripts n'a pas abouti et son nettoyage a été interrompu: vérifier l'espace `microcrm-dev`, puis
-valider avant fusion. L'option `MINIKUBE_PROFILE` envisagée n'a pas été écrite. L'ancienne branche locale
-`ci/staging-promotion` mélange les deux travaux: ne pas la pousser.
+- PR #59 à #62: `standalone` supprimée, images construites à partir des artefacts des tests, jobs de build supprimés,
+  Checkstyle et SpotBugs dans `test-back` et dans Sonar, `v0.2.4` **promue**, retours arrière essayés.
+- PR #63: schéma et livrables (le worktree `../orion-staging-wt` est **périmé**, ne pas le commiter).
+- Branche `ci/scripts-dev` (reprise de `ci/local-scripts`): lancement manuel de la CI, ShellCheck, `ci_local.sh`,
+  `app.sh`, Helm sur minikube. CI locale complète réussie sur le poste; minikube validé sur un runner GitHub (run
+  46070319151). Fusion autorisée par l'utilisateur.
+- À décider: promotion capable de mettre à niveau la production (backlog). Restent aussi la justification de Caddy.
+- Branches et worktrees locaux périmés (`ci/staging-promotion`, `ci/local-scripts`, `docs/pipeline-staging`): non
+  supprimés, accord à demander.
 
 ## Priorité et mandat
 
@@ -46,11 +32,10 @@ format de téléphone; ordre ou parallélisme du job `lint`; sort de `.gitlab-ci
 
 ## Où on en est
 
-- `main` à la fin de la nuit du 26 au 27/11: pipeline CI/CD complet du schéma (PR #43 à #56), dernière version
-  publiée `v0.2.2`, les trois Quality Gates Sonar OK (non bloquants). Bilan, preuves et réserves:
-  [`docs/AUDIT-2026-11-27.md`](AUDIT-2026-11-27.md).
-- **Une fusion sur `main` contenant `feat`, `fix`, `perf`, `build` ou un changement cassant publie une version et
-  des images publiques.** (Avec le lot en cours: des images candidates, puis une pré-version après le staging.)
+- Fin de la nuit du 26 au 27/11: PR #43 à #56 ([`docs/AUDIT-2026-11-27.md`](AUDIT-2026-11-27.md)). Dernière release
+  au 27/11 au soir: `v0.2.4` (promue). Les trois Quality Gates Sonar ne sont pas bloquants.
+- **Une fusion sur `main` contenant `feat`, `fix`, `perf`, `build` ou un changement cassant publie des images
+  candidates, puis une pré-version après le staging.**
 - Historique détaillé (mesures, incidents, branches supprimées): [`docs/HISTORIQUE-SESSIONS.md`](HISTORIQUE-SESSIONS.md),
   à ne consulter qu'au besoin.
 
@@ -64,7 +49,6 @@ format de téléphone; ordre ou parallélisme du job `lint`; sort de `.gitlab-ci
 
 ## Prochaine étape (proposée, non décidée)
 
-0. Valider la branche `ci/local-scripts`, puis la proposer en PR.
 - Séparation de la base (besoin donné le 27/11): plan en 5 PR dans le backlog, après la fusion du lot staging;
   une réponse attendue (données à conserver).
 1. Prendre les décisions ci-dessus, en commençant par la sécurité (API, `main`).

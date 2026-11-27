@@ -171,6 +171,9 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] outillage: scripts pour tester la CI à la main (`ci_local.sh`, lancement manuel) et pour utiliser l'application
+  et l'infrastructure (`app.sh`, `run_*.sh`, Helm sur minikube), ShellCheck dans la CI (27/11). Helm sur minikube
+  validé sur un runner GitHub (run 46070319151)
 - [x] docs: schéma du pipeline (`.drawio` et `.png`, rendu par `docs/livrables/render_schema.py`) et livrables à
   jour au 27/11, après les PR #59 à #62 (travail commencé par une autre session, repris et complété)
 - [x] cd: promotion, retour arrière de production et de staging essayés (27/11). `v0.2.4` promue (run
