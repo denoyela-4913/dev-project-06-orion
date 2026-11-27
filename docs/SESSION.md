@@ -3,7 +3,12 @@
 Fichier de passage de relais entre sessions (Claude CLI, Claude dans VS Code). À mettre à jour à la fin de chaque
 lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `docs/BACKLOG.md`.
 
-**Dernière mise à jour: 27/11/2026**
+**Dernière mise à jour: 28/11/2026**
+
+## Lot en cours: un script par job (branche `ci/scripts-par-job`, 28/11)
+
+Chaque job rejouable de `ci.yml` lance `scripts/ci/<job>.sh`, que `ci_local.sh <job>` lance aussi. Commit, PR et
+fusion autorisés par l'utilisateur pour ce lot.
 
 ## Dernier lot: documentation et scripts (27/11)
 

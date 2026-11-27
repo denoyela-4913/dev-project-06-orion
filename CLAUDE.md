@@ -25,6 +25,8 @@ et outils, ce fichier est la seule mémoire commune).
 ## Commandes
 
 `README.md` décrit les scripts. Toute la CI sur le poste : `scripts/ci_local.sh all` (hors Sonar et publication).
+**Un job rejouable de `ci.yml` lance `scripts/ci/<nom du job>.sh`** : les contrôles s'écrivent dans ces scripts, pas
+dans le YAML (`scripts/test_ci_scripts.py` vérifie les noms).
 
 ```bash
 # Back (http://localhost:8080) puis front (http://localhost:4200); arrêt: Ctrl+C
@@ -33,7 +35,7 @@ cd front && npm ci --ignore-scripts && npm start
 
 # Lint (job `lint` de la CI ; Checkstyle et SpotBugs : `./gradlew check`, job `test-back`)
 cd front && npm run lint
-docker run --rm -i hadolint/hadolint:v2.15.1-alpine hadolint - < Dockerfile
+scripts/ci_local.sh lint                  # ESLint et hadolint, image épinglée dans scripts/ci/lint.sh
 
 # Tests
 cd back && ./gradlew clean build

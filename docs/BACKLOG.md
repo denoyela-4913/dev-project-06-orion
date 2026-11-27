@@ -67,7 +67,7 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 - [ ] cd: sauvegardes planifiées et stockées hors de la machine qui les lance (aujourd'hui: à la demande et avant
   chaque mise à jour, en local); procédure de rétention. Lié au choix de l'hébergement
 - [ ] ci: suivre les mises à jour des images de Trivy et de Playwright (références par digest dans
-  `scripts/trivy.sh`, `scripts/e2e.sh` et `scripts/lint_scripts.sh`, que Dependabot ne voit pas), ainsi que celle de hadolint (`ci.yml`) et
+  `scripts/trivy.sh`, `scripts/e2e.sh` et `scripts/lint_scripts.sh`, que Dependabot ne voit pas), ainsi que celle de hadolint (`scripts/ci/lint.sh`) et
   les versions de kind, Helm et Terraform
 - [ ] données: séparer la base du back pour pouvoir lancer plusieurs réplicas du back avec une seule base
   - Besoin donné par l'utilisateur le 27/11. HSQLDB, interne au processus, limite à une instance et à une coupure
@@ -171,6 +171,8 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] ci: un job rejouable porte le nom de son script (`scripts/ci/<job>.sh`), lancé par la CI et par
+  `ci_local.sh` (branche `ci/scripts-par-job`, 28/11). Correspondance vérifiée par `scripts/test_ci_scripts.py`
 - [x] outillage: scripts pour tester la CI à la main (`ci_local.sh`, lancement manuel) et pour utiliser l'application
   et l'infrastructure (`app.sh`, `run_*.sh`, Helm sur minikube), ShellCheck dans la CI (27/11). Helm sur minikube
   validé sur un runner GitHub (run 46070319151)
