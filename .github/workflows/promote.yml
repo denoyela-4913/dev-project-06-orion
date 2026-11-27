@@ -4,6 +4,9 @@
 # La pré-version créée par ci.yml ne déclenche pas ce workflow : `released` ne concerne pas les pré-versions, et
 # GitHub ne déclenche aucun workflow pour ce qui est fait avec le jeton d'un workflow. Le passage en production
 # reste donc un geste humain.
+# Limite (essai du 27/11) : ce workflow installe sur un cluster neuf (deploy_demo.sh, état Terraform temporaire). Il
+# ne sait pas mettre à niveau une production existante, et ne fait ni sauvegarde ni retour arrière après un test en
+# échec : scripts/deploy.sh le fait (docs/DEPLOIEMENT.md, §6). À corriger avec le choix d'un hébergement.
 # La « production » est ici un cluster kind jetable : aucun hébergement n'est choisi (cf. docs/BACKLOG.md). Un
 # échec ne rend pas à la release son statut de pré-version : il est signalé par la notification.
 name: Passage en production
