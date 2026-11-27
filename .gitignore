@@ -11,5 +11,6 @@ terraform.tfvars
 
 # Notes écrites par scripts/release.py
 /release-notes.md
+
 # Python
 __pycache__/

@@ -17,9 +17,6 @@
 
 Objectif: toutes les cases du schéma « faites », ou une entrée « en attente de décision ». Une PR par lot.
 
-- [ ] cd: déploiement de démonstration, test de santé HTTP, notification du résultat
-- [ ] cd: retour arrière automatique (`helm rollback`) et sauvegarde des données
-- [ ] cd: livraison manuelle de secours
 - [ ] tests: compléter les tests unitaires, fonctionnels et de bout en bout
 - [ ] docs: documentation CI/CD et déploiement à jour, schéma à jour
 - [ ] docs: fiches et flashcards sur le projet, dont les processus CI et CD (`learning/`)
@@ -30,8 +27,12 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 
 ### Autres tâches
 
-- [ ] cd (en attente de décision: visibilité des paquets): les paquets GHCR créés par la CI peuvent être privés par
-  défaut; les rendre publics (réglage GitHub) si les images doivent être lues sans authentification
+- [ ] ci: à la première release (v0.1.0), l'envoi de l'image `standalone` sur GHCR a été refusé (`denied`) après
+  ceux de `front` et `back`; la relance du job a réussi (aucune release incomplète: le tag vient en dernier). Cause
+  non identifiée. Surveiller la prochaine release; si cela se répète, réessayer l'envoi dans le script
+- [ ] cd: essayer une fois le workflow « Livraison manuelle de secours » (sans `publish` sur une version existante)
+- [ ] cd (en attente de décision: canal de notification): créer le secret `NOTIFY_WEBHOOK_URL` (Slack, Teams…); en
+  attendant, résumé du run, commentaire du commit et courriels de GitHub
 - [ ] cd (en attente de décision: hébergement): créer un environnement permanent (cluster, domaine, certificat,
   stockage). Terraform devrait alors aussi créer le cluster, avec un état distant, chiffré et verrouillé à la place
   de l'état local
@@ -153,6 +154,18 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] cd: livraison manuelle de secours
+  - Workflow « Livraison manuelle de secours » (construction, scan et publication facultatifs, puis déploiement), et
+    scripts utilisables depuis un poste (`publish_images.sh`, `deploy.sh`). **Le workflow n'a pas été lancé**: il
+    publie des images, à essayer à la première occasion (entrée « À faire »).
+- [x] cd: retour arrière automatique (`helm rollback`) et sauvegarde des données
+  - Annulation par Helm si les pods ne sont pas prêts, `helm rollback` si le test de santé échoue, sauvegarde et
+    restauration à froid. Éprouvés à chaque run sur staging (`scripts/test_recovery.sh`).
+- [x] cd: déploiement de démonstration, test de santé HTTP, notification du résultat
+  - Job `deploy-demo`: dev, staging et production déployés avec Terraform et Helm sur un cluster kind jetable, test de
+    santé de chacun; après une release, images relues depuis GHCR. Job `notify`: résumé du run, commentaire du commit
+    sur `main`, webhook si `NOTIFY_WEBHOOK_URL` existe. Limite: pas d'environnement permanent (en attente de
+    décision: hébergement).
 - [x] ci: release sur `main` (version SemVer et tag, images publiées sur GHCR, notes de release)
   - Job `release`: version SemVer calculée par `scripts/release.py` (13 tests), images testées et scannées
     publiées sur GHCR (`scripts/publish_images.sh`, refuse d'écraser une version; un premier essai local a montré
