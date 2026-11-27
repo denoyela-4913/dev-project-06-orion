@@ -16,15 +16,16 @@ La compilation et l'assemblage des images sont séparés :
 
 | Étape | Rôle |
 |---|---|
-| `front-build`, `back-build` | compilent (Node, Gradle). Les jobs `test-front` et `test-back` les construisent et y jouent les tests (`scripts/ci_test.sh <front\|back>`) |
+| `front-build`, `back-build` | compilent (Node, Gradle). Les jobs `test-front` et `test-back` les construisent et y jouent les tests (`scripts/ci/test-front.sh`, `test-back.sh`, par `scripts/ci_test.sh`) |
 | `front-dist`, `back-dist` | ne contiennent que le produit : front compilé, JAR |
 | `front`, `back` | images finales, qui lisent le produit dans l'étape `-dist` |
 
 - **À la main**, le produit vient de l'étape de compilation : `docker build --target back .` suffit.
 - **En CI**, `test-front` et `test-back` publient ce produit en artefact (`dist-front`, `dist-back`). Le job
-  `images` lance `scripts/build_images.sh artifacts` : `--build-context front-dist=…` remplace l'étape `-dist` par
-  l'artefact, BuildKit saute la compilation, et le script échoue si elle a lieu quand même. L'image contient ainsi
-  le produit sorti de l'étape où les tests ont tourné.
+  `images` lance `scripts/ci/images.sh`, qui appelle `scripts/build_images.sh artifacts` : l'option
+  `--build-context front-dist=…` remplace l'étape `-dist` par l'artefact, BuildKit saute la compilation, et le
+  script échoue si elle a lieu quand même. L'image contient ainsi le produit sorti de l'étape où les tests ont
+  tourné.
 
 Le Dockerfile ne produit que le JAR (`./gradlew bootJar`) ; Checkstyle et SpotBugs sont exécutés par `test-back` (`./gradlew check`).
 Pour lancer les conteneurs avec Docker seul : `scripts/run_all.sh`, `run_back.sh`, `run_front.sh` (cf. README).
@@ -225,8 +226,9 @@ ignoré par git).
 ## 7. Déploiement de démonstration
 
 Les jobs `staging` (dev puis staging) et le workflow de production créent chacun un cluster **kind** dans le runner
-et lancent `scripts/deploy_demo.sh` : pour chaque environnement, `terraform apply`, contrôle que les pods désignent
-les empreintes attendues quand elles sont fournies, test de déploiement par port-forward, puis `terraform destroy`.
+et lancent `scripts/deploy_demo.sh` (le job `staging` passe par `scripts/ci/staging.sh`) : pour chaque
+environnement, `terraform apply`, contrôle que les pods désignent les empreintes attendues quand elles sont fournies,
+test de déploiement par port-forward, puis `terraform destroy`.
 Sur staging, `scripts/test_recovery.sh` éprouve en plus la sauvegarde et la restauration, l'annulation d'une version
 qui ne démarre pas et le retour arrière d'une version qui échoue au test. Sur une PR, les images du run sont
 chargées dans le cluster : **le déploiement par empreinte ne s'exécute que sur `main`**.
