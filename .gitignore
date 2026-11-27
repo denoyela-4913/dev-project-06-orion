@@ -17,3 +17,6 @@ __pycache__/
 /e2e/node_modules
 /e2e/test-results
 /e2e/playwright-report
+
+# Verrou créé par `terraform test` dans le module (les verrous suivis sont ceux des environnements)
+deploy/terraform/modules/platform/.terraform.lock.hcl
