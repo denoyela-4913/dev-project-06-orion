@@ -85,14 +85,18 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
 - Outil : GitHub Actions (workflow validé), dans la continuité des projets précédents : environnement cohérent
   GitHub, GitHub Actions, GHCR (voir 3.5, risque R2 pour le lien GitLab attendu par le sujet).
 - Ordre des jobs : lint, puis tests avec couverture, puis, en parallèle, les trois analyses SonarQube (une par
-  projet : front, back et infra, voir 2.6) et le contrôle des seuils de couverture (job `coverage`), puis build,
-  vérification des images (bout en bout, Compose, démarrage de l'image tout en un, scan) ; puis, selon le
-  contexte, images candidates, staging, pré-version, et enfin production (voir 2.9). SonarQube vient après les tests car il importe leur couverture (les
-  rapports des tests sont réutilisés, sans relancer les tests) ; le build attend les analyses pour ne pas
-  construire une version dont l'analyse a échoué. L'analyse de l'infra n'attend rien et part dès le début.
-- Lint : le job `lint` ne contient qu'**ESLint** et **hadolint**. **Checkstyle** et **SpotBugs** sont lancés par
-  `./gradlew build` dans le job `build-back`, après la compilation dont ils ont besoin. Conséquence acceptée :
-  leurs erreurs n'apparaissent qu'à l'étape de build, et ce job relance les tests du back.
+  projet : front, back et infra, voir 2.6) et le contrôle des seuils de couverture (job `coverage`), puis
+  construction des images et vérification de celles-ci (bout en bout, Compose, scan) ; puis, selon le contexte,
+  images candidates, staging, pré-version, et enfin production (voir 2.9). SonarQube vient après les tests car il
+  importe leurs rapports (sans relancer les tests) ; les images attendent les analyses. L'analyse de l'infra
+  n'attend rien et part dès le début.
+- **Une seule compilation** : `test-front` et `test-back` testent dans l'étape de compilation du `Dockerfile`, et
+  publient son produit (front compilé, JAR) en artefact, conservé 7 jours. Le job `images` le reprend sans
+  recompiler. Il n'y a plus de jobs de build séparés (27/11/2026).
+- Lint : le job `lint` ne contient qu'**ESLint** et **hadolint**. **Checkstyle** et **SpotBugs**, qui ont besoin du
+  code compilé, sont lancés par `./gradlew check` dans `test-back`. Ils sont bloquants ; leurs rapports sur le code
+  principal sont importés dans SonarQube, même après un échec. Les écarts sur le code de test, que SonarQube
+  n'analyse pas, ne se lisent que dans `test-back`.
 - Durée de référence : **127 s** au tag `v0.0.2` (Sonar en parallèle des tests, sans cache). Avec un seul scan
   Sonar entre les tests et le build : **181 s** sur `main` (run 45809708667, scan de 104 s). Avec trois scans
   parallèles : **131 s** sur `main` (run 45880516355), le plus long scan (back) durant 62 s. Pipeline complet,
@@ -172,9 +176,12 @@ ajouter.
   sur ces mêmes empreintes et crée une **pré-version** GitHub (tag, notes, chart Helm, empreintes).
 - **Mise en production par décision humaine.** Passer la pré-version au statut de release déclenche le workflow
   `promote.yml`, qui déploie en production les empreintes jointes à la release.
-- **Limites actuelles.** La production est un cluster jetable créé par la CI ; la livraison manuelle de secours
-  avec publication reconstruit les images et ne passe pas par cette validation ; un déploiement de production en
-  échec ne remet pas la release au statut de pré-version ; rien n'empêche de promouvoir une pré-version ancienne.
+- **Limites actuelles.** La production est un cluster jetable créé par la CI. La promotion ne sait qu'**installer** :
+  sur une production existante elle échoue, et elle ne fait ni sauvegarde ni retour arrière après un test de santé
+  en échec. La mise à niveau d'une production existante passe par `scripts/deploy.sh`, qui fait les deux. La
+  livraison manuelle de secours avec publication reconstruit les images et ne passe pas par la validation en
+  staging ; un déploiement de production en échec ne remet pas la release au statut de pré-version ; rien
+  n'empêche de promouvoir une pré-version ancienne.
 
 # 3. Plan de mise en œuvre
 
@@ -197,7 +204,7 @@ l'automatisation.
 ### 3.2.2 Étape 2 : Contrôles qualité et sécurité
 
 - **Description** : SonarQube avec couverture (un projet et un gate par partie, non bloquants) et seuils de couverture par partie (job `coverage`, bloquant), Trivy (dépendances, Dockerfile, images), lint
-  (ESLint, hadolint), Checkstyle et SpotBugs dans le build Gradle.
+  (ESLint, hadolint), Checkstyle et SpotBugs dans les tests du back.
 - **Responsables** : Dev, avec Ops pour les seuils Trivy.
 - **Livrables** : jobs `lint`, `trivy`, `sonar-front`, `sonar-back`, `sonar-infra` ; rapport des résultats ; seuils documentés.
 - **État** : SonarQube **fait**, en trois projets (front, back, infra) depuis le 26/11/2026, gates non
@@ -222,7 +229,8 @@ l'automatisation.
 - **Responsables** : Dev et Ops.
 - **Livrables** : images dans le registre ; tag de version ; notes de release ; empreintes des images.
 - **État** : **fait** (versions `v0.1.0` à `v0.2.2` le 27/11/2026 : images sur GHCR, tag, notes, chart Helm ; puis
-  `v0.2.3`, première **pré-version** publiée après validation en staging, avec les empreintes). La livraison manuelle de secours a été lancée une fois sans publication.
+  `v0.2.3`, première **pré-version** publiée après validation en staging, avec les empreintes, puis `v0.2.4`). La
+  livraison manuelle de secours a été lancée une fois sans publication.
 
 ### 3.2.5 Étape 5 : Déploiement automatisé
 
@@ -232,9 +240,11 @@ l'automatisation.
 - **Livrables** : charts Helm, fichiers Terraform, playbooks Ansible, pipeline CD.
 - **État** : **fait en démonstration** : Docker Compose, chart Helm (dev, staging, production), Terraform
   (modules et environnements), pipeline CD, test de santé, retour arrière, sauvegarde et restauration, sur un
-  cluster **jetable** créé par la CI. Le staging, identique à la production hors valeurs d'installation, a validé
-  `v0.2.3` par ses empreintes. Le passage en production (`promote.yml`) est écrit et essayé en local, mais **pas
-  encore exécuté sur GitHub**. **Il n'y a pas encore d'environnement permanent** (hébergement à décider).
+  cluster **jetable** créé par la CI. Essais du 27/11/2026 : `v0.2.4` **promue en production** par `promote.yml`
+  avec les empreintes validées en staging ; retour arrière de production entre `0.2.4` et `0.2.2` et secours en
+  production réussis (par `deploy.sh` et `rollback.sh`) ; retour arrière de staging éprouvé à chaque run avec
+  staging. La promotion ne sait pas encore mettre à niveau une production existante (voir 2.9).
+  **Il n'y a pas encore d'environnement permanent** (hébergement à décider).
   Ansible n'est pas utilisé : aucune machine n'est à configurer.
 
 ## 3.3 Ressources nécessaires
@@ -287,12 +297,13 @@ processus automatisé, répétable et mesurable.
 - Protéger l'API (authentification ou restriction réseau) avant toute exposition, et protéger la branche `main`.
 - Décider le passage des Quality Gates en mode bloquant.
 - Aligner la livraison manuelle de secours sur la règle « staging d'abord ».
+- Faire mettre à niveau la production par la promotion, avec sauvegarde et retour arrière.
 - Séparer la base de données du back, pour pouvoir lancer plusieurs réplicas.
 - Raccourcir le pipeline ; ajouter ShellCheck à la CI, les tests de charge, le monitoring et les métriques DORA.
 - Réviser ce document à chaque jalon.
 
 # Annexe : schéma du pipeline cible
 
-Vert : fait ; orange : écrit, pas encore exécuté ; les cases de secours gardent une bordure rouge (retour arrière) ou grise (livraison manuelle). Source modifiable : `schema_pipeline_ci_cd.drawio`.
+Vert : fait ; orange : limite connue ; les cases de secours gardent une bordure rouge (retour arrière) ou grise (livraison manuelle). Source modifiable : `schema_pipeline_ci_cd.drawio`.
 
 ![Pipeline CI/CD cible d'Orion](schema_pipeline_ci_cd.png){width=9.4in}
