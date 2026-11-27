@@ -8,3 +8,6 @@ backups/
 *.tfstate.*
 *.tfplan
 terraform.tfvars
+
+# Notes écrites par scripts/release.py
+/release-notes.md

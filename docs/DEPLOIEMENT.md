@@ -142,7 +142,7 @@ Sur `main`, le job `release` publie une version quand les commits depuis le dern
 Il publie sur GHCR `ghcr.io/<propriétaire>/<dépôt>/microcrm-{front,back,standalone}:X.Y.Z` (les images testées et
 scannées dans le même run, sans reconstruction ; pas d'étiquette `latest`), puis crée la release GitHub : tag
 `vX.Y.Z`, notes générées depuis les commits et paquet du chart Helm. Pour connaître la prochaine version sans rien
-publier : `python3 scripts/release.py --notes /tmp/notes.md`.
+publier : `python3 scripts/release.py` (écrit `release-notes.md`, ignoré par git).
 
 Si l'envoi s'interrompt, relancer le job : à partir de la deuxième tentative, les images déjà envoyées sont
 remplacées. Un nouveau paquet GHCR peut être privé par défaut : sa visibilité se règle dans GitHub (backlog).

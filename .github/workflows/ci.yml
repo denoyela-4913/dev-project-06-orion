@@ -435,7 +435,7 @@ jobs:
           fetch-depth: 0
       - name: Calculer la version et les notes
         id: plan
-        run: python3 scripts/release.py --notes release-notes.md --outputs "$GITHUB_OUTPUT"
+        run: python3 scripts/release.py >> "$GITHUB_OUTPUT"
       - name: Vérifier que la version n'est pas déjà publiée
         id: check
         if: steps.plan.outputs.released == 'true'
