@@ -371,7 +371,8 @@ livraison. Le processus Ops est extrêmement limité et entièrement manuel.
 - **Raisonnement** : le Dev ne passe plus par un échange de numéros de version par e-mail ; les Ops
   récupèrent une image déjà testée et scannée.
 - **Implémentation** : versionnement automatique à partir des conventional commits ; publication des
-  images dans le registre de la plateforme ; possibilité de **forcer une livraison manuelle** si
+  images dans le registre de la plateforme ; version publiée seulement après validation en staging, puis passée en
+  production sans reconstruction (voir Modèle 2, §2.9) ; possibilité de **forcer une livraison manuelle** si
   l'automatisation tombe en panne.
 - **Impacts** : délai de reprise réduit en cas de défaut urgent (lead time) ; plus de fréquence de
   livraison.
