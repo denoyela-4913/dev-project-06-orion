@@ -2,6 +2,22 @@
 
 ## À faire
 
+### Actions demandées par l'utilisateur le 27/11
+
+- [ ] docs: justifier le maintien de Caddy (décision du 27/11, remplacement par nginx abandonné)
+  - Raison donnée par l'utilisateur: Caddy s'intègre bien avec ELK pour générer les rapports.
+  - À écrire dans `docs/DEPLOIEMENT.md` (et les livrables si concernés). ELK n'est pas en place dans le dépôt:
+    vérifier l'argument avant de le rédiger (format des journaux de Caddy, activation des journaux d'accès absente
+    du `Caddyfile`, collecte vers ELK) et le comparer honnêtement à nginx.
+- [ ] ci (souhaité par l'utilisateur le 27/11, « a priori »): supprimer les jobs `build-front` et `build-back`.
+  `build-front` fait double emploi avec l'étape `front-build`. `build-back` est le seul à lancer Checkstyle et
+  SpotBugs: lancer d'abord `./gradlew check` à la place de `./gradlew test` dans `ci_test.sh` (essayé en local dans
+  l'étape de compilation: réussi en 21 s). Mettre à jour `needs` et `if` de `candidate`, le commentaire du job
+  `lint`, la documentation, le schéma et les livrables
+- [ ] outillage: la branche `ci/local-scripts` est à reprendre après ce lot: `ci_local.sh` construit et teste encore
+  `standalone` (et appelle `smoke_standalone.sh`, supprimé), ne passe pas par `ci_test.sh` et `build_images.sh`; son
+  `app.sh` (Compose) recoupe `run_all.sh`
+
 ### Priorité (donnée par l'utilisateur le 26/11): sécurité et accélération de la CI
 
 - [ ] sécurité (en attente de décision: réglage du dépôt GitHub, hors des fichiers versionnés): protéger `main` en
@@ -42,9 +58,9 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
   `deploy-demo`, `images` jusqu'à 100 s (le build Docker du back relance les tests et retélécharge tout: cache de
   couches, ou image construite à partir du JAR de `build-back`), `scan` et `compose-test` environ 70 s (en
   parallèle). Aussi: une branche avec PR lance deux runs par push
-- [ ] ci: à la première release (v0.1.0), l'envoi de l'image `standalone` sur GHCR a été refusé (`denied`) après
-  ceux de `front` et `back`; la relance du job a réussi (aucune release incomplète: le tag vient en dernier). Cause
-  non identifiée. Surveiller la prochaine release; si cela se répète, réessayer l'envoi dans le script
+- [ ] ci: à la première release (v0.1.0), l'envoi d'une image (la troisième, `standalone`, supprimée depuis) sur
+  GHCR a été refusé (`denied`); la relance du job a réussi. Cause non identifiée: si cela se répète, réessayer
+  l'envoi dans le script
 - [ ] cd (en attente de décision: canal de notification): créer le secret `NOTIFY_WEBHOOK_URL` (Slack, Teams…); en
   attendant, résumé du run, commentaire du commit et courriels de GitHub
 - [ ] cd (en attente de décision: hébergement): créer un environnement permanent (cluster, domaine, certificat,
@@ -77,9 +93,8 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
   - PR 5, documentation: déploiement, sécurité, schéma, livrables.
   - Limite: une seule instance de base reste un point de panne unique (haute disponibilité hors périmètre). HPA
     après les tests de charge.
-  - En attente de réponse: (1) image `standalone`: HSQLDB en mémoire pour la démonstration seulement
-    (recommandé, mais second moteur à tester) ou PostgreSQL externe obligatoire; (2) données locales à conserver
-    ou base vide au départ (recommandé: aucun environnement permanent).
+  - En attente de réponse: données locales à conserver ou base vide au départ (recommandé: aucun environnement
+    permanent). La question sur `standalone` est close: la cible est supprimée.
 - [ ] back (à vérifier, non testé): `Organization.persons` est en `CascadeType.ALL`; d'après le code, supprimer
   une organisation pourrait supprimer ses personnes. Écrire d'abord un test qui le montre
 - [ ] outillage: valider la branche `ci/local-scripts` (scripts de lancement et Helm sur minikube, CI locale,
@@ -142,35 +157,6 @@ la cible au moment de la migration si une version plus récente est sortie.
 - [ ] back: vérifier la maintenance de `ro.polak:spring-boot-data-fixtures:0.2.0`
   - Fonctionne avec Spring Boot 4.1.2 (jeu de données de démonstration chargé), mais l'état de maintenance de
     la bibliothèque n'a pas été vérifié: la remplacer si elle est abandonnée.
-- [ ] docker: étudier le remplacement de Caddy par nginx (à l'étude, décision non prise)
-  - Motivation: nginx est plus standard et mieux documenté que Caddy. Ce n'est pas un argument de sécurité:
-    avec un `USER` explicite, un port élevé et les bons droits, les deux donnent un conteneur non-root équivalent.
-  - Rôle actuel de Caddy: serveur de fichiers statiques du front, avec compression gzip et repli sur
-    `/index.html` pour les routes Angular (`misc/docker/Caddyfile`). Il ne fait pas de proxy vers le back.
-  - À remplacer si la décision est prise: `apk add caddy` et `CMD` du stage `front` (`Dockerfile`),
-    `COPY misc/docker/Caddyfile`, et la commande `caddy run` de `misc/docker/supervisor.ini` (image `standalone`).
-  - À écrire: un `misc/docker/nginx.conf` équivalent (`root /app/front`, `gzip on`,
-    `try_files $uri /index.html`), lancé avec `nginx -g "daemon off;"`.
-  - Deux options à comparer:
-    - A (défaut): `apk add nginx` sur Alpine, plus configuration non-root dans `nginx.conf`
-      (`listen 8080`, `pid /tmp/nginx.pid`, `*_temp_path` dans `/tmp`) et `USER nginx`.
-      Garde la structure du `Dockerfile`, notamment le stage `standalone`.
-    - B: image `nginx-unprivileged` (non-root, port 8080, PID et temporaires dans `/tmp`, maintenue par l'équipe
-      nginx; registre `nginx/nginx-unprivileged` pour les versions récentes, `nginxinc/...` pour les anciennes,
-      à vérifier). Risque: le stage `standalone` copie tout le système de fichiers de `front` et `back`
-      (`COPY --from=front / /`), ce qui se complique si `front` change d'image de base.
-      Pertinent si les images sont restructurées.
-  - Dans les deux cas, épingler la version et le digest de l'image (cf. tâche des versions figées).
-  - Comportement actuel de Caddy (vérifié par un build d'image): sert en HTTPS sur le port 443 avec un certificat
-    qu'il génère lui-même (autorité interne), et redirige le port 80 vers HTTPS (308). nginx devra reproduire ce
-    comportement ou le simplifier (HTTP seul): à décider.
-  - Points à vérifier: le rechargement d'une route profonde renvoie bien `index.html` et la compression est
-    active (les deux fonctionnent aujourd'hui avec Caddy).
-  - Le non-root (`S6471`) est déjà fait avec Caddy (cf. « Fait »): si nginx le remplace, reprendre l'utilisateur
-    `app` (uid 10001) et le `supervisord` non-root, et décider des ports: Caddy garde 80 et 443 grâce à
-    `setcap cap_net_bind_service`, nginx pourrait passer sur des ports élevés (le mappage `-p 80:<port>` du
-    README suffit à garder les mêmes URL).
-  - À faire avec la mise à jour d'Alpine, pour n'installer qu'une fois le paquet nginx de la version cible.
 - [ ] ci: améliorer la précision de l'analyse Java de Sonar (`sonar.java.libraries`)
   - Constat: le scan signale `Missing 'sonar.java.libraries'` et des types non résolus, car le scanner générique
     (choisi pour garder un seul projet Sonar) ne connaît pas le classpath Gradle, contrairement au plugin
@@ -191,6 +177,16 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] docker/ci: suppression de la cible `standalone`; images construites à partir des artefacts des jobs de tests
+  (branche `ci/images-depuis-artefacts`, 27/11)
+  - `test-front` et `test-back` testent dans l'étape de compilation du Dockerfile (`ci_test.sh`); `images` reprend
+    leurs produits par `--build-context` (`build_images.sh`). Vérifié en local: JAR et front identiques à ceux
+    extraits de l'étape testée, aucune compilation; sans artefact, le Dockerfile compile. **Pas encore vérifié sur
+    GitHub.**
+- [x] outillage: `run_back.sh`, `run_front.sh`, `run_all.sh` (ports et réglages des conteneurs), essayés avec de
+  vrais conteneurs en HTTP et en HTTPS
+- [x] docker: remplacement de Caddy par nginx étudié puis abandonné (décision de l'utilisateur, 27/11). Caddy est
+  conservé; justification à rédiger (cf. « À faire »)
 - [x] ci/cd: staging avant la release et même binaires en production (branche `ci/staging-release`, 27/11)
   - Un seul job `images`; `standalone` réutilise les étapes compilées et son démarrage est testé; `bootJar` dans le
     Dockerfile.

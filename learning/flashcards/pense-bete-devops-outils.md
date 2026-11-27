@@ -102,8 +102,8 @@ R: Docker (`Dockerfile`), Compose (`deploy/compose/`), Helm (`deploy/helm/microc
 
 ---
 
-Q: Que fait la cible `standalone` du `Dockerfile` d'Orion, et que ferait Compose à sa place ?
-R: Elle met Caddy et Java dans un seul conteneur, lancés par `supervisord` (`misc/docker/supervisor.ini`). Avec Compose ou Kubernetes, on lancerait deux conteneurs séparés, un par cible `front` et `back`.
+Q: Pourquoi le `Dockerfile` d'Orion a-t-il des étapes `front-dist` et `back-dist` ?
+R: Elles ne contiennent que le produit compilé. À la main, il vient de l'étape de compilation ; en CI, `--build-context` les remplace par l'artefact du job de tests : l'image n'est pas recompilée.
 
 ---
 

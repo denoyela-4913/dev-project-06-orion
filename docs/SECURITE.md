@@ -5,7 +5,7 @@
 | Contrôle | Où | Bloquant |
 |---|---|---|
 | Dépendances (verrous npm et Gradle), secrets, configurations | job `scan` (`scripts/trivy.sh repo`) | oui : critique ou haute avec correctif |
-| Images `front`, `back`, `standalone` | job `scan` (`scripts/trivy.sh image …`) | oui : critique ou haute avec correctif |
+| Images `front`, `back` | job `scan` (`scripts/trivy.sh image …`) | oui : critique ou haute avec correctif |
 | Rescan hebdomadaire (lundi) et à la demande | workflow `Scan de sécurité` | échec notifié par GitHub |
 | Analyse statique (bugs, vulnérabilités, hotspots) | SonarQube Cloud, trois projets | non (Quality Gate non bloquant) |
 | Bugs et style du Java | SpotBugs et Checkstyle (`./gradlew build`) | oui |

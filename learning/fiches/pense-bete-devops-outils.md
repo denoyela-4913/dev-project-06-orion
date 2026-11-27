@@ -76,14 +76,13 @@ le déploiement visant un cluster Kubernetes.
 
 | Outil | Dans le dépôt | Rôle |
 |---|---|---|
-| Docker | [`Dockerfile`](../../Dockerfile), trois cibles `front`, `back`, `standalone` | images non root, bases épinglées par digest |
+| Docker | [`Dockerfile`](../../Dockerfile), deux images, `front` et `back` | images non root, bases épinglées par digest |
 | Compose | [`deploy/compose/`](../../deploy/compose/) | dev, staging, production sur une machine |
 | Helm | [`deploy/helm/microcrm/`](../../deploy/helm/microcrm/) | chart avec des valeurs par environnement |
 | Kubernetes | cluster kind jetable dans la CI | déploiement de démonstration |
 | Terraform | [`deploy/terraform/`](../../deploy/terraform/README.md) | espace de noms, quotas, release Helm |
 
-`standalone` met Caddy et Java dans **un seul** conteneur, lancés par `supervisord` : c'est ce que Compose ou
-Kubernetes font mieux, avec un conteneur par service.
+Un conteneur par service : Compose et Kubernetes les lancent et les relient.
 
 Pour aller plus loin : [processus CI/CD](processus-ci-cd.md), [conteneurs](conteneurs-orion.md),
 [Kubernetes, Helm, Terraform](kubernetes-helm-terraform-orion.md).

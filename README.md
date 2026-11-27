@@ -24,7 +24,7 @@ Ce [monorepo](https://en.wikipedia.org/wiki/Monorepo) contient :
 | `back/` | serveur : Java 21, Spring Boot 4.1, Spring Data REST, Gradle |
 | `front/` | client : Angular 22, tests Vitest |
 | `e2e/` | tests de bout en bout (Playwright) |
-| `Dockerfile`, `misc/docker/` | images `front`, `back` et `standalone` |
+| `Dockerfile`, `misc/docker/` | images `front` et `back` |
 | `deploy/` | Docker Compose, chart Helm, Terraform |
 | `scripts/` | tests de déploiement, déploiement, secours, release, qualité |
 | `.github/workflows/` | pipeline CI/CD (GitHub Actions) |
@@ -79,10 +79,24 @@ encore ces étapes. Détail : [`docs/DEPLOIEMENT.md`](./docs/DEPLOIEMENT.md).
 
 ## Images Docker
 
-| Cible | Construire | Lancer |
-|---|---|---|
-| front | `docker build --target front -t orion-microcrm-front:latest .` | `docker run -it --rm -p 80:80 -p 443:443 orion-microcrm-front:latest` |
-| back | `docker build --target back -t orion-microcrm-back:latest .` | `docker run -it --rm -p 8080:8080 orion-microcrm-back:latest` |
-| tout en un | `docker build --target standalone -t orion-microcrm-standalone:latest .` | `docker run -it --rm -p 8080:8080 -p 80:80 -p 443:443 orion-microcrm-standalone:latest` |
+Lancer des conteneurs, avec Docker seul (l'image est construite si elle manque, `--build` la reconstruit) :
 
-L'application est sur https://localhost (certificat interne de Caddy) et l'API sur http://localhost:8080.
+```shell
+scripts/run_all.sh                       # back et front : http://localhost:4280
+scripts/run_all.sh --stop
+scripts/run_back.sh --port 9090          # back seul : http://localhost:9090
+scripts/run_front.sh --api-url http://localhost:9090     # front seul : http://localhost:4280
+```
+
+| Script | Paramètres principaux (liste complète en tête de chaque script) |
+|---|---|
+| `run_all.sh` | `--front-port` (4280), `--back-port` (8080), `--https`, `--data VOLUME`, `--bind`, `--name`, `--build`, `--stop` |
+| `run_back.sh` | `--port` (8080), `--cors`, `--data VOLUME`, `--env`, `--bind`, `--name`, `--image`, `--build`, `--stop` |
+| `run_front.sh` | `--port` (4280), `--https`, `--api-url` ou `--upstream`, `--env`, `--bind`, `--name`, `--image`, `--build`, `--stop` |
+
+Les ports n'écoutent que sur le poste (`127.0.0.1`) sauf `--bind` : l'API n'a pas d'authentification. `run_back.sh`
+et `run_front.sh` passent à `docker run` ce qui suit `--` (ex. `-- --memory 1g`). Avec un front lancé seul sur un
+autre port que 4280, déclarer son origine au back (`run_back.sh --cors http://localhost:<port>`).
+
+Les images se construisent aussi directement : `docker build --target front -t microcrm-front:local .` (de même
+avec `back`). À la main, le Dockerfile compile lui-même ; en CI, les images reprennent les produits des jobs de tests.
