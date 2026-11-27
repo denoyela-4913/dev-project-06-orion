@@ -15,7 +15,6 @@
 Objectif: toutes les cases du schéma « faites », ou une entrée « en attente de décision ». Une PR par lot.
 
 - [ ] docs: documentation CI/CD et déploiement à jour, schéma à jour
-- [ ] docs: fiches et flashcards sur le projet, dont les processus CI et CD (`learning/`)
 - [ ] docs: audit et état des lieux de la nuit (à écrire vers 04h00 le 27/11, tenu à jour jusqu'à la fin)
 - [ ] docs: `README.md` périmé (Spring Boot 3, Angular 17, OpenJDK 17, `npx @angular/cli serve`, GitLab CI)
 - [ ] ci (en attente de décision: supprimer ou porter): `.gitlab-ci.yml` d'origine n'est plus fonctionnel pour
@@ -23,6 +22,10 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 
 ### Autres tâches
 
+- [ ] ci (priorité accélération): la détection du projet Gradle par le scan de `sonar-back` prend encore 31 s
+  (« Build system information detected in 31260ms », run 45926860668) malgré le cache de la distribution: 39 s
+  avant. Le job est passé de 84-91 s à 63-74 s. Piste à essayer: restaurer aussi les dépendances Gradle
+  (`~/.gradle/caches`, avec `cache: gradle` de `setup-java`) et mesurer
 - [ ] front (en attente de décision: format de téléphone accepté): le message « Phone must be a valid phone number. »
   attend une erreur `tel` qu'aucun validateur ne produit; ajouter un validateur (quel format?) ou retirer le message
 - [ ] sonar (en attente de décision: Quality Gates bloquants): `-Dsonar.qualitygate.wait=true` dans les `args` des
@@ -146,6 +149,10 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] docs: fiches et flashcards sur le projet, dont les processus CI et CD (`learning/`)
+  - Cinq fiches et leurs cartes (processus CI/CD, conteneurs, Kubernetes-Helm-Terraform, qualité et sécurité, tests),
+    PDF et CSV Anki générés; pense-bête existant mis à jour (il indiquait que seul Docker était utilisé). 85 cartes au
+    total.
 - [x] front: défauts d'affichage et de navigation relevés pendant le lot des promesses (26-27/11)
   - Plus de « liste vide » après un chargement en échec, plus de titre au nom vide, lien « Create one » des
     organisations corrigé, bouton « + » actif au clavier (PR du lint). Chaque correctif a un test qui échouait sur
