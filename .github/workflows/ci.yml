@@ -16,6 +16,11 @@ on:
   push:
   pull_request:
 
+# Jeton du workflow en lecture seule, écrit ici pour ne pas dépendre du réglage du dépôt. Les jobs qui doivent
+# écrire le déclarent eux-mêmes (`release`, `notify`).
+permissions:
+  contents: read
+
 jobs:
   # --- Stage "lint" ---------------------------------------------------------
   # Contrôles rapides, sans compilation, avant les tests (stage 1 du schéma) : ESLint pour le front, hadolint
