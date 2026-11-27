@@ -48,7 +48,8 @@ if: >-
 ## Les artefacts : construire une fois
 
 Chaque job tourne sur une machine neuve. Ce qui doit passer de l'un à l'autre est un **artefact** : les rapports
-de couverture (pour Sonar), puis les images (`docker save`). L'image **testée** et **scannée** est celle qui est
+de couverture (pour Sonar), le front compilé et le JAR sortis des jobs de tests (repris par `images` sans
+recompilation), puis les images (`docker save`). L'image **testée** et **scannée** est celle qui est
 **publiée** : pas de reconstruction entre les deux, donc pas de différence possible.
 
 ## La durée, un compromis

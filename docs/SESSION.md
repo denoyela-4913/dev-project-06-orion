@@ -5,6 +5,15 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 
 **Dernière mise à jour: 27/11/2026**
 
+## Lot en cours: images à partir des artefacts (branche `ci/images-depuis-artefacts`, worktree `../orion-artefacts-wt`)
+
+Demandé le 27/11: cible `standalone` supprimée; scripts `run_back.sh`, `run_front.sh`, `run_all.sh`; les tests
+passent par l'étape de compilation du Dockerfile, les images reprennent leurs artefacts (à la main: elles
+compilent); artefacts conservés 7 jours. Vérifié en local. Commit, push, PR et fusion en rebase autorisés par
+l'utilisateur le 27/11 pour ce lot (pas le passage en production). Suppression de `build-front` et `build-back`:
+souhaitée « a priori », conséquences à présenter avant (backlog). Part d'`origin/main`,
+sans `ci/local-scripts`, à reprendre ensuite (backlog). Schéma et livrables non mis à jour.
+
 ## Dernier lot: staging avant la release (branche `ci/staging-release`)
 
 Demandé le 27/11: trois images dans un job (`standalone` réutilise les étapes), démarrage de `standalone` testé, mêmes
@@ -55,7 +64,7 @@ format de téléphone; ordre ou parallélisme du job `lint`; sort de `.gitlab-ci
 
 0. Valider la branche `ci/local-scripts`, puis la proposer en PR.
 - Séparation de la base (besoin donné le 27/11): plan en 5 PR dans le backlog, après la fusion du lot staging;
-  deux réponses attendues (`standalone`, données à conserver).
+  une réponse attendue (données à conserver).
 1. Prendre les décisions ci-dessus, en commençant par la sécurité (API, `main`).
 2. Corriger les 7 vulnérabilités moyennes des images (backlog).
 3. Accélération: détection Gradle du scan `sonar-back` (31 s), cache des couches Docker.

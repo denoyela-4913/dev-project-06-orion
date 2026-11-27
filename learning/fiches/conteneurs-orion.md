@@ -3,13 +3,15 @@
 Une **image** est un système de fichiers figé avec la commande à lancer ; un **conteneur** en est une exécution.
 **Docker Compose** décrit plusieurs conteneurs qui fonctionnent ensemble sur une machine.
 
-## Un Dockerfile, trois cibles
+## Un Dockerfile, deux images
 
 | Cible | Base | Contenu | Rôle |
 |---|---|---|---|
 | `front` | Alpine | Caddy et le front compilé | déploiement |
 | `back` | Alpine | JRE (*Java Runtime Environment*) et le JAR | déploiement |
-| `standalone` | Alpine | les deux, sous supervisord | démonstration en un conteneur |
+
+Les étapes `front-dist` et `back-dist` ne contiennent que le produit compilé : en CI, il vient de l'artefact du job de
+tests (`docker build --build-context`), sinon de l'étape de compilation.
 
 Les étapes `front-build` (Node) et `back-build` (Gradle) compilent ; leurs outils ne sont pas dans les images
 finales : c'est le **build multi-étapes** (images plus petites, moins de surface d'attaque).

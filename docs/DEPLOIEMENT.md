@@ -5,17 +5,29 @@ Comment construire, lancer et déployer l'application. Le pipeline complet est d
 
 ## 1. Images Docker
 
-Un seul `Dockerfile`, trois cibles :
+Un seul `Dockerfile`, deux images :
 
 | Cible | Contenu | Ports | Usage |
 |---|---|---|---|
 | `front` | Caddy et le front compilé ; relaie `/api` vers le back | 80, 443 | déploiement |
 | `back` | JRE 21 et le JAR Spring Boot | 8080 | déploiement |
-| `standalone` | les deux, lancés par supervisord | 80, 443, 8080 | démonstration en un seul conteneur |
 
-Le Dockerfile ne produit que le JAR (`./gradlew bootJar`) : les tests, Checkstyle et SpotBugs sont exécutés par la
-CI. En CI, un seul job construit les trois images : `standalone` réutilise les étapes compilées pour `front` et
-`back`, et contient donc les mêmes binaires. Son démarrage est testé par `scripts/smoke_standalone.sh <image>`.
+La compilation et l'assemblage des images sont séparés :
+
+| Étape | Rôle |
+|---|---|
+| `front-build`, `back-build` | compilent (Node, Gradle). Les jobs `test-front` et `test-back` les construisent et y jouent les tests (`scripts/ci_test.sh <front\|back>`) |
+| `front-dist`, `back-dist` | ne contiennent que le produit : front compilé, JAR |
+| `front`, `back` | images finales, qui lisent le produit dans l'étape `-dist` |
+
+- **À la main**, le produit vient de l'étape de compilation : `docker build --target back .` suffit.
+- **En CI**, `test-front` et `test-back` publient ce produit en artefact (`dist-front`, `dist-back`). Le job
+  `images` lance `scripts/build_images.sh artifacts` : `--build-context front-dist=…` remplace l'étape `-dist` par
+  l'artefact, BuildKit saute la compilation, et le script échoue si elle a lieu quand même. L'image contient ainsi
+  le produit sorti de l'étape où les tests ont tourné.
+
+Le Dockerfile ne produit que le JAR (`./gradlew bootJar`) ; Checkstyle et SpotBugs sont exécutés par `build-back`.
+Pour lancer les conteneurs avec Docker seul : `scripts/run_all.sh`, `run_back.sh`, `run_front.sh` (cf. README).
 
 Toutes tournent sous l'utilisateur non root `10001`. Images de base épinglées par digest, paquets Alpine
 épinglés à la mineure.
@@ -213,7 +225,7 @@ ni `images-digests.env`. Il ne respecte pas la règle « staging d'abord » et n
 | Situation | Que faire |
 |---|---|
 | L'automatisation n'a pas livré, GitHub Actions fonctionne | onglet *Actions*, workflow **Livraison manuelle de secours** : version `X.Y.Z`, cocher *publish* pour construire, scanner et publier |
-| GitHub Actions est indisponible | depuis un poste : construire les trois images (étiquette `ci`), `scripts/trivy.sh image …`, `docker login ghcr.io`, `scripts/publish_images.sh ghcr.io/<propriétaire>/<dépôt>/ X.Y.Z`, puis `scripts/deploy.sh <env> X.Y.Z --set images.repositoryPrefix=…` |
+| GitHub Actions est indisponible | depuis un poste : `scripts/build_images.sh`, `scripts/trivy.sh image …`, `docker login ghcr.io`, `scripts/publish_images.sh ghcr.io/<propriétaire>/<dépôt>/ X.Y.Z`, puis `scripts/deploy.sh <env> X.Y.Z --set images.repositoryPrefix=…` |
 
 ## 8. Dans la CI
 
@@ -222,7 +234,7 @@ ni `images-digests.env`. Il ne respecte pas la règle « staging d'abord » et n
 | 1. lint | `lint` |
 | 2. test et couverture | `test-front`, `test-back`, et `infra-check` (chart, scripts, Terraform) |
 | 3. qualité | `sonar-front`, `sonar-back`, `sonar-infra`, `coverage` |
-| 4. build | `build-front`, `build-back` (avec Checkstyle et SpotBugs), `images`, `compose-test` (dont `standalone`) |
+| 4. build | `build-front`, `build-back` (avec Checkstyle et SpotBugs), `images`, `compose-test` |
 | 5. scan | `scan` ; rescan hebdomadaire : workflow *Scan de sécurité* |
 | 6. candidate (`main`) | `candidate` |
 | 7. validation en staging (PR et `main`) | `staging` |

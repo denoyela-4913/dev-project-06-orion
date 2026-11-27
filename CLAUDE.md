@@ -1,6 +1,6 @@
 # Instructions pour Claude (CLI et VS Code)
 
-Projet: monorepo `front` (Angular), `back` (Spring Boot, Gradle), `Dockerfile` (Caddy + supervisor). Travail de
+Projet: monorepo `front` (Angular), `back` (Spring Boot, Gradle), `Dockerfile` (images `front` avec Caddy et `back`). Travail de
 modernisation et de durcissement du dépôt (CI GitHub Actions, Sonar, versions, sécurité).
 
 **Au début d'une session, lire `docs/SESSION.md` (état courant, prochaine étape) puis `docs/BACKLOG.md`.

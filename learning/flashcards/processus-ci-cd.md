@@ -33,7 +33,7 @@ R: Si un job de `needs` est sauté, GitHub saute les suivants. `!cancelled()` l�
 ---
 
 Q: À quoi servent les artefacts entre jobs ?
-R: Chaque job a sa propre machine : les artefacts transmettent rapports de couverture et images construites.
+R: Chaque job a sa propre machine : les artefacts transmettent rapports de couverture, front compilé, JAR et images construites.
 
 ---
 

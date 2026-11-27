@@ -8,7 +8,7 @@ Quelles sont les étapes du pipeline d'Orion ?,"lint, test et couverture, qualit
 Pourquoi placer le lint en premier ?,"C'est le contrôle le moins cher : échouer tôt évite de lancer des étapes longues. En contrepartie, chaque run réussi attend sa durée."
 "Dans GitHub Actions, qu'est-ce qui crée l'ordre des jobs ?",<code>needs</code>. Il n'y a pas de notion de stage.
 Pourquoi écrire <code>!cancelled()</code> dans un <code>if</code> de job ?,"Si un job de <code>needs</code> est sauté, GitHub saute les suivants. <code>!cancelled()</code> lève ce comportement ; il faut alors tester chaque <code>needs.&lt;job&gt;.result</code>."
-À quoi servent les artefacts entre jobs ?,Chaque job a sa propre machine : les artefacts transmettent rapports de couverture et images construites.
+À quoi servent les artefacts entre jobs ?,"Chaque job a sa propre machine : les artefacts transmettent rapports de couverture, front compilé, JAR et images construites."
 Pourquoi publier l'image testée plutôt que la reconstruire ?,"Une reconstruction peut différer (dépendances, base) : ce qui est publié ne serait plus ce qui a été testé et scanné."
 Quelles conditions pour qu'Orion publie une version ?,"Un push sur <code>main</code>, tous les contrôles réussis (build, images, Compose, e2e, scan, infrastructure) et au moins un commit <code>feat</code>, <code>fix</code>, <code>perf</code>, <code>build</code> ou incompatible depuis le dernier tag."
 Quel commit donne une version mineure ? un correctif ?,"<code>feat</code> : mineure. <code>fix</code>, <code>perf</code>, <code>build</code> : correctif."
