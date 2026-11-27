@@ -98,7 +98,7 @@ R: Terraform, Compose, Kubernetes et Helm. Ansible décrit aussi un état, avec 
 ---
 
 Q: Lequel de ces outils Orion utilise-t-il déjà, et où ?
-R: Seulement Docker : le `Dockerfile` a trois cibles (`front`, `back`, `standalone`). Il n'y a encore ni Compose, ni manifeste k8s, ni chart Helm, ni Terraform, ni Ansible.
+R: Docker (`Dockerfile`), Compose (`deploy/compose/`), Helm (`deploy/helm/microcrm/`), Kubernetes (cluster kind jetable dans la CI) et Terraform (`deploy/terraform/`). Ansible n'est pas utilisé : aucune machine à configurer.
 
 ---
 
@@ -107,5 +107,5 @@ R: Elle met Caddy et Java dans un seul conteneur, lancés par `supervisord` (`mi
 
 ---
 
-Q: Que prévoit le plan de la partie 2 pour le déploiement d'Orion ?
-R: Un déploiement automatisé en trois temps : Docker, puis Kubernetes + Helm, puis Terraform + Ansible. En local : Docker et Minikube. Rollback par `helm rollback` (`docs/livrables/02_normalisation_plan_ci.md`).
+Q: Comment la CI d'Orion déploie-t-elle l'application ?
+R: Sur un cluster kind créé pour le run : Terraform prépare l'environnement et installe le chart Helm, pour dev, staging et production. Retour arrière par `helm rollback`.

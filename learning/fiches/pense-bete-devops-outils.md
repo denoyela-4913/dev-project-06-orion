@@ -71,24 +71,22 @@ seule machine.
 
 ## Dans Orion
 
-Aujourd'hui, le dépôt n'utilise que **Docker** parmi ces six outils. Aucun fichier Compose, manifeste
-k8s, chart Helm, fichier Terraform ou playbook Ansible n'existe encore.
+Le dépôt utilise cinq de ces six outils. **Ansible** n'est pas utilisé : il n'y a aucune machine à configurer,
+le déploiement visant un cluster Kubernetes.
 
-- **Docker : trois cibles dans un seul `Dockerfile`.** Stages `front` ([Dockerfile:30](../../Dockerfile#L30),
-  Caddy sert l'Angular), `back` ([Dockerfile:54](../../Dockerfile#L54), le JAR Spring Boot sur
-  `openjdk21-jre-headless`) et `standalone` ([Dockerfile:70](../../Dockerfile#L70)). Les images de base
-  sont épinglées par version et par digest, et tournent sous l'utilisateur non privilégié `app`
-  (uid 10001).
-- **`standalone` fait à la main ce que Compose ou k8s feraient.** Il met Caddy et Java dans **un seul**
-  conteneur, lancés par `supervisord` ([misc/docker/supervisor.ini](../../misc/docker/supervisor.ini)).
-  Avec Compose ou Kubernetes, on lancerait au contraire deux conteneurs, un par cible `front` et `back`.
-- **Le plan prévoit la suite.** [docs/livrables/02_normalisation_plan_ci.md](../../docs/livrables/02_normalisation_plan_ci.md)
-  (étape 5, « Déploiement automatisé ») annonce un déploiement « Docker, puis Kubernetes + Helm, puis
-  Terraform + Ansible », avec Docker et Minikube en local, et un rollback par `helm rollback` dans le
-  schéma du pipeline. Les livrables attendus sont des charts Helm, des fichiers Terraform, des
-  playbooks Ansible et un pipeline CD (*Continuous Delivery*).
-- **CI actuelle.** [.github/workflows/ci.yml](../../.github/workflows/ci.yml) teste et construit le
-  front et le back, mais ne lance pas encore `docker build` : l'image n'est construite qu'à la main.
+| Outil | Dans le dépôt | Rôle |
+|---|---|---|
+| Docker | [`Dockerfile`](../../Dockerfile), trois cibles `front`, `back`, `standalone` | images non root, bases épinglées par digest |
+| Compose | [`deploy/compose/`](../../deploy/compose/) | dev, staging, production sur une machine |
+| Helm | [`deploy/helm/microcrm/`](../../deploy/helm/microcrm/) | chart avec des valeurs par environnement |
+| Kubernetes | cluster kind jetable dans la CI | déploiement de démonstration |
+| Terraform | [`deploy/terraform/`](../../deploy/terraform/README.md) | espace de noms, quotas, release Helm |
+
+`standalone` met Caddy et Java dans **un seul** conteneur, lancés par `supervisord` : c'est ce que Compose ou
+Kubernetes font mieux, avec un conteneur par service.
+
+Pour aller plus loin : [processus CI/CD](processus-ci-cd.md), [conteneurs](conteneurs-orion.md),
+[Kubernetes, Helm, Terraform](kubernetes-helm-terraform-orion.md).
 
 ## À retenir
 
@@ -99,5 +97,4 @@ k8s, chart Helm, fichier Terraform ou playbook Ansible n'existe encore.
    Helm s'occupent de l'application elle-même.
 4. Les chevauchements existent (providers Terraform `helm` et `kubernetes`, Ansible qui lance `kubectl`),
    mais chaque outil garde son rôle principal.
-5. Dans Orion, seul Docker est en place ; le plan de la partie 2 prévoit Kubernetes + Helm, puis
-   Terraform + Ansible.
+5. Dans Orion, Docker, Compose, Helm, Kubernetes et Terraform sont en place ; Ansible n'est pas utilisé.

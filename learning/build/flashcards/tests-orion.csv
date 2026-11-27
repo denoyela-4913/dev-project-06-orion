@@ -1,0 +1,13 @@
+#separator:comma
+#html:true
+#notetype:Basic
+#deck:Orion::tests-orion
+Que décrit la pyramide des tests ?,"Beaucoup de tests unitaires rapides, moins de tests d'intégration et fonctionnels, peu de tests de bout en bout, lents et fragiles."
+Différence entre test fonctionnel d'API et test unitaire ?,Le test fonctionnel suit un scénario complet par HTTP sur l'application démarrée ; le test unitaire vérifie une unité isolée.
+Que signifie e2e ?,"End to end : de bout en bout, l'application assemblée pilotée comme par un utilisateur."
+Qu'est-ce qu'un smoke test ?,Une vérification courte qu'une instance déployée fonctionne pour l'essentiel.
+Pourquoi voir un test échouer avant de corriger ?,Pour prouver qu'il détecte bien le défaut.
+Pourquoi refuser les nouveaux essais automatiques ?,"Ils masquent une instabilité, qui est un défaut du test ou de l'application."
+Quel outil pilote le navigateur dans les tests e2e d'Orion ?,"Playwright, avec Chromium, dans l'image officielle épinglée par digest."
+Les tests e2e comptent-ils dans la couverture d'Orion ?,Non : la couverture vient des tests unitaires et fonctionnels.
+Pourquoi tester la restauration d'une sauvegarde ?,Une sauvegarde qu'on n'a jamais restaurée peut être inutilisable sans qu'on le sache.

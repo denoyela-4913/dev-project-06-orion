@@ -1,0 +1,17 @@
+#separator:comma
+#html:true
+#notetype:Basic
+#deck:Orion::kubernetes-helm-terraform-orion
+Que fait un Deployment ?,Il maintient un nombre de pods identiques et gère leurs mises à jour progressives et leur historique.
+À quoi sert un Service ?,Il donne une adresse stable à un ensemble de pods qui changent.
+"Que signifie PVC, et qu'apporte-t-il ?",PersistentVolumeClaim : une demande de stockage qui survit aux pods.
+Que fait une NetworkPolicy dans le chart d'Orion ?,Elle n'autorise que les pods du front à joindre le back (si le réseau du cluster l'applique).
+Qu'impose le niveau « restricted » des Pod Security Standards ?,"Pas de root, pas d'élévation de privilèges, capacités retirées (seule NET_BIND_SERVICE peut être ajoutée), seccomp activé."
+Pourquoi le back d'Orion n'a-t-il qu'une instance ?,Sa base HSQLDB est interne au processus : plusieurs instances auraient des données différentes.
+Quand utiliser la stratégie <code>Recreate</code> ?,"Quand l'ancienne et la nouvelle version ne peuvent pas tourner ensemble, par exemple un volume à un seul écrivain."
+"Que fait <code>--atomic</code> (Helm 3), renommé <code>--rollback-on-failure</code> (Helm 4) ?","Si la mise à jour échoue (pods non prêts à temps), Helm revient à la révision précédente."
+Qu'est-ce que l'état (state) de Terraform ?,La liste de ce que Terraform a créé et de ses attributs ; il peut contenir des valeurs sensibles et ne se versionne pas.
+Pourquoi un dossier Terraform par environnement ?,Chacun a son état : une opération sur dev ne peut pas modifier la production.
+Comment tester un module Terraform sans cluster ?,<code>terraform test</code> avec un <code>mock_provider</code>.
+Un retour arrière Helm restaure-t-il les données ?,"Non, seulement les manifestes. Les données se restaurent depuis une sauvegarde."
+Pourquoi une sauvegarde « à froid » ?,Copier les fichiers d'une base en cours d'écriture ne garantit pas leur cohérence.

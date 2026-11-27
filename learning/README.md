@@ -17,6 +17,11 @@ projets DataShare (P3) et OlympicTracker (P4).
 
 | Sujet | Fiche | Flashcards |
 |---|---|---|
+| **Le processus CI/CD d'Orion** (à lire en premier) | [fiche](fiches/processus-ci-cd.md) · [PDF](build/fiches/processus-ci-cd.pdf) | [cartes](flashcards/processus-ci-cd.md) · [CSV Anki](build/flashcards/processus-ci-cd.csv) |
+| Les conteneurs : images et Compose | [fiche](fiches/conteneurs-orion.md) · [PDF](build/fiches/conteneurs-orion.pdf) | [cartes](flashcards/conteneurs-orion.md) · [CSV Anki](build/flashcards/conteneurs-orion.csv) |
+| Kubernetes, Helm et Terraform | [fiche](fiches/kubernetes-helm-terraform-orion.md) · [PDF](build/fiches/kubernetes-helm-terraform-orion.pdf) | [cartes](flashcards/kubernetes-helm-terraform-orion.md) · [CSV Anki](build/flashcards/kubernetes-helm-terraform-orion.csv) |
+| Qualité et sécurité dans le pipeline | [fiche](fiches/securite-qualite-orion.md) · [PDF](build/fiches/securite-qualite-orion.pdf) | [cartes](flashcards/securite-qualite-orion.md) · [CSV Anki](build/flashcards/securite-qualite-orion.csv) |
+| Les tests | [fiche](fiches/tests-orion.md) · [PDF](build/fiches/tests-orion.pdf) | [cartes](flashcards/tests-orion.md) · [CSV Anki](build/flashcards/tests-orion.csv) |
 | Pense-bête DevOps : Terraform, Ansible, Docker, Compose, Kubernetes, Helm | [fiche](fiches/pense-bete-devops-outils.md) · [PDF](build/fiches/pense-bete-devops-outils.pdf) | [cartes](flashcards/pense-bete-devops-outils.md) · [CSV Anki](build/flashcards/pense-bete-devops-outils.csv) |
 
 ## Conventions

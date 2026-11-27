@@ -1,0 +1,21 @@
+#separator:comma
+#html:true
+#notetype:Basic
+#deck:Orion::processus-ci-cd
+"Que signifie CI, et que fait-elle ?",Continuous Integration (intégration continue) : vérifier automatiquement chaque changement dès qu'il est poussé.
+Que signifie CD ?,Continuous Delivery (livraison continue : toujours prêt à publier) ou Continuous Deployment (déploiement continu : chaque changement validé est déployé).
+Quelles sont les sept étapes du pipeline d'Orion ?,"lint, test et couverture, qualité (Sonar et seuils), build (applications, images, Compose), bout en bout et scan (Playwright, Trivy), release (sur <code>main</code>), déploiement de démonstration (PR et <code>main</code>)."
+Pourquoi placer le lint en premier ?,"C'est le contrôle le moins cher : échouer tôt évite de lancer des étapes longues. En contrepartie, chaque run réussi attend sa durée."
+"Dans GitHub Actions, qu'est-ce qui crée l'ordre des jobs ?",<code>needs</code>. Il n'y a pas de notion de stage.
+Pourquoi écrire <code>!cancelled()</code> dans un <code>if</code> de job ?,"Si un job de <code>needs</code> est sauté, GitHub saute les suivants. <code>!cancelled()</code> lève ce comportement ; il faut alors tester chaque <code>needs.&lt;job&gt;.result</code>."
+À quoi servent les artefacts entre jobs ?,Chaque job a sa propre machine : les artefacts transmettent rapports de couverture et images construites.
+Pourquoi publier l'image testée plutôt que la reconstruire ?,"Une reconstruction peut différer (dépendances, base) : ce qui est publié ne serait plus ce qui a été testé et scanné."
+Quelles conditions pour qu'Orion publie une version ?,"Un push sur <code>main</code>, tous les contrôles réussis (build, images, Compose, e2e, scan, infrastructure) et au moins un commit <code>feat</code>, <code>fix</code>, <code>perf</code>, <code>build</code> ou incompatible depuis le dernier tag."
+Quel commit donne une version mineure ? un correctif ?,"<code>feat</code> : mineure. <code>fix</code>, <code>perf</code>, <code>build</code> : correctif."
+Que fait un changement incompatible avant la version 1.0.0 dans Orion ?,"Il augmente la version mineure : en 0.y.z, SemVer autorise tout changement."
+Pourquoi le tag est-il créé après l'envoi des images ?,Pour qu'un tag désigne toujours une version complète.
+Pourquoi une release à la fois (<code>concurrency</code>) ?,Deux runs rapprochés calculeraient le même numéro de version.
+Que fait le job <code>deploy-demo</code> ?,"Sur un cluster kind jetable : déploiement de dev, staging et production avec Terraform et Helm, test de santé, et épreuve des secours sur staging."
+Quelle est la limite du déploiement de démonstration d'Orion ?,"Le cluster est jetable : pas d'environnement permanent, ni domaine ni certificat public. L'hébergement reste à décider."
+Quels sont les quatre indicateurs DORA ?,"Fréquence de déploiement, délai de livraison (lead time), taux d'échec des changements, temps de rétablissement."
+Pourquoi fusionner en rebase ?,"Pour garder un historique linéaire, lisible, dont la release calcule la version et les notes."
