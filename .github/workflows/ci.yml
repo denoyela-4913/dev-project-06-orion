@@ -53,8 +53,9 @@ jobs:
         with:
           node-version: 24 # cf. justification dans test-front
           package-manager-cache: false # cf. justification dans test-front
-      - run: npm ci --ignore-scripts # cf. justification dans test-front
-        working-directory: front
+      # Même commande que sur un poste ; `--ignore-scripts` : les scripts d'installation des paquets ne sont pas
+      # exécutés (chaîne d'approvisionnement, Sonar S6505).
+      - run: scripts/deps.sh install front
       # `--max-warnings 0` (script "lint" de package.json) : un avertissement fait aussi échouer le job.
       - name: ESLint (front)
         run: npm run lint
@@ -167,8 +168,9 @@ jobs:
             echo "::error::le chart devrait refuser back.replicas=2" >&2
             exit 1
           fi
-      - name: Syntaxe des scripts d'exploitation
-        run: for script in scripts/*.sh; do bash -n "$script"; done
+      # Ici et non dans le job `lint`, réservé à ESLint et hadolint. Toute remarque fait échouer le job.
+      - name: ShellCheck des scripts
+        run: scripts/lint_scripts.sh
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           # Terraform n'a pas de LTS : version fixe, suivie à la mineure (cf. deploy/terraform/README.md).
@@ -667,8 +669,9 @@ jobs:
           package-manager-cache: false # cf. justification dans test-front
       # Les tests ne sont pas relancés, mais les dépendances restent nécessaires : l'analyse TypeScript lit
       # les types dans node_modules, et des règles en dépendent (ex. promesses non gérées).
-      - run: npm ci --ignore-scripts # cf. justification dans test-front
-        working-directory: front
+      # Même commande que sur un poste ; `--ignore-scripts` : les scripts d'installation des paquets ne sont pas
+      # exécutés (chaîne d'approvisionnement, Sonar S6505).
+      - run: scripts/deps.sh install front
       # Couverture du job `test-front`, replacée au chemin attendu par front/sonar-project.properties.
       # L'artefact est limité à ce run et son empreinte est vérifiée.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
