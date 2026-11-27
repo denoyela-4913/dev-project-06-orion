@@ -154,6 +154,14 @@ fusionné), avec les valeurs de production :
 Aucune des deux versions ne modifie le schéma de la base : un retour arrière après un changement de schéma n'a pas
 été essayé. Le retour arrière du **staging** est éprouvé à chaque run avec staging (`test_recovery.sh`).
 
+### Raccourcis sur minikube, et essai (27/11/2026)
+
+`scripts/install-dev.sh`, `install-staging.sh`, `upgrade-dev.sh`, `upgrade-staging.sh` et `helm-deploy.sh` (cf.
+README). Essai sur un runner GitHub jetable (minikube 1.39.0, run `46070319151`, workflow temporaire non fusionné),
+réussi : installation en dev et accès par `open`, seconde installation refusée, mise à niveau après un changement de
+code, désinstallation ; en staging, installation, mise à niveau avec sauvegarde, `rollback.sh`, désinstallation ;
+puis `scripts/ci_local.sh test images staging` (secours compris). Non essayés sur un poste de développeur.
+
 ## 5. Terraform
 
 Terraform prépare l'environnement (espace de noms au niveau `restricted`, quota) puis y installe le chart. Code

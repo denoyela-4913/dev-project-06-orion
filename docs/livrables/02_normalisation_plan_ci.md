@@ -78,7 +78,9 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
 ## 2.5 Intégration continue
 
 - Déclenchement : à chaque push de branche et à chaque pull request, sauf si seuls des fichiers de
-  documentation changent (`**.md`, `docs/`, `learning/`), qu'aucun job ne lit.
+  documentation changent (`**.md`, `docs/`, `learning/`), qu'aucun job ne lit. La CI se lance aussi à la main sur
+  la branche choisie (sans rien publier), et se rejoue sur un poste avec `scripts/ci_local.sh` (hors SonarQube et
+  publication).
 - Fréquence d'intégration : au moins une PR par jour de travail sur une fonctionnalité ; branches de moins de
   quelques jours.
 - Critère de réussite : tous les jobs obligatoires verts (lint, tests, build, scans).
