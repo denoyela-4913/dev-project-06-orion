@@ -41,16 +41,17 @@ stop_container() {
   echo "Arrêté: $1"
 }
 
-# wait_ready <conteneur> <URL> : attend une réponse ; sinon affiche les journaux et supprime le conteneur.
-# `--insecure` : en HTTPS local, le certificat vient de l'autorité interne de Caddy.
+# wait_ready <conteneur> <commande de sonde...> : attend que la sonde réussisse ; sinon affiche les journaux et
+# supprime le conteneur.
 # Paramètre: RUN_TIMEOUT (secondes, défaut 120).
 wait_ready() {
-  local deadline=$((SECONDS + ${RUN_TIMEOUT:-120}))
-  until curl --fail --silent --insecure --max-time 3 --output /dev/null "$2"; do
-    if [[ $(docker container inspect --format '{{.State.Running}}' "$1") != true ]] || ((SECONDS >= deadline)); then
-      docker logs --tail 50 "$1" >&2 || true
-      docker rm --force "$1" >/dev/null
-      fail "$1 ne répond pas sur $2 (conteneur supprimé, derniers journaux ci-dessus)"
+  local name=$1 deadline=$((SECONDS + ${RUN_TIMEOUT:-120}))
+  shift
+  until "$@" >/dev/null 2>&1; do
+    if [[ $(docker container inspect --format '{{.State.Running}}' "$name") != true ]] || ((SECONDS >= deadline)); then
+      docker logs --tail 50 "$name" >&2 || true
+      docker rm --force "$name" >/dev/null
+      fail "$name ne répond pas (conteneur supprimé, derniers journaux ci-dessus)"
     fi
     sleep 1
   done
