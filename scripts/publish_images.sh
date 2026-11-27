@@ -11,7 +11,7 @@
 set -euo pipefail
 
 usage() { echo "Usage: $0 <préfixe de registre se terminant par /> <version> [étiquette source]" >&2; exit 2; }
-[ $# -ge 2 ] || usage
+[[ $# -ge 2 ]] || usage
 prefix=$1
 version=$2
 source_tag=${3:-ci}
@@ -26,7 +26,7 @@ for target in "${targets[@]}"; do
     { echo "Image locale absente: microcrm-$target:$source_tag" >&2; exit 1; }
 done
 
-if [ "${FORCE:-0}" != 1 ]; then
+if [[ "${FORCE:-0}" != 1 ]]; then
   for target in "${targets[@]}"; do
     image="${prefix}microcrm-$target:$version"
     if output=$(docker buildx imagetools inspect "$image" 2>&1); then
