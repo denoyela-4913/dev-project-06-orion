@@ -11,146 +11,76 @@ L'application MicroCRM est une implémentation simplifiée d'un ["CRM" (Customer
 ![Page d'accueil](./misc/screenshots/screenshot_1.png)
 ![Édition de la fiche d'un individu](./misc/screenshots/screenshot_2.png)
 
+> L'API n'a **pas d'authentification** : ne pas l'exposer sur Internet (cf. [`docs/SECURITE.md`](./docs/SECURITE.md)).
+
 ## Code source
 
 ### Organisation
 
-Ce [monorepo](https://en.wikipedia.org/wiki/Monorepo) contient les 2 composantes du projet "MicroCRM":
+Ce [monorepo](https://en.wikipedia.org/wiki/Monorepo) contient :
 
-- La partie serveur (ou "backend"), en Java SpringBoot 3;
-- La partie cliente (ou "frontend"), en Angular 17.
+| Dossier | Contenu |
+|---|---|
+| `back/` | serveur : Java 21, Spring Boot 4.1, Spring Data REST, Gradle |
+| `front/` | client : Angular 22, tests Vitest |
+| `e2e/` | tests de bout en bout (Playwright) |
+| `Dockerfile`, `misc/docker/` | images `front`, `back` et `standalone` |
+| `deploy/` | Docker Compose, chart Helm, Terraform |
+| `scripts/` | tests de déploiement, déploiement, secours, release, qualité |
+| `.github/workflows/` | pipeline CI/CD (GitHub Actions) |
+| `docs/` | déploiement, sécurité, tests, livrables, backlog |
+| `learning/` | fiches et flashcards |
 
-Une intégration basique avec Gitlab CI est définie via le fichier [`.gitlab-ci.yml`](./.gitlab-ci.yml).
+Le fichier [`.gitlab-ci.yml`](./.gitlab-ci.yml) d'origine est conservé pour mémoire ; il n'est plus maintenu (ses
+options de test du front datent de Karma). Le pipeline en service est celui de GitHub Actions.
 
 ### Démarrer avec les sources
 
-#### Serveur
-
-##### Dépendances
-
-- [OpenJDK >= 17](https://openjdk.org/)
-
-##### Procédure
-
-1. Se positionner dans le répertoire `back` avec une invite de commande:
-
-   ```shell
-   cd back
-   ```
-
-2. Construire le JAR:
-
-   ```shell
-   # Sur Linux
-   ./gradlew build
-
-   # Sur Windows
-   gradlew.bat build
-   ```
-
-3. Démarrer le service:
-
-   ```shell
-   java -jar build/libs/microcrm-0.0.1-SNAPSHOT.jar
-   ```
-
-Puis ouvrir l'URL http://localhost:8080 dans votre navigateur.
-
-#### Client
-
-##### Dépendances
-
-- [NPM >= 10.2.4](https://www.npmjs.com/)
-
-##### Procédure
-
-1. Se positionner dans le répertoire `front` avec une invite de commande:
-
-   ```shell
-   cd front
-   ```
-
-2. (La première fois seulement) Installer les dépendances NodeJS:
-
-   ```shell
-   npm install
-   ```
-
-3. Démarrer le service de développement:
-
-   ```shell
-   npx @angular/cli serve
-   ```
-
-Puis ouvrir l'URL http://localhost:4200 dans votre navigateur.
-
-### Exécution des tests
-
-#### Client
-
-Les tests utilisent Vitest, avec un DOM simulé (jsdom): aucun navigateur n'est nécessaire.
-
-Dans votre terminal:
+Prérequis : [JDK 21](https://openjdk.org/) pour le back ; [Node.js 24](https://nodejs.org/) pour le front.
 
 ```shell
-cd front
-npm test                              # relance les tests à chaque modification
-npm test -- --watch=false --coverage  # un seul passage, avec la couverture
+# Serveur, sur http://localhost:8080 (Ctrl+C pour l'arrêter)
+cd back && ./gradlew bootRun          # Windows : gradlew.bat bootRun
+
+# Client, sur http://localhost:4200, dans un autre terminal
+cd front && npm ci --ignore-scripts && npm start
 ```
 
-#### Serveur
-
-Dans votre terminal:
+### Démarrer avec Docker seul
 
 ```shell
-cd back
-./gradlew test
+scripts/compose.sh dev up -d --build --wait     # http://localhost:4280
+scripts/compose.sh dev down
 ```
 
-### Images Docker
+Environnements `staging` et `production`, images et réglages : [`docs/DEPLOIEMENT.md`](./docs/DEPLOIEMENT.md).
 
-#### Client
-
-##### Construire l'image
+### Tests et contrôles
 
 ```shell
-docker build --target front -t orion-microcrm-front:latest .
+cd back && ./gradlew clean build                      # tests, Checkstyle, SpotBugs
+cd front && npm run lint && npm test -- --watch=false --coverage
+python3 -m unittest discover -s scripts
+scripts/compose.sh dev up -d --build --wait && scripts/e2e.sh
+scripts/trivy.sh repo                                  # sécurité (Docker requis)
 ```
 
-##### Exécuter l'image
+Détail : [`docs/TESTS.md`](./docs/TESTS.md).
 
-```shell
-docker run -it --rm -p 80:80 -p 443:443 orion-microcrm-front:latest
-```
+## Pipeline CI/CD
 
-L'application sera disponible sur https://localhost.
+![Pipeline CI/CD](./docs/livrables/schema_pipeline_ci_cd.png)
 
-#### Serveur
+À chaque push : lint, tests, couverture, analyses, construction et test des images, scan de sécurité, et
+déploiement de démonstration sur un cluster jetable. Sur `main`, une version est publiée quand les commits le
+justifient (images sur GHCR, release GitHub). Détail : [`docs/DEPLOIEMENT.md`](./docs/DEPLOIEMENT.md).
 
-##### Construire l'image
+## Images Docker
 
-```shell
-docker build --target back -t orion-microcrm-back:latest .
-```
+| Cible | Construire | Lancer |
+|---|---|---|
+| front | `docker build --target front -t orion-microcrm-front:latest .` | `docker run -it --rm -p 80:80 -p 443:443 orion-microcrm-front:latest` |
+| back | `docker build --target back -t orion-microcrm-back:latest .` | `docker run -it --rm -p 8080:8080 orion-microcrm-back:latest` |
+| tout en un | `docker build --target standalone -t orion-microcrm-standalone:latest .` | `docker run -it --rm -p 8080:8080 -p 80:80 -p 443:443 orion-microcrm-standalone:latest` |
 
-##### Exécuter l'image
-
-```shell
-docker run -it --rm -p 8080:8080 orion-microcrm-back:latest
-```
-
-L'API sera disponible sur http://localhost:8080.
-
-#### Tout en un
-
-```shell
-docker build --target standalone -t orion-microcrm-standalone:latest .
-```
-
-##### Exécuter l'image
-
-```shell
-docker run -it --rm -p 8080:8080 -p 80:80 -p 443:443 orion-microcrm-standalone:latest
-```
-
-L'application sera disponible sur https://localhost et l'API sur http://localhost:8080.
+L'application est sur https://localhost (certificat interne de Caddy) et l'API sur http://localhost:8080.
