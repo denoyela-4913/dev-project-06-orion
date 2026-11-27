@@ -81,5 +81,6 @@ host=$(local_host "$bind")
 # En HTTPS, le certificat porte le nom `localhost` : c'est par ce nom qu'il faut joindre le front.
 if [[ $https == 1 && $host == 127.0.0.1 ]]; then host=localhost; fi
 url="$scheme://$host:$port"
-wait_ready "$name" "$url/healthz"
+# `--insecure` : en HTTPS local, le certificat vient de l'autorité interne de Caddy.
+wait_ready "$name" curl --fail --silent --insecure --max-time 3 --output /dev/null "$url/healthz"
 echo "Front prêt : $url  (journaux : docker logs -f $name ; arrêt : $0 --stop --name $name)"

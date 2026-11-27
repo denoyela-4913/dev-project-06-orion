@@ -64,6 +64,11 @@ ensure_free "$name"
 ensure_image "$image" back "$build"
 docker run --detach --name "$name" --label "$LABEL=1" --publish "$bind:$port:8080" \
   --env "APP_CORS_ALLOWED_ORIGINS=$cors" "${options[@]}" "$image" >/dev/null
-url="http://$(local_host "$bind"):$port"
-wait_ready "$name" "$url/actuator/health/readiness"
-echo "Back prêt : $url  (journaux : docker logs -f $name ; arrêt : $0 --stop --name $name)"
+# Sonde jouée dans le conteneur, sur sa boucle locale : la même que celle de Compose, quelle que soit --bind.
+wait_ready "$name" docker exec "$name" wget -q -O /dev/null http://127.0.0.1:8080/actuator/health/readiness
+case $bind in
+  127.0.0.1 | 0.0.0.0) address=http://localhost:$port ;;
+  # Hors du poste, l'API circulerait en clair : pas de lien tout prêt, un avertissement.
+  *) address="port $port de $bind (sans chiffrement ni authentification : réseau de confiance seulement)" ;;
+esac
+echo "Back prêt : $address  (journaux : docker logs -f $name ; arrêt : $0 --stop --name $name)"

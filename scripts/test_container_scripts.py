@@ -62,6 +62,12 @@ class RunTests(ScriptCase):
         self.assertIn("--publish 127.0.0.1:9090:8080", self.calls())
         self.assertIn("--env A=1 --memory 1g microcrm-back:local", self.calls())
 
+    def test_a_network_address_gets_a_warning_instead_of_a_link(self):
+        result = self.run_script("run_back.sh", "--bind", "192.0.2.10")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("docker exec microcrm-back wget", self.calls())
+        self.assertIn("sans chiffrement", result.stdout)
+
     def test_https_front_publishes_the_tls_port(self):
         result = self.run_script("run_front.sh", "--https", "--port", "8443")
         self.assertEqual(result.returncode, 0, result.stderr)
