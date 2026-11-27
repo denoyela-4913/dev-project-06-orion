@@ -4,7 +4,6 @@
 
 ### Priorité (donnée par l'utilisateur le 26/11): sécurité et accélération de la CI
 
-- [ ] ci: cache npm (cf. l'entrée plus bas; gain attendu faible: `npm ci` prend 4 à 8 s par job)
 - [ ] sécurité (en attente de décision: réglage du dépôt GitHub, hors des fichiers versionnés): protéger `main` en
   exigeant les jobs de CI. Aujourd'hui `main` n'a ni protection ni règle: une PR en échec reste fusionnable
 - [ ] sécurité: le journal de l'action de scan Sonar signale que la sous-clé de signature du scanner est révoquée
@@ -14,14 +13,19 @@
 
 Objectif: toutes les cases du schéma « faites », ou une entrée « en attente de décision ». Une PR par lot.
 
-- [ ] docs: documentation CI/CD et déploiement à jour, schéma à jour
-- [ ] docs: audit et état des lieux de la nuit (à écrire vers 04h00 le 27/11, tenu à jour jusqu'à la fin)
-- [ ] docs: `README.md` périmé (Spring Boot 3, Angular 17, OpenJDK 17, `npx @angular/cli serve`, GitLab CI)
 - [ ] ci (en attente de décision: supprimer ou porter): `.gitlab-ci.yml` d'origine n'est plus fonctionnel pour
   les tests du front (options de Karma, cf. `docs/KARMA.md`)
 
 ### Autres tâches
 
+- [ ] sécurité: 7 vulnérabilités MOYENNES dans les images publiées `0.2.2` (paquets Alpine, correctifs disponibles:
+  OpenSSL `3.5.9-r1` pour CVE-2026-107496, CVE-2026-95691 et CVE-2026-95692, sur `libcrypto3` et `libssl3`; zlib
+  `1.4-r0` pour CVE-2026-4738). L'image de base figée par digest garde les anciennes versions: mettre à jour le
+  digest d'`alpine:3.24` s'il les contient (rôle de Dependabot), sinon décider d'un `apk upgrade` à la construction
+  (au prix de la reproductibilité). Niveau moyen: traitement planifié (document de normalisation, §2.7). Le job
+  `scan` ne bloque pas à ce niveau
+- [ ] ci: exécuter ShellCheck dans la CI (passé à la main pendant le mandat; le job `lint` reste réservé à ESLint et
+  hadolint: à placer dans `infra-check`)
 - [ ] ci (priorité accélération): la détection du projet Gradle par le scan de `sonar-back` prend encore 31 s
   (« Build system information detected in 31260ms », run 45926860668) malgré le cache de la distribution: 39 s
   avant. Le job est passé de 84-91 s à 63-74 s. Piste à essayer: restaurer aussi les dépendances Gradle
@@ -33,10 +37,11 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
   de `main` sont verts le 27/11; le schéma annonçait ce passage « à v0.1.0 », publiée le 27/11. Non fait: la
   décision n'est pas prise (l'autorisation donnée portait sur les seuils de couverture)
 - [ ] tests: charge et performance, accessibilité au-delà des règles ESLint, autres navigateurs que Chromium
-- [ ] ci: raccourcir encore la CI. Avec la CD, un run de `main` est passé d'environ 2 min à 12 min 42 s (run
-  45921077822, avant l'accélération). Postes: `deploy-demo` 386 s, `images` jusqu'à 102 s (le build Docker du back
-  relance les tests et retélécharge tout: cache de couches, ou construire l'image à partir du JAR de `build-back`),
-  `scan` 69 s et `compose-test` 68 s (en parallèle). Aussi: une branche avec PR lance deux runs par push
+- [ ] ci (priorité accélération): raccourcir encore la CI. Mesures du 27/11 après la première accélération: `main`
+  631 s (run 45926860668, dont `deploy-demo` 272 s), PR 597 s, branche 264 s (environ 2 min avant la CD). Postes:
+  `deploy-demo`, `images` jusqu'à 100 s (le build Docker du back relance les tests et retélécharge tout: cache de
+  couches, ou image construite à partir du JAR de `build-back`), `scan` et `compose-test` environ 70 s (en
+  parallèle). Aussi: une branche avec PR lance deux runs par push
 - [ ] ci: à la première release (v0.1.0), l'envoi de l'image `standalone` sur GHCR a été refusé (`denied`) après
   ceux de `front` et `back`; la relance du job a réussi (aucune release incomplète: le tag vient en dernier). Cause
   non identifiée. Surveiller la prochaine release; si cela se répète, réessayer l'envoi dans le script
@@ -61,7 +66,8 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 - [ ] ci (en attente de décision: vitesse ou ordre du schéma): le job `lint` précède les tests, comme sur le
   schéma; chaque run réussi attend sa durée. Le lancer en parallèle des tests (les builds attendant les deux)
   raccourcirait le chemin
-- [ ] ci: ajouter le cache npm (`cache:` de `setup-node`; le cache Gradle est fait, cf. « Fait »)
+- [ ] ci: ajouter le cache npm (`cache:` de `setup-node`; le cache Gradle est fait, cf. « Fait »). Priorité
+  accélération, gain attendu faible: `npm ci` prend 4 à 8 s par job
   - Pré-requis: mesurer les durées de run sans cache (`gh run view`), puis avec cache.
   - Mesure sans cache (premier run, 18/11/2026): test-back ~48 s, test-front ~59 s, build-front ~45 s,
     build-back ~45 s, soit environ 2 min au total.
@@ -149,6 +155,14 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] docs: audit et état des lieux de la nuit (à écrire vers 04h00 le 27/11, tenu à jour jusqu'à la fin)
+  - `docs/AUDIT-2026-11-27.md`: preuves par case du schéma, PR, effets visibles, défauts et erreurs, décisions prises
+    et en attente, durées, sécurité, points non vérifiés.
+- [x] docs: `README.md` périmé (Spring Boot 3, Angular 17, OpenJDK 17, `npx @angular/cli serve`, GitLab CI)
+  - Réécrit le 27/11: versions réelles, démarrage, Compose, tests, pipeline, images.
+- [x] docs: documentation CI/CD et déploiement à jour, schéma à jour
+  - `docs/DEPLOIEMENT.md`, `docs/TESTS.md`, `docs/SECURITE.md`, `deploy/terraform/README.md`, livrables 01 et 02
+    (état au 27/11), schéma, `README.md`, `CLAUDE.md`.
 - [x] docs: fiches et flashcards sur le projet, dont les processus CI et CD (`learning/`)
   - Cinq fiches et leurs cartes (processus CI/CD, conteneurs, Kubernetes-Helm-Terraform, qualité et sécurité, tests),
     PDF et CSV Anki générés; pense-bête existant mis à jour (il indiquait que seul Docker était utilisé). 85 cartes au

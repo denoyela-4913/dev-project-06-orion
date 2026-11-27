@@ -3,26 +3,20 @@
 Fichier de passage de relais entre sessions (Claude CLI, Claude dans VS Code). À mettre à jour à la fin de chaque
 lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `docs/BACKLOG.md`.
 
-**Dernière mise à jour: 26/11/2026**
+**Dernière mise à jour: 27/11/2026**
 
-## Priorité et mandat en cours
+## Priorité et mandat
 
-- **Priorité de l'utilisateur (26/11)**: sécurité et accélération de la CI (détail dans le backlog).
-- **Mandat de nuit (26/11 au soir, jusqu'au 27/11 avant 06h00)**: pipeline CI/CD complet du schéma, Docker,
-  Compose, Terraform, Helm (dev, staging, production), documentation, fiches et flashcards, tests. Une PR par
-  lot, fusionnée en rebase (autorisation donnée pour ce mandat seulement). Une PR bloquée est mise de côté avec
-  une entrée « en attente de décision » au backlog. Aucune branche ne reste après fusion.
+- **Priorité de l'utilisateur (26/11)**: sécurité et accélération de la CI.
+- **Mandat de nuit (du 26/11 au soir au 27/11 avant 06h00)**: réalisé, état détaillé et vérifications dans
+  [`docs/AUDIT-2026-11-27.md`](AUDIT-2026-11-27.md). L'autorisation de commiter et fusionner valait pour ce mandat
+  seulement: **la redemander désormais**.
 
-## Propositions en attente
+## En attente d'une décision de l'utilisateur
 
-- **Décidé le 26/11**: le job `lint` (à créer) ne contient qu'ESLint et hadolint; Checkstyle et SpotBugs passeront
-  par `./gradlew build` dans `build-back`, qui n'est pas remplacé par `assemble`. Schéma et livrables à jour.
-- **Pas encore décidé**: contrôles sur les branches de dev, une branche `ci/…` par ajout, non bloquants au début:
-  ESLint (`angular-eslint`, `no-floating-promises`), puis `diff-cover` (couverture du code nouveau par rapport à
-  `origin/main`, demande la couverture dans `test-front`), Trivy, hadolint et ShellCheck, puis SpotBugs. SonarQube
-  n'exécute pas les tests: il analyse le code et importe la couverture. Ces outils n'ont pas été essayés sur le dépôt.
-- **Pas encore décidé**: rendre les Quality Gates bloquants (`sonar.qualitygate.wait=true`, un par projet Sonar), dans
-  une branche `ci/…`. Le gate de `main` est vert.
+Détail dans le backlog: hébergement (environnement permanent, état Terraform distant, sauvegardes); protection de
+l'API; protection de `main`; Quality Gates Sonar bloquants; base de données de production; canal de notification;
+format de téléphone; ordre ou parallélisme du job `lint`; sort de `.gitlab-ci.yml`.
 
 ## Où on en est
 
@@ -96,22 +90,25 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 - Vu une fois le 26/11, machine très chargée (charge moyenne autour de 57): `ng test --coverage` en échec
   (`Timeout waiting for worker to respond`, aucun test exécuté). Réussi ensuite, charge retombée.
 
-## Prochaine étape (ordre décidé)
+- **Nuit du 26 au 27/11** (PR #43 à #55 environ, toutes fusionnées en rebase): pipeline CI/CD complet du schéma
+  (lint, Checkstyle et SpotBugs, images et Compose, Trivy, Helm, Terraform, release, déploiement de démonstration,
+  secours, notification), tests fonctionnels et de bout en bout, fiches et flashcards. Versions publiées:
+  `v0.1.0` à `v0.2.2`; cliché Sonar `docs/quality/v0.1.0/`. Bilan, preuves et réserves:
+  [`docs/AUDIT-2026-11-27.md`](AUDIT-2026-11-27.md).
 
-Les trois lots d'issues Sonar du front sont terminés.
+## Prochaine étape (proposée, non décidée)
 
-1. Jalon `v0.1.0`: créer le tag, attendre la CI de `main`, lancer `scripts/sonar-export-release.sh v0.1.0` (un
-   cliché par projet dans `docs/quality/`).
-2. Puis le reste de `docs/BACKLOG.md`: cache npm, `sonar.java.libraries`, 2 `java:S6813`
-   (`InitialDataFixture.java`), scan de sécurité dans la CI, étude nginx, maintenance de
-   `ro.polak:spring-boot-data-fixtures`.
+1. Prendre les décisions ci-dessus, en commençant par la sécurité (API, `main`).
+2. Corriger les 7 vulnérabilités moyennes des images (backlog).
+3. Accélération: détection Gradle du scan `sonar-back` (31 s), cache des couches Docker.
 
-Seuils de couverture (décidé le 26/11): 80 % pour le front et pour le back, tout le code et code nouveau (job
-`coverage` de la CI), **bloquants** depuis le 26/11 (front 97,5 %, back 93,9 % au passage). Sonar ne compte pas les templates HTML.
+Seuils de couverture: 80 % pour le front et pour le back, tout le code et code nouveau, **bloquants**. Sonar ne
+compte pas les templates HTML.
 
 ## Questions ouvertes
 
 - GitHub au lieu de GitLab (le mail 2 demande un lien GitLab public): à confirmer avec le mentor (risque R2).
+- Règle `ignore` de Dependabot pour Docker: non confirmée (il n'a pas encore ouvert de PR).
 - Branches supprimées le 26/11 au soir (demande d'un dépôt sans branche qui traîne; `git branch <nom> <sha>` pour
   restaurer tant que git conserve le commit): `docs/backlog-functional-bugs` (`4f0ac28`, ses deux bugs sont corrigés
   depuis la PR #14), `ci/blocking-coverage` (`d777b45`, PR #41 fermée, remplacée par la #42),
