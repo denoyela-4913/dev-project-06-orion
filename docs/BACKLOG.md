@@ -7,7 +7,7 @@
   après un test en échec. Options: (A) état Terraform distant et verrouillé, plus sauvegarde, test et
   `rollback.sh` autour de l'`apply` (après un retour arrière, l'état Terraform diffère du cluster); (B) mise à niveau
   par `deploy.sh` (sauvegarde et retour arrière déjà éprouvés), Terraform réservé à la plateforme (le module
-  `microcrm` ne gérerait plus la release). Le schéma (case 9, « retour arrière + sauvegarde ») est à corriger
+  `microcrm` ne gérerait plus la release). Le schéma (case 9) signale cette limite
 ### Actions demandées par l'utilisateur le 27/11
 
 - [ ] docs: justifier le maintien de Caddy (décision du 27/11, remplacement par nginx abandonné)
@@ -108,8 +108,6 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
   empreintes: à aligner sur la règle « staging d'abord », ou à limiter au redéploiement d'une version existante
 - [ ] cd: nettoyer les étiquettes `candidate-*` sur GHCR; empêcher de promouvoir une pré-version plus ancienne que la
   version en production
-- [ ] docs: mettre à jour le schéma du pipeline (`.drawio` et `.png`) et les livrables (candidate, staging,
-  pré-version, production), puis régénérer les PDF et CSV de `learning/` si le hook ne l'a pas fait
 - [ ] back: `spring.jpa.open-in-view` est actif par défaut (avertissement au démarrage); à désactiver après
   vérification des accès paresseux de Spring Data REST
 - [ ] front: passer les composants en `ChangeDetectionStrategy.OnPush` (règle ESLint
@@ -178,11 +176,13 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] docs: schéma du pipeline (`.drawio` et `.png`, rendu par `docs/livrables/render_schema.py`) et livrables à
+  jour au 27/11, après les PR #59 à #62 (travail commencé par une autre session, repris et complété)
 - [x] cd: promotion, retour arrière de production et de staging essayés (27/11). `v0.2.4` promue (run
   46061528997); retour arrière entre `0.2.4` et `0.2.2` et secours en production (run 46061833182); staging éprouvé
   par la CI. Détail: `docs/DEPLOIEMENT.md`, §4 et §6
 - [x] ci: jobs `build-front` et `build-back` supprimés; Checkstyle et SpotBugs dans `test-back` (`check --continue`),
-  résultats importés dans Sonar (branche `ci/qualite-dans-les-tests`, 27/11). Reste: schéma et livrables
+  résultats importés dans Sonar (branche `ci/qualite-dans-les-tests`, 27/11). 
 - [x] docker/ci: suppression de la cible `standalone`; images construites à partir des artefacts des jobs de tests
   (branche `ci/images-depuis-artefacts`, 27/11)
   - `test-front` et `test-back` testent dans l'étape de compilation du Dockerfile (`ci_test.sh`); `images` reprend
