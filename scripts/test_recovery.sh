@@ -52,7 +52,9 @@ echo "Données restaurées à l'état sauvegardé."
 image_before=$(back_image)
 
 step "Version qui ne démarre pas: annulation par Helm"
-if SKIP_BACKUP=1 DEPLOY_TIMEOUT=90s "$here/deploy.sh" "$env_name" 0.0.0-absente "$@"; then
+# Délai court: l'image n'existant pas, les pods ne seront jamais prêts. Il doit rester assez long pour que le
+# retour à la version précédente, soumis au même délai, aboutisse.
+if SKIP_BACKUP=1 DEPLOY_TIMEOUT=60s "$here/deploy.sh" "$env_name" 0.0.0-absente "$@"; then
   fail "le déploiement d'une image absente aurait dû échouer"
 fi
 [[ "$(back_image)" = "$image_before" ]] || fail "l'image du back n'a pas été rétablie: $(back_image)"
