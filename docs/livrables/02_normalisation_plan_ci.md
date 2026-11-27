@@ -51,7 +51,7 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
 | Front (Angular / TypeScript) | Guide de style Angular ; pas de promesse non gérée ; champs de formulaire avec label | ESLint (`angular-eslint`), SonarQube |
 | Back (Java 21 / Spring Boot) | Conventions Java usuelles, couches contrôleur / service / dépôt, pas de logique dans les contrôleurs | Checkstyle, SpotBugs, SonarQube |
 | Dockerfile | Mot-clé `AS` en majuscules, un stage par cible, utilisateur non root | hadolint, SonarQube |
-| Scripts | Bash : `set -euo pipefail`, ShellCheck ; Python : tests `unittest`, bibliothèque standard | `unittest` (CI), ShellCheck (à la main, pas encore dans la CI) |
+| Scripts | Bash : `set -euo pipefail`, ShellCheck ; Python : tests `unittest`, bibliothèque standard | `unittest` (CI), ShellCheck (job `infra-check`) |
 | Commits | Conventional commits (`feat:`, `fix:`, `ci:`, `docs:`, `build:`) | contrôle en revue |
 
 ## 2.3 Gestion des versions
@@ -219,8 +219,8 @@ l'automatisation.
 - **Responsables** : Ops (Bash, Ansible) avec un Dev pour Python.
 - **Livrables** : dossier `scripts/` documenté dans le README (but, fonctionnement, paramètres).
 - **État** : **fait** pour l'exécution des tests, le déploiement, la sauvegarde, la restauration, le retour arrière,
-  la notification et la release (en-tête de chaque script : but, fonctionnement, paramètres). Reste : ShellCheck
-  dans la CI et un script de gestion des dépendances.
+  la notification, la release et les dépendances (en-tête de chaque script et tableau du README : but,
+  fonctionnement, paramètres) ; ShellCheck bloquant dans la CI (job `infra-check`).
 
 ### 3.2.4 Étape 4 : Livraison automatisée de l'image
 
@@ -299,7 +299,7 @@ processus automatisé, répétable et mesurable.
 - Aligner la livraison manuelle de secours sur la règle « staging d'abord ».
 - Faire mettre à niveau la production par la promotion, avec sauvegarde et retour arrière.
 - Séparer la base de données du back, pour pouvoir lancer plusieurs réplicas.
-- Raccourcir le pipeline ; ajouter ShellCheck à la CI, les tests de charge, le monitoring et les métriques DORA.
+- Raccourcir le pipeline ; ajouter les tests de charge, le monitoring et les métriques DORA.
 - Réviser ce document à chaque jalon.
 
 # Annexe : schéma du pipeline cible

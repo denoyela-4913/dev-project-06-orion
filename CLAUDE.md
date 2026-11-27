@@ -24,6 +24,8 @@ et outils, ce fichier est la seule mémoire commune).
 
 ## Commandes
 
+`README.md` décrit les scripts. Toute la CI sur le poste : `scripts/ci_local.sh all` (hors Sonar et publication).
+
 ```bash
 # Back (http://localhost:8080) puis front (http://localhost:4200); arrêt: Ctrl+C
 cd back && ./gradlew bootRun
