@@ -12,9 +12,15 @@ name: CI
 # push + pull_request, sans filtre de branche : équivalent du comportement par
 # défaut de GitLab CI (pipeline à chaque push). Le workflow de dev impose de
 # valider la CI sur la branche de dev (push) avant d'ouvrir la pull request.
+# paths-ignore : un push ou une PR qui ne touche que de la documentation ou les fiches ne lance pas la CI, qui ne lit
+# aucun de ces fichiers. Un seul autre fichier modifié suffit à la lancer (sur une PR, c'est tout son diff qui compte).
+# La liste est écrite deux fois : GitHub la lit séparément pour chaque déclencheur. Attention si ces jobs deviennent
+# un jour des contrôles obligatoires : une PR de documentation resterait en attente, faute de run.
 on:
   push:
+    paths-ignore: ['**.md', 'docs/**', 'learning/**']
   pull_request:
+    paths-ignore: ['**.md', 'docs/**', 'learning/**']
 
 # Jeton du workflow en lecture seule, écrit ici pour ne pas dépendre du réglage du dépôt. Les jobs qui doivent
 # écrire le déclarent eux-mêmes (`release`, `notify`).
