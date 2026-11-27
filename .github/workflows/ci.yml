@@ -108,11 +108,15 @@ jobs:
       # JaCoCo. La racine de l'artefact est le dossier commun aux deux chemins, back/build.
       # Réglages : cf. justification dans test-front.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        # Aussi après un échec : les rapports d'un contrôle en échec sont lus par `sonar-back` et téléchargeables.
+        if: ${{ !cancelled() }}
         with:
           name: analysis-back
           path: |
             back/build/classes/java
             back/build/reports/jacoco/test/jacocoTestReport.xml
+            back/build/reports/checkstyle
+            back/build/reports/spotbugs
           if-no-files-found: error
           retention-days: 7
 
@@ -680,17 +684,20 @@ jobs:
             -Dsonar.projectKey=${{ github.repository_owner }}_${{ github.event.repository.name }}_front
 
   sonar-back:
-    # Après le test du back.
+    # Après le test du back, même en échec : Sonar importe alors les écarts de Checkstyle et de SpotBugs, qui sont
+    # ceux qu'on veut y lire. Le run reste en échec et les images ne sont pas construites. Une compilation arrêtée
+    # ne laisse pas les classes attendues : le job échoue alors sur son contrôle des résultats reçus.
     needs: [test-back]
     if: >-
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+      !cancelled() && (needs.test-back.result == 'success' || needs.test-back.result == 'failure') &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: ubuntu-26.04 # cf. justification dans test-front
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      # Résultats du job `test-back` (couverture et classes Java), replacés aux chemins attendus par
+      # Résultats du job `test-back` (couverture, classes Java, rapports Checkstyle et SpotBugs), replacés aux chemins attendus par
       # back/sonar-project.properties. Pas de setup-java : les tests ne tournent plus ici et le scanner
       # télécharge son propre JRE.
       # Le scanner détecte le projet Gradle et en demande les informations au wrapper, qui télécharge alors toute la
@@ -711,6 +718,16 @@ jobs:
           test -s back/build/reports/jacoco/test/jacocoTestReport.xml
           test -d back/build/classes/java/main
           test -d back/build/classes/java/test
+          # Un rapport absent après des tests réussis ferait disparaître ses résultats de Sonar sans erreur. Après un
+          # échec, le scan se fait avec les rapports qui existent.
+          if [[ "$TESTS" = success ]]; then
+            for tool in checkstyle spotbugs; do
+              test -s "back/build/reports/$tool/main.xml"
+              test -s "back/build/reports/$tool/test.xml"
+            done
+          fi
+        env:
+          TESTS: ${{ needs.test-back.result }}
       - uses: SonarSource/sonarqube-scan-action@59202af334b4ba7b5db01b701b8e79f8b3bef0f4 # v8.5.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
