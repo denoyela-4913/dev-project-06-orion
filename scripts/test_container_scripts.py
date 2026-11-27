@@ -1,4 +1,4 @@
-"""Tests des garde-fous des scripts de tests en conteneur et de construction des images.
+"""Tests des garde-fous des scripts de lancement des conteneurs et de construction des images.
 
 Docker et curl sont remplacés par de faux programmes qui notent leurs appels : rien n'est construit ni lancé.
 """
@@ -39,13 +39,64 @@ class ScriptCase(unittest.TestCase):
         return self.log.read_text() if self.log.exists() else ""
 
 
-class UsageTests(ScriptCase):
+class RunTests(ScriptCase):
     def test_bad_arguments_are_refused_before_any_action(self):
-        for command in (("ci_test.sh",), ("ci_test.sh", "database")):
+        for command in (
+            ("run_back.sh", "--port", "70000"),
+            ("run_back.sh", "--port", "abc"),
+            ("run_back.sh", "--port"),
+            ("run_front.sh", "--unknown"),
+            ("run_front.sh", "--api-url", "http://x", "--upstream", "back:8080"),
+            ("run_all.sh", "--front-port", "8080"),
+            ("ci_test.sh",),
+            ("ci_test.sh", "database"),
+        ):
             with self.subTest(command=command):
                 result = self.run_script(*command)
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertEqual(self.calls(), "")
+
+    def test_ports_and_extra_options_reach_the_container(self):
+        result = self.run_script("run_back.sh", "--port", "9090", "--env", "A=1", "--", "--memory", "1g")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--publish 127.0.0.1:9090:8080", self.calls())
+        self.assertIn("--env A=1 --memory 1g microcrm-back:local", self.calls())
+
+    def test_https_front_publishes_the_tls_port(self):
+        result = self.run_script("run_front.sh", "--https", "--port", "8443")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--publish 127.0.0.1:8443:443 --env SITE_ADDRESS=localhost", self.calls())
+
+    def test_an_existing_container_is_not_replaced(self):
+        self.fake("docker")
+        result = self.run_script("run_back.sh")
+        self.assertEqual(result.returncode, 1)
+        self.assertNotIn("docker run", self.calls())
+        self.assertNotIn("docker rm", self.calls())
+
+    def test_stop_leaves_a_foreign_container_alone(self):
+        # Le conteneur existe mais n'a pas le label de ces scripts.
+        self.fake("docker")
+        result = self.run_script("run_back.sh", "--stop", "--name", "someone-else")
+        self.assertEqual(result.returncode, 1)
+        self.assertNotIn("docker rm", self.calls())
+
+    def test_a_front_that_fails_also_stops_the_back(self):
+        # Le back répond ; `docker run` échoue pour le front. Après son lancement, le back « existe ».
+        marker = self.bin / "back-started"
+        self.fake(
+            "docker",
+            f'case "$*" in\n'
+            f'  *"--name microcrm-front"*) exit 1 ;;\n'
+            f'  "run "*) touch "{marker}" ;;\n'
+            f'  "container inspect --format"*) echo 1 ;;\n'
+            f'  "container inspect microcrm-back") test -f "{marker}" ;;\n'
+            f'  "container inspect"*) exit 1 ;;\n'
+            f"esac",
+        )
+        result = self.run_script("run_all.sh")
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("docker rm --force microcrm-back", self.calls())
 
 
 class BuildImagesTests(ScriptCase):
