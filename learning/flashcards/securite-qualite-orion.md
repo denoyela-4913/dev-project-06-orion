@@ -8,7 +8,7 @@ R: Déplacer les contrôles vers le début du cycle, là où corriger coûte le 
 ---
 
 Q: Pourquoi SpotBugs ne va-t-il pas dans le job de lint ?
-R: Il analyse les classes compilées ; il s'exécute avec `./gradlew build`.
+R: Il analyse les classes compilées ; il s'exécute avec `./gradlew check`, dans le job `test-back`.
 
 ---
 

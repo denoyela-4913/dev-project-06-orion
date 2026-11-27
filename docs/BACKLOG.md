@@ -9,11 +9,6 @@
   - À écrire dans `docs/DEPLOIEMENT.md` (et les livrables si concernés). ELK n'est pas en place dans le dépôt:
     vérifier l'argument avant de le rédiger (format des journaux de Caddy, activation des journaux d'accès absente
     du `Caddyfile`, collecte vers ELK) et le comparer honnêtement à nginx.
-- [ ] ci (souhaité par l'utilisateur le 27/11, « a priori »): supprimer les jobs `build-front` et `build-back`.
-  `build-front` fait double emploi avec l'étape `front-build`. `build-back` est le seul à lancer Checkstyle et
-  SpotBugs: lancer d'abord `./gradlew check` à la place de `./gradlew test` dans `ci_test.sh` (essayé en local dans
-  l'étape de compilation: réussi en 21 s). Mettre à jour `needs` et `if` de `candidate`, le commentaire du job
-  `lint`, la documentation, le schéma et les livrables
 - [ ] outillage: la branche `ci/local-scripts` est à reprendre après ce lot: `ci_local.sh` construit et teste encore
   `standalone` (et appelle `smoke_standalone.sh`, supprimé), ne passe pas par `ci_test.sh` et `build_images.sh`; son
   `app.sh` (Compose) recoupe `run_all.sh`
@@ -177,6 +172,8 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] ci: jobs `build-front` et `build-back` supprimés; Checkstyle et SpotBugs dans `test-back` (`check --continue`),
+  résultats importés dans Sonar (branche `ci/qualite-dans-les-tests`, 27/11). Reste: schéma et livrables
 - [x] docker/ci: suppression de la cible `standalone`; images construites à partir des artefacts des jobs de tests
   (branche `ci/images-depuis-artefacts`, 27/11)
   - `test-front` et `test-back` testent dans l'étape de compilation du Dockerfile (`ci_test.sh`); `images` reprend

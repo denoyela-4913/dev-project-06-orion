@@ -3,7 +3,7 @@
 #notetype:Basic
 #deck:Orion::securite-qualite-orion
 Que signifie « shift-left » ?,"Déplacer les contrôles vers le début du cycle, là où corriger coûte le moins."
-Pourquoi SpotBugs ne va-t-il pas dans le job de lint ?,Il analyse les classes compilées ; il s'exécute avec <code>./gradlew build</code>.
+Pourquoi SpotBugs ne va-t-il pas dans le job de lint ?,"Il analyse les classes compilées ; il s'exécute avec <code>./gradlew check</code>, dans le job <code>test-back</code>."
 Que signifie SAST ?,Static Application Security Testing : analyser le code sans l'exécuter.
 Que signifie CVE ?,Common Vulnerabilities and Exposures : l'identifiant d'une vulnérabilité publiée.
 Quels seuils de couverture Orion impose-t-il ?,"80 % pour le front et pour le back, sur tout le code et sur le code nouveau, en mode bloquant."

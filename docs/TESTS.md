@@ -14,7 +14,8 @@
 | Terraform | `terraform test` (fournisseur simulé) | garde-fous du module `platform` | `modules/platform/tests` | `infra-check` |
 
 Dans la CI, les tests du front et du back tournent dans l'étape de compilation du `Dockerfile`
-(`scripts/ci_test.sh <front|back>`, lançable sur un poste avec Docker seul).
+(`scripts/ci_test.sh <front|back>`, lançable sur un poste avec Docker seul). Pour le back, `./gradlew check` lance
+aussi Checkstyle et SpotBugs ; leurs rapports sont importés dans Sonar, y compris après un échec.
 
 ## Lancer les tests
 

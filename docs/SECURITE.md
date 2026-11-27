@@ -8,7 +8,7 @@
 | Images `front`, `back` | job `scan` (`scripts/trivy.sh image …`) | oui : critique ou haute avec correctif |
 | Rescan hebdomadaire (lundi) et à la demande | workflow `Scan de sécurité` | échec notifié par GitHub |
 | Analyse statique (bugs, vulnérabilités, hotspots) | SonarQube Cloud, trois projets | non (Quality Gate non bloquant) |
-| Bugs et style du Java | SpotBugs et Checkstyle (`./gradlew build`) | oui |
+| Bugs et style du Java | SpotBugs et Checkstyle (`./gradlew check`, job `test-back`), résultats importés dans Sonar | oui |
 | TypeScript, templates, Dockerfile | job `lint` (ESLint, hadolint) | oui |
 | Versions figées | verrous, images et actions épinglées par SHA ou digest, Dependabot | – |
 | Droits de la CI | écriture réservée aux jobs `candidate` (registre), `release` (dépôt, registre), `notify` et au passage en production (commentaire), et à la livraison manuelle (registre) | – |

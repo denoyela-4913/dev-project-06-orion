@@ -26,7 +26,7 @@ La compilation et l'assemblage des images sont séparés :
   l'artefact, BuildKit saute la compilation, et le script échoue si elle a lieu quand même. L'image contient ainsi
   le produit sorti de l'étape où les tests ont tourné.
 
-Le Dockerfile ne produit que le JAR (`./gradlew bootJar`) ; Checkstyle et SpotBugs sont exécutés par `build-back`.
+Le Dockerfile ne produit que le JAR (`./gradlew bootJar`) ; Checkstyle et SpotBugs sont exécutés par `test-back` (`./gradlew check`).
 Pour lancer les conteneurs avec Docker seul : `scripts/run_all.sh`, `run_back.sh`, `run_front.sh` (cf. README).
 
 Toutes tournent sous l'utilisateur non root `10001`. Images de base épinglées par digest, paquets Alpine
@@ -232,9 +232,9 @@ ni `images-digests.env`. Il ne respecte pas la règle « staging d'abord » et n
 | Étape du schéma | Jobs |
 |---|---|
 | 1. lint | `lint` |
-| 2. test et couverture | `test-front`, `test-back`, et `infra-check` (chart, scripts, Terraform) |
+| 2. test et couverture | `test-front`, `test-back` (avec Checkstyle et SpotBugs), et `infra-check` (chart, scripts, Terraform) |
 | 3. qualité | `sonar-front`, `sonar-back`, `sonar-infra`, `coverage` |
-| 4. build | `build-front`, `build-back` (avec Checkstyle et SpotBugs), `images`, `compose-test` |
+| 4. build | `images`, `compose-test` (la compilation a lieu dans `test-front` et `test-back`) |
 | 5. scan | `scan` ; rescan hebdomadaire : workflow *Scan de sécurité* |
 | 6. candidate (`main`) | `candidate` |
 | 7. validation en staging (PR et `main`) | `staging` |

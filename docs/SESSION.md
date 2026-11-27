@@ -5,14 +5,13 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 
 **Dernière mise à jour: 27/11/2026**
 
-## Lot en cours: images à partir des artefacts (branche `ci/images-depuis-artefacts`, worktree `../orion-artefacts-wt`)
+## Lot en cours: qualité dans les tests (branche `ci/qualite-dans-les-tests`, worktree `../orion-artefacts-wt`)
 
-Demandé le 27/11: cible `standalone` supprimée; scripts `run_back.sh`, `run_front.sh`, `run_all.sh`; les tests
-passent par l'étape de compilation du Dockerfile, les images reprennent leurs artefacts (à la main: elles
-compilent); artefacts conservés 7 jours. Vérifié en local. Commit, push, PR et fusion en rebase autorisés par
-l'utilisateur le 27/11 pour ce lot (pas le passage en production). Suppression de `build-front` et `build-back`:
-souhaitée « a priori », conséquences à présenter avant (backlog). Part d'`origin/main`,
-sans `ci/local-scripts`, à reprendre ensuite (backlog). Schéma et livrables non mis à jour.
+Lot précédent fusionné (PR #59, pré-version `v0.2.4`): `standalone` supprimée, images construites à partir des
+artefacts des tests, scripts `run_*.sh`. Ce lot: `build-front` et `build-back` supprimés, Checkstyle et SpotBugs
+dans `test-back`, résultats dans Sonar. Commit, PR et fusion autorisés par l'utilisateur pour ce lot.
+Schéma du pipeline et livrables **non mis à jour**: une autre session les modifie (`../orion-staging-wt`, non
+commité, en retard sur `main`). `ci/local-scripts` reste à reprendre (backlog).
 
 ## Dernier lot: staging avant la release (branche `ci/staging-release`)
 
