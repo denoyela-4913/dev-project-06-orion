@@ -1,0 +1,16 @@
+#separator:comma
+#html:true
+#notetype:Basic
+#deck:Orion::conteneurs-orion
+Quelle différence entre une image et un conteneur ?,L'image est un modèle figé (fichiers et commande) ; le conteneur est une exécution de cette image.
+Qu'apporte un build multi-étapes ?,Les outils de compilation restent dans les étapes intermédiaires : images finales plus petites et moins exposées.
+Pourquoi épingler une image par digest ?,Un tag peut être déplacé par son auteur ; le digest désigne un contenu immuable.
+Pourquoi <code>USER 10001</code> plutôt que <code>USER app</code> ?,Kubernetes (<code>runAsNonRoot</code>) ne peut vérifier qu'un identifiant numérique.
+Pourquoi lire l'adresse de l'API au démarrage ?,"Pour que la même image serve à tous les environnements, sans reconstruction."
+Que fait le proxy <code>/api</code> de Caddy ?,Il relaie les appels vers le back : le navigateur ne parle qu'au front et le back n'est pas publié.
+"Que signifie CORS, et est-ce un contrôle d'accès ?",Cross-Origin Resource Sharing. Non : c'est une règle appliquée par les navigateurs ; un script ou <code>curl</code> n'est pas concerné.
+Différence entre sonde de vivacité et sonde de disponibilité ?,La vivacité décide s'il faut redémarrer le conteneur ; la disponibilité s'il peut recevoir du trafic.
+Pourquoi Actuator n'expose-t-il que <code>health</code> dans Orion ?,"L'API n'a pas d'authentification : <code>env</code>, <code>heapdump</code> ou <code>beans</code> divulgueraient des informations internes."
+Comment Compose gère-t-il plusieurs environnements dans Orion ?,"Un socle (<code>compose.yaml</code>) complété par des fichiers de surcharge, choisis par <code>scripts/compose.sh</code>, avec un nom de projet par environnement."
+Pourquoi un volume neuf peut-il être inaccessible à un conteneur non root ?,"Si le dossier de montage n'existe pas dans l'image, le volume est créé au nom de root."
+Comment Caddy ouvre-t-il les ports 80 et 443 sans root ni capacité ?,"Docker (20.10 et suivants) laisse un processus non root ouvrir ces ports dans un conteneur ; sur Kubernetes, Orion écoute sur 8080. Toutes les capacités sont retirées."

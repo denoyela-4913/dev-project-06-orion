@@ -1,0 +1,16 @@
+#separator:comma
+#html:true
+#notetype:Basic
+#deck:Orion::securite-qualite-orion
+Que signifie « shift-left » ?,"Déplacer les contrôles vers le début du cycle, là où corriger coûte le moins."
+Pourquoi SpotBugs ne va-t-il pas dans le job de lint ?,Il analyse les classes compilées ; il s'exécute avec <code>./gradlew build</code>.
+Que signifie SAST ?,Static Application Security Testing : analyser le code sans l'exécuter.
+Que signifie CVE ?,Common Vulnerabilities and Exposures : l'identifiant d'une vulnérabilité publiée.
+Quels seuils de couverture Orion impose-t-il ?,"80 % pour le front et pour le back, sur tout le code et sur le code nouveau, en mode bloquant."
+Pourquoi une couverture élevée ne suffit-elle pas ?,"Elle mesure ce qui est exécuté, pas ce qui est vérifié."
+Quand le job de scan Trivy échoue-t-il ?,"Sur une vulnérabilité critique ou haute qui a un correctif, un secret ou une erreur de configuration grave."
+Pourquoi rescanner chaque semaine ?,De nouvelles vulnérabilités sont publiées sans qu'aucun commit ne relance la CI.
+Que s'est-il passé avec Trivy en mars 2026 ?,Sa chaîne de publication a été compromise : des tags de ses actions GitHub ont été réécrits pour voler des secrets de pipelines.
+Pourquoi référencer une action par SHA ?,Un SHA de commit est immuable ; un tag peut être déplacé vers un autre code.
+Que protège <code>npm ci --ignore-scripts</code> ?,Les scripts d'installation des dépendances ne s'exécutent pas.
+Quel est le principal risque de sécurité encore ouvert dans Orion ?,L'API n'a pas d'authentification.
