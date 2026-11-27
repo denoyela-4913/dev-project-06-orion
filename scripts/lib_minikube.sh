@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# Fonctions communes à helm-deploy.sh et ci_local.sh : préparer minikube avec les images construites ici.
+# Fonctions communes à helm-deploy.sh et ci/staging.sh : préparer minikube avec les images construites ici.
 # À inclure avec `.`, pas à exécuter.
 
 # Les scripts qui l'utilisent créent et suppriment des ressources : ils ne visent que minikube.
