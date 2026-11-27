@@ -9,6 +9,7 @@ locals {
       images = {
         repositoryPrefix = var.image_repository_prefix
         tag              = var.image_tag
+        digests          = var.image_digests
       }
       imagePullSecrets = [for name in var.image_pull_secrets : { name = name }]
       ingress = merge(
@@ -25,10 +26,14 @@ resource "helm_release" "microcrm" {
   namespace = var.namespace
   chart     = local.chart
 
-  values = [
-    file("${local.chart}/values-${var.environment}.yaml"),
-    yamlencode(local.overrides),
-  ]
+  # Même ordre que scripts/deploy.sh : réglages partagés par staging et production, puis ceux de l'environnement.
+  values = concat(
+    var.environment == "dev" ? [] : [file("${local.chart}/values-prodlike.yaml")],
+    [
+      file("${local.chart}/values-${var.environment}.yaml"),
+      yamlencode(local.overrides),
+    ],
+  )
 
   # Attend que les pods soient prêts ; sinon, annule (retour à la révision précédente).
   wait            = true

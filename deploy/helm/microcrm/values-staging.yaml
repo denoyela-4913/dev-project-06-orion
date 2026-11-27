@@ -1,8 +1,5 @@
-# Staging : comme la production, en plus petit : données conservées, deux instances du front.
-publicUrl: http://localhost:8080
-back:
-  persistence:
-    enabled: true
-    size: 1Gi
-front:
-  replicas: 2
+# Staging : valeurs propres à cette installation seulement ; le reste vient de values-prodlike.yaml.
+publicUrl: https://microcrm-staging.example.com
+ingress:
+  host: microcrm-staging.example.com
+  tlsSecretName: microcrm-tls

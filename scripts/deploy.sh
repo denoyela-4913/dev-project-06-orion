@@ -6,6 +6,8 @@
 # (scripts/smoke_test.sh) à travers un port-forward; 4) en cas d'échec du test, `helm rollback`.
 # Usage: scripts/deploy.sh <dev|staging|production> <version> [options helm...]
 # Exemple: scripts/deploy.sh staging 0.1.0 --set images.repositoryPrefix=ghcr.io/<propriétaire>/<dépôt>/
+# Pour désigner les images par leur empreinte (celles de images-digests.env d'une release), ajouter
+# --set images.digests.back=sha256:… --set images.digests.front=sha256:…
 # Paramètres: NAMESPACE (défaut microcrm-<env>), RELEASE (défaut microcrm), DEPLOY_TIMEOUT (défaut 5m),
 # BACKUP_DIR (défaut ./backups), SKIP_BACKUP=1, LOCAL_PORT (port du port-forward, défaut 18080).
 # Le cluster visé est le contexte courant de kubectl (KUBECONFIG).
@@ -38,10 +40,15 @@ atomic=--atomic
 upgrade_help=$(helm upgrade --help)
 if grep -q -- '--rollback-on-failure' <<<"$upgrade_help"; then atomic=--rollback-on-failure; fi
 
+# Staging et production partagent values-prodlike.yaml, puis chacun ajoute ses valeurs d'installation.
+values=()
+if [[ "$env_name" != dev ]]; then values+=(--values "$chart/values-prodlike.yaml"); fi
+values+=(--values "$chart/values-$env_name.yaml")
+
 echo "Déploiement de $version sur « $env_name » (espace de noms $namespace)"
 helm upgrade --install "$release" "$chart" \
   --namespace "$namespace" --create-namespace \
-  --values "$chart/values-$env_name.yaml" \
+  "${values[@]}" \
   --set-string "images.tag=$version" \
   --wait --timeout "$timeout" "$atomic" \
   "$@"

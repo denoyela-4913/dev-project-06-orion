@@ -151,11 +151,27 @@ jobs:
           version: v4.3.2
       - name: Chart Helm, pour les trois environnements
         run: |
+          chart=deploy/helm/microcrm
           for environment in dev staging production; do
-            helm lint deploy/helm/microcrm --strict --values "deploy/helm/microcrm/values-$environment.yaml"
-            helm template microcrm deploy/helm/microcrm \
-              --values "deploy/helm/microcrm/values-$environment.yaml" > /dev/null
+            values=()
+            if [[ "$environment" != dev ]]; then values+=(--values "$chart/values-prodlike.yaml"); fi
+            values+=(--values "$chart/values-$environment.yaml")
+            helm lint "$chart" --strict "${values[@]}"
+            helm template microcrm "$chart" "${values[@]}" > /dev/null
           done
+      - name: Staging identique à la production, hors valeurs d'installation
+        run: scripts/check_parity.sh
+      # Le déploiement par empreinte ne sert que sur `main` : il est contrôlé ici sur chaque branche.
+      - name: Le chart désigne les images par leur empreinte
+        run: |
+          digest="sha256:$(printf '0%.0s' {1..64})"
+          rendered=$(helm template microcrm deploy/helm/microcrm \
+            --set "images.digests.back=$digest" --set "images.digests.front=$digest")
+          [[ $(grep -cE "image: \"microcrm-(back|front)@$digest\"" <<<"$rendered") -eq 2 ]]
+          if helm template microcrm deploy/helm/microcrm --set images.digests.back=latest > /dev/null 2>&1; then
+            echo "::error::le chart devrait refuser une empreinte invalide" >&2
+            exit 1
+          fi
       - name: Le chart refuse plusieurs instances du back
         run: |
           if helm template microcrm deploy/helm/microcrm --set back.replicas=2 > /dev/null 2>&1; then
@@ -394,10 +410,10 @@ jobs:
           scripts/compose.sh dev up -d --no-build --wait --wait-timeout 180
           scripts/smoke_test.sh http://localhost:4280
           scripts/compose.sh dev down -v
-      - name: Environnement staging
+      - name: Environnement staging (HTTPS, certificat interne, comme la production)
         run: |
           scripts/compose.sh staging up -d --no-build --wait --wait-timeout 180
-          scripts/smoke_test.sh http://localhost:4281
+          SMOKE_INSECURE=1 scripts/smoke_test.sh https://localhost:4443
           scripts/compose.sh staging down -v
       - name: Environnement production (HTTPS, certificat interne)
         run: |

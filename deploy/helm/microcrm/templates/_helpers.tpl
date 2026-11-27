@@ -19,7 +19,14 @@ app.kubernetes.io/component: {{ .component }}
 {{- end -}}
 
 {{- define "microcrm.image" -}}
+{{- if .digest -}}
+{{- if not (regexMatch "^sha256:[0-9a-f]{64}$" .digest) -}}
+{{- fail (printf "empreinte d'image invalide : %s" .digest) -}}
+{{- end -}}
+{{- printf "%s%s@%s" .root.Values.images.repositoryPrefix .name .digest -}}
+{{- else -}}
 {{- printf "%s%s:%s" .root.Values.images.repositoryPrefix .name (.root.Values.images.tag | default .root.Chart.AppVersion) -}}
+{{- end -}}
 {{- end -}}
 
 {{/* Contexte de sécurité commun : utilisateur non root, aucun droit en plus, système de fichiers en lecture seule. */}}

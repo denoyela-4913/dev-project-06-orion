@@ -18,6 +18,20 @@ variable "image_tag" {
   }
 }
 
+variable "image_digests" {
+  description = "Empreintes sha256 des images. Vides : les images sont désignées par image_tag."
+  type = object({
+    back  = string
+    front = string
+  })
+  default = { back = "", front = "" }
+
+  validation {
+    condition     = alltrue([for digest in values(var.image_digests) : digest == "" || can(regex("^sha256:[0-9a-f]{64}$", digest))])
+    error_message = "Empreinte attendue : sha256: suivi de 64 caractères hexadécimaux."
+  }
+}
+
 variable "image_repository_prefix" {
   description = "Préfixe du registre avec le « / » final (ex. ghcr.io/<propriétaire>/<dépôt>/). Vide : images locales."
   type        = string
