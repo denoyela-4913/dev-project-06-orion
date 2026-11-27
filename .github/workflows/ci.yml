@@ -77,7 +77,7 @@ jobs:
           name: dist-front
           path: artifacts/front
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
       # Transmet la couverture au job `sonar-front` : chaque job a sa propre machine, rien n'est partagé sinon.
       # Envoyé aussi sur les branches sans Sonar : un envoi cassé se voit dès le run de push.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -87,8 +87,9 @@ jobs:
           path: front/coverage/microcrm/lcov.info
           # Échec si le fichier manque, au lieu d'un avertissement qui laisserait Sonar sans couverture.
           if-no-files-found: error
-          # Durée minimale : l'artefact ne sert qu'à ce run (au-delà, relancer tout le workflow).
-          retention-days: 1
+          # 7 jours pour tous les artefacts (demande du 27/11) : de quoi relire un run ou relancer un job en échec
+          # dans la semaine, au lieu de relancer tout le workflow le lendemain.
+          retention-days: 7
 
   test-back:
     needs: [lint]
@@ -102,7 +103,7 @@ jobs:
           name: dist-back
           path: artifacts/back
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
       # Pour le job `sonar-back` : classes compilées (sonar.java.binaries et sonar.java.test.binaries) et rapport
       # JaCoCo. La racine de l'artefact est le dossier commun aux deux chemins, back/build.
       # Réglages : cf. justification dans test-front.
@@ -113,7 +114,7 @@ jobs:
             back/build/classes/java
             back/build/reports/jacoco/test/jacocoTestReport.xml
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
 
   # --- Contrôle de l'infrastructure ------------------------------------------
   # Chart Helm et scripts d'exploitation, sans cluster. Ce n'est pas le job `lint` (réservé à ESLint et
@@ -342,7 +343,7 @@ jobs:
           name: image-front
           path: image-front.tar.gz
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
           # Déjà compressée par gzip.
           compression-level: 0
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -350,7 +351,7 @@ jobs:
           name: image-back
           path: image-back.tar.gz
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
           # Déjà compressée par gzip.
           compression-level: 0
 
