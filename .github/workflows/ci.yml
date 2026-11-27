@@ -302,9 +302,12 @@ jobs:
       # `test-back`, tournent une seconde fois.
       - run: ./gradlew build
 
-  # Les trois images du Dockerfile, construites avec les mêmes conditions que les builds applicatifs. Chacune est
-  # transmise aux jobs suivants par artefact : ce qui est testé, scanné puis publié est la même image, pas une
-  # reconstruction. Commande `docker` du runner, sans action tierce. Pas de cache de couches pour l'instant.
+  # Les trois images du Dockerfile, construites avec les mêmes conditions que les builds applicatifs. Un seul job,
+  # donc un seul constructeur Docker : `standalone`, construite en dernier, réutilise les étapes déjà compilées
+  # pour `front` et `back` (cache local). Elle contient ainsi les mêmes binaires que les images testées, au lieu
+  # d'une seconde compilation sur une autre machine. Chaque image est transmise aux jobs suivants par artefact :
+  # ce qui est testé, scanné puis publié est la même image, pas une reconstruction. Commande `docker` du runner,
+  # sans action tierce. Pas de cache de couches d'un run à l'autre pour l'instant.
   images:
     needs: [test-front, test-back, coverage, sonar-front, sonar-back, sonar-infra]
     if: >-
@@ -315,38 +318,53 @@ jobs:
       (needs.sonar-back.result == 'success' || needs.sonar-back.result == 'skipped') &&
       (needs.sonar-infra.result == 'success' || needs.sonar-infra.result == 'skipped')
     runs-on: ubuntu-26.04 # cf. justification dans test-front
-    strategy:
-      # Une cible en échec n'interrompt pas les autres : on voit tout ce qui casse en un run.
-      fail-fast: false
-      matrix:
-        target: [front, back, standalone]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Construire l'image
+      - name: Construire les images
         env:
-          TARGET: ${{ matrix.target }}
           # Labels OCI : le registre rattache le paquet au dépôt et au commit d'origine.
           SOURCE: ${{ github.server_url }}/${{ github.repository }}
           REVISION: ${{ github.sha }}
-        run: >-
-          docker build --target "$TARGET" -t "microcrm-$TARGET:ci"
-          --label "org.opencontainers.image.source=$SOURCE"
-          --label "org.opencontainers.image.revision=$REVISION" .
-      - name: Exporter l'image
-        env:
-          TARGET: ${{ matrix.target }}
-        run: docker save "microcrm-$TARGET:ci" | gzip > "image-$TARGET.tar.gz"
+        # `standalone` en dernier : ses étapes `front` et `back` viennent alors du cache.
+        run: |
+          for target in front back standalone; do
+            docker build --target "$target" -t "microcrm-$target:ci" \
+              --label "org.opencontainers.image.source=$SOURCE" \
+              --label "org.opencontainers.image.revision=$REVISION" .
+          done
+      - name: Exporter les images
+        run: |
+          for target in front back standalone; do
+            docker save "microcrm-$target:ci" | gzip > "image-$target.tar.gz"
+          done
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: image-${{ matrix.target }}
-          path: image-${{ matrix.target }}.tar.gz
+          name: image-front
+          path: image-front.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+          # Déjà compressée par gzip.
+          compression-level: 0
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-back
+          path: image-back.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+          # Déjà compressée par gzip.
+          compression-level: 0
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-standalone
+          path: image-standalone.tar.gz
           if-no-files-found: error
           retention-days: 1
           # Déjà compressée par gzip.
           compression-level: 0
 
-  # Test de déploiement des images avec Docker Compose, dans les trois environnements : santé, application,
-  # API à travers le front, écriture avec l'origine du navigateur (scripts/smoke_test.sh).
+  # Test de déploiement des images avec Docker Compose, dans les trois environnements, puis de l'image
+  # `standalone` seule : santé, application, API à travers le front, écriture avec l'origine du navigateur
+  # (scripts/smoke_test.sh).
   compose-test:
     needs: [images]
     # `!cancelled()` : sans fonction de statut, ce job serait sauté quand un job plus haut a été sauté (Sonar sur
@@ -364,9 +382,13 @@ jobs:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: image-back
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: image-standalone
       - run: |
           docker load -i image-front.tar.gz
           docker load -i image-back.tar.gz
+          docker load -i image-standalone.tar.gz
       - name: Environnement dev
         run: |
           scripts/compose.sh dev up -d --no-build --wait --wait-timeout 180
@@ -382,6 +404,8 @@ jobs:
           scripts/compose.sh production up -d --no-build --wait --wait-timeout 180
           SMOKE_INSECURE=1 scripts/smoke_test.sh https://localhost
           scripts/compose.sh production down -v
+      - name: Image standalone (démarrage de Caddy et du back dans un seul conteneur)
+        run: scripts/smoke_standalone.sh microcrm-standalone:ci
       - name: Journaux en cas d'échec
         if: failure()
         run: docker ps -a --format '{{.Names}}' | xargs -r -n1 docker logs --tail 100
