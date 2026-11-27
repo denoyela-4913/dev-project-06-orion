@@ -4,9 +4,6 @@
 
 ### Priorité (donnée par l'utilisateur le 26/11): sécurité et accélération de la CI
 
-- [ ] ci: éviter que le scan Sonar télécharge la distribution Gradle (étape « Detecting build system
-  information », 27 à 38 s mesurées sur les runs à un seul scan après la PR #19, contre 8 s avant). À remesurer
-  avec les trois scans parallèles (PR #33) avant de corriger
 - [ ] ci: cache npm (cf. l'entrée plus bas; gain attendu faible: `npm ci` prend 4 à 8 s par job)
 - [ ] sécurité (en attente de décision: réglage du dépôt GitHub, hors des fichiers versionnés): protéger `main` en
   exigeant les jobs de CI. Aujourd'hui `main` n'a ni protection ni règle: une PR en échec reste fusionnable
@@ -27,6 +24,10 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 
 ### Autres tâches
 
+- [ ] ci: raccourcir encore la CI. Avec la CD, un run de `main` est passé d'environ 2 min à 12 min 42 s (run
+  45921077822, avant l'accélération). Postes: `deploy-demo` 386 s, `images` jusqu'à 102 s (le build Docker du back
+  relance les tests et retélécharge tout: cache de couches, ou construire l'image à partir du JAR de `build-back`),
+  `scan` 69 s et `compose-test` 68 s (en parallèle). Aussi: une branche avec PR lance deux runs par push
 - [ ] ci: à la première release (v0.1.0), l'envoi de l'image `standalone` sur GHCR a été refusé (`denied`) après
   ceux de `front` et `back`; la relance du job a réussi (aucune release incomplète: le tag vient en dernier). Cause
   non identifiée. Surveiller la prochaine release; si cela se répète, réessayer l'envoi dans le script
@@ -154,6 +155,13 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] ci: éviter que le scan Sonar télécharge la distribution Gradle (étape « Detecting build system
+  information », 27 à 38 s mesurées sur les runs à un seul scan après la PR #19, contre 8 s avant). À remesurer
+  avec les trois scans parallèles (PR #33) avant de corriger
+  - Cache de `~/.gradle/wrapper/dists` dans `sonar-back` (38 s de téléchargement sur 91 s, run 45921077822).
+    Gain à mesurer sur les runs suivants (le premier remplit le cache).
+  - Même PR: pod de sauvegarde supprimé sans attendre 30 s (12 s au lieu de 39 s par sauvegarde en local), délai du
+    scénario « version qui ne démarre pas » ramené à 60 s, et `deploy-demo` limité aux PR et à `main`.
 - [x] cd: livraison manuelle de secours
   - Workflow « Livraison manuelle de secours » (construction, scan et publication facultatifs, puis déploiement), et
     scripts utilisables depuis un poste (`publish_images.sh`, `deploy.sh`). **Le workflow n'a pas été lancé**: il
