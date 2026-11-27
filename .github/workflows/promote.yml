@@ -1,0 +1,80 @@
+# Passage en production : se déclenche quand le statut d'une pré-version devient « release » (page de la release,
+# ou `gh release edit vX.Y.Z --prerelease=false --latest`). Rien n'est reconstruit : les images sont désignées par
+# les empreintes jointes à la release (images-digests.env), celles que le staging a validées.
+# La pré-version créée par ci.yml ne déclenche pas ce workflow : `released` ne concerne pas les pré-versions, et
+# GitHub ne déclenche aucun workflow pour ce qui est fait avec le jeton d'un workflow. Le passage en production
+# reste donc un geste humain.
+# La « production » est ici un cluster kind jetable : aucun hébergement n'est choisi (cf. docs/BACKLOG.md). Un
+# échec ne rend pas à la release son statut de pré-version : il est signalé par la notification.
+name: Passage en production
+
+on:
+  release:
+    types: [released]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  production:
+    runs-on: ubuntu-26.04 # cf. justification dans ci.yml
+    timeout-minutes: 20
+    permissions:
+      # `write` pour commenter le commit (notification).
+      contents: write
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Vérifier le nom de la version
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::version attendue : vX.Y.Z"; exit 1; }
+      # Le code du tag : chart et scripts de la version déployée.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name }}
+      # Une release sans ce fichier n'est pas passée par le staging : elle n'est pas déployée.
+      - name: Lire les empreintes validées en staging
+        id: digests
+        run: |
+          gh release download "$TAG" --pattern images-digests.env
+          for target in front back; do
+            digest=$(sed -n "s/^$target=//p" images-digests.env)
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "::error::empreinte absente pour $target"; exit 1; }
+            echo "$target=$digest" >> "$GITHUB_OUTPUT"
+          done
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
+        with:
+          version: v4.3.2
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.17.2
+          terraform_wrapper: false
+      - uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
+        with:
+          version: v0.33.0
+          node_image: kindest/node:v1.36.4@sha256:099e049362a1526b2db71494e1947aae99bd16290d7c895f2b7ea312e3cbfaed
+          cluster_name: orion
+      - name: Déployer et vérifier la production
+        env:
+          ENVIRONMENTS: production
+          BACK_DIGEST: ${{ steps.digests.outputs.back }}
+          FRONT_DIGEST: ${{ steps.digests.outputs.front }}
+          KUBE_CONTEXT: kind-orion
+        run: scripts/deploy_demo.sh "${TAG#v}" "ghcr.io/${GITHUB_REPOSITORY,,}/"
+      - name: Notifier le résultat
+        if: ${{ !cancelled() }}
+        env:
+          STATUS: ${{ job.status }}
+          NOTIFY_COMMIT: "1"
+          NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          status=failure
+          if [[ "$STATUS" = "success" ]]; then status=success; fi
+          # Le commit commenté est celui de la version, pas celui de la branche par défaut.
+          GITHUB_SHA=$(git rev-parse HEAD) scripts/notify.sh "$status" "production, version $TAG"
