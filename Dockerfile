@@ -76,25 +76,3 @@ EXPOSE 8080
 USER 10001
 
 CMD ["java", "-jar", "/app/back/microcrm-0.0.1-SNAPSHOT.jar"]
-
-# Alpine 3.24.4, cf. ci-dessus.
-FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS standalone
-
-# Copie complète voulue : l'image « tout en un » est la réunion des deux images (hadolint DL3067).
-# hadolint ignore=DL3067
-COPY --from=front / /
-# hadolint ignore=DL3067
-COPY --from=back / /
-COPY misc/docker/supervisor.ini /app/supervisor.ini
-
-# `COPY --from=front / /` puis `--from=back / /` copient aussi `/etc/passwd` et les droits de fichier:
-# l'utilisateur `app` (uid 10001) existe donc déjà, la ligne `getent` ne le recrée
-# que si ces copies changent. supervisord et ses deux programmes tournent sous cet utilisateur.
-RUN apk add --no-cache 'supervisor=~4.3' \
-    && (getent passwd app >/dev/null || adduser -D -u 10001 app)
-
-WORKDIR /app
-
-USER 10001
-
-CMD ["/usr/bin/supervisord", "-c", "/app/supervisor.ini"]
