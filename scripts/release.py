@@ -17,7 +17,6 @@ Bibliothèque standard seule.
 import argparse
 import re
 import subprocess
-import sys
 from typing import NamedTuple
 
 TAG = re.compile(r'^v(\d+)\.(\d+)\.(\d+)$')
@@ -105,12 +104,11 @@ def main(argv=None):
     version, commits = plan('.')
     if version is None:
         print('released=false')
-        return 0
-    with open(NOTES_FILE, 'w', encoding='utf-8') as file:
-        file.write(notes(version, commits))
-    print(f'released=true\nversion={text(version)}\ntag=v{text(version)}')
-    return 0
+    else:
+        with open(NOTES_FILE, 'w', encoding='utf-8') as file:
+            file.write(notes(version, commits))
+        print(f'released=true\nversion={text(version)}\ntag=v{text(version)}')
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()
