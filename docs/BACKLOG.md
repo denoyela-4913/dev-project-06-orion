@@ -33,7 +33,8 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 
 ### Autres tâches
 
-- [ ] sécurité: 7 vulnérabilités MOYENNES dans les images publiées `0.2.2` (paquets Alpine, correctifs disponibles:
+- [ ] sécurité: 7 vulnérabilités MOYENNES relevées dans les images publiées `0.2.2`, à mesurer de nouveau (aucun
+  relevé à ce niveau n'est consigné pour les versions suivantes). Paquets Alpine, correctifs alors disponibles:
   OpenSSL `3.5.9-r1` pour CVE-2026-107496, CVE-2026-95691 et CVE-2026-95692, sur `libcrypto3` et `libssl3`; zlib
   `1.4-r0` pour CVE-2026-4738). L'image de base figée par digest garde les anciennes versions: mettre à jour le
   digest d'`alpine:3.24` s'il les contient (rôle de Dependabot), sinon décider d'un `apk upgrade` à la construction
@@ -51,11 +52,10 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
   de `main` sont verts le 27/11; le schéma annonçait ce passage « à v0.1.0 », publiée le 27/11. Non fait: la
   décision n'est pas prise (l'autorisation donnée portait sur les seuils de couverture)
 - [ ] tests: charge et performance, accessibilité au-delà des règles ESLint, autres navigateurs que Chromium
-- [ ] ci (priorité accélération): raccourcir encore la CI. Mesures du 27/11 après la première accélération: `main`
-  631 s (run 45926860668, dont `deploy-demo` 272 s), PR 597 s, branche 264 s (environ 2 min avant la CD). Postes:
-  `deploy-demo`, `images` jusqu'à 100 s (le build Docker du back relance les tests et retélécharge tout: cache de
-  couches, ou image construite à partir du JAR de `build-back`), `scan` et `compose-test` environ 70 s (en
-  parallèle). Aussi: une branche avec PR lance deux runs par push
+- [ ] ci (priorité accélération): raccourcir encore la CI. Mesure du 28/11 sur une PR (run 46081585709, une seule
+  mesure): 592 s, dont `staging` 271 s, `test-back` 120 s, `sonar-infra` 66 s, `scan` 65 s, `sonar-back` 63 s,
+  `test-front` 60 s, `e2e` 57 s, `sonar-front` 55 s, `compose-test` 46 s, `images` 32 s. Les durées de jobs en
+  parallèle ne s'additionnent pas. Aussi: une branche avec PR lance deux runs par push
 - [ ] ci: à la première release (v0.1.0), l'envoi d'une image (la troisième, `standalone`, supprimée depuis) sur
   GHCR a été refusé (`denied`); la relance du job a réussi. Cause non identifiée: si cela se répète, réessayer
   l'envoi dans le script
@@ -71,8 +71,9 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
   les versions de kind, Helm et Terraform
 - [ ] données: séparer la base du back pour pouvoir lancer plusieurs réplicas du back avec une seule base
   - Besoin donné par l'utilisateur le 27/11. HSQLDB, interne au processus, limite à une instance et à une coupure
-    par mise à jour. À commencer après la fusion du lot `ci/staging-release` (mêmes fichiers Helm, Terraform,
-    Compose). Plan ci-dessous: proposition, ajoutée au backlog à la demande de l'utilisateur.
+    par mise à jour. Le lot staging, qui touchait les mêmes fichiers Helm, Terraform et Compose, est fusionné
+    (PR #58): à commencer après accord de l'utilisateur. Plan ci-dessous: proposition, ajoutée au backlog à la
+    demande de l'utilisateur.
   - Choix proposés: PostgreSQL 18 (version et fin de support à vérifier au démarrage), image épinglée par digest;
     Flyway et `ddl-auto=validate`; tests avec Testcontainers; base gérée à part de la release Helm de
     l'application (un `helm rollback` ne la touche pas); en cluster, un StatefulSet dans un module Terraform
@@ -95,8 +96,10 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
     permanent). La question sur `standalone` est close: la cible est supprimée.
 - [ ] back (à vérifier, non testé): `Organization.persons` est en `CascadeType.ALL`; d'après le code, supprimer
   une organisation pourrait supprimer ses personnes. Écrire d'abord un test qui le montre
-- [ ] ci: mettre en cache les couches Docker d'un run à l'autre (le job `images` reconstruit tout à chaque run). Autre
-  piste à essayer: prêter le cache Gradle du runner à `docker build` en lecture seule (`GRADLE_RO_DEP_CACHE`)
+- [ ] ci: mettre en cache les couches Docker d'un run à l'autre. Gain attendu faible depuis la PR #59: le job
+  `images` reprend les produits des tests sans recompiler (32 s, dont 15 s de construction, run 46081585709). Les
+  jobs de tests compilent dans le Dockerfile: c'est là qu'un cache serait à mesurer. Autre piste à essayer: prêter
+  le cache Gradle du runner à `docker build` en lecture seule (`GRADLE_RO_DEP_CACHE`)
 - [ ] ci (priorité accélération, en attente de décision: ordre du schéma): ne plus faire attendre `images` après les
   jobs Sonar (les ajouter aux `needs` de `candidate`); gain estimé d'environ 70 s sur les PR et `main`
 - [ ] cd: la livraison manuelle avec `publish` reconstruit et publie avant tout staging, sans pré-version ni
