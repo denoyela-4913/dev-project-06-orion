@@ -24,6 +24,6 @@ args=()
 for file in "${files[@]}"; do args+=(-f "$dir/$file"); done
 # Un nom de projet par environnement : volumes et réseaux séparés.
 # COMPOSE_ENV_FILE et COMPOSE_PROJECT: réservés à scripts/check_parity.sh, qui compare deux environnements à
-# valeurs égales ; COMPOSE_PROJECT sert aussi à scripts/ci_local.sh, pour ne pas toucher aux volumes locaux.
+# valeurs égales ; COMPOSE_PROJECT sert aussi à scripts/lib_ci.sh, pour ne pas toucher aux volumes locaux.
 exec docker compose -p "${COMPOSE_PROJECT:-microcrm-$env_name}" \
   --env-file "${COMPOSE_ENV_FILE:-$dir/env/$env_name.env}" "${args[@]}" "$@"

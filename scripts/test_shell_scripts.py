@@ -31,7 +31,9 @@ class ScriptCase(unittest.TestCase):
         path.chmod(0o755)
 
     def run_script(self, *command):
-        env = dict(os.environ, PATH=f"{self.bin}{os.pathsep}{os.environ['PATH']}")
+        # Sans les variables de la CI : ces tests y tournent aussi, et les scripts doivent se comporter comme sur un poste.
+        env = {key: value for key, value in os.environ.items() if key not in ("GITHUB_ACTIONS", "IMAGE_ARTIFACTS")}
+        env["PATH"] = f"{self.bin}{os.pathsep}{env['PATH']}"
         return subprocess.run(
             [str(SCRIPTS / command[0]), *command[1:]], env=env, capture_output=True, text=True, timeout=30
         )
@@ -84,7 +86,7 @@ class HelmDeployTests(ScriptCase):
 
 class CiLocalTests(ScriptCase):
     def test_images_alone_never_reuse_old_artifacts(self):
-        # Sans `test` dans la même commande, des artefacts peuvent dater d'un code ancien : le Dockerfile compile.
+        # Sans les deux jobs de tests dans la même commande, des artefacts peuvent dater d'un code ancien : le Dockerfile compile.
         result = self.run_script("ci_local.sh", "images")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("--target back", self.calls())
@@ -95,7 +97,7 @@ class CiLocalTests(ScriptCase):
         for tool in ("bash", "env", "dirname"):
             (self.bin / tool).symlink_to(shutil.which(tool))
         result = subprocess.run(
-            [str(SCRIPTS / "ci_local.sh"), "lint", "infra"], env=dict(os.environ, PATH=str(self.bin)),
+            [str(SCRIPTS / "ci_local.sh"), "lint", "infra-check"], env=dict(os.environ, PATH=str(self.bin)),
             capture_output=True, text=True, timeout=30,
         )
         self.assertEqual(result.returncode, 1, result.stderr)
