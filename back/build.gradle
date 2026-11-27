@@ -4,7 +4,7 @@ plugins {
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'com.adarshr.test-logger' version '4.0.0'
 	id 'jacoco'
-	// Analyses du code Java, rattachées à `check` donc lancées par `./gradlew build` (job `build-back`).
+	// Analyses du code Java, rattachées à `check` donc lancées par `./gradlew check` (job `test-back`, scripts/ci_test.sh).
 	id 'checkstyle'
 	// 6.5.13 : dernière version du plugin publiée depuis plus de 7 jours au 26/11/2026 (même délai que Dependabot).
 	id 'com.github.spotbugs' version '6.5.13'

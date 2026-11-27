@@ -105,6 +105,34 @@ class RunTests(ScriptCase):
         self.assertIn("docker rm --force microcrm-back", self.calls())
 
 
+class CiTestTests(ScriptCase):
+    """ci_test.sh efface des dossiers de sortie : il est joué sur une copie, hors du dépôt."""
+
+    def run_copy(self, docker):
+        self.fake("docker", docker)
+        copy = self.bin / "repo" / "scripts" / "ci_test.sh"
+        copy.parent.mkdir(parents=True)
+        copy.write_bytes((SCRIPTS / "ci_test.sh").read_bytes())
+        copy.chmod(0o755)
+        return self.run_script(str(copy), "back")
+
+    def test_the_back_runs_every_check_and_keeps_going(self):
+        result = self.run_copy("")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("./gradlew check --continue", self.calls())
+
+    def test_reports_are_still_copied_after_a_failure(self):
+        # Les contrôles échouent et un rapport manque : les autres sont copiés, l'échec est conservé.
+        result = self.run_copy('case "$*" in "start --attach"*) exit 1 ;; "cp "*jacoco*) exit 1 ;; esac')
+        self.assertEqual(result.returncode, 1, result.stderr)
+        for report in ("reports/checkstyle", "reports/spotbugs"):
+            self.assertIn(f":/src/build/{report} ", self.calls())
+
+    def test_a_missing_report_fails_a_successful_run(self):
+        result = self.run_copy('case "$*" in "cp "*spotbugs*) exit 1 ;; esac')
+        self.assertNotEqual(result.returncode, 0)
+
+
 class BuildImagesTests(ScriptCase):
     def artifacts(self):
         directory = self.bin / "artifacts"
