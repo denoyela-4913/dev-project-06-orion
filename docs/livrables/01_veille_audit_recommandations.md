@@ -401,19 +401,20 @@ déploiement automatisé.
 
 ## 5.2 Prochaines étapes (calendrier prévisionnel)
 
-Le calendrier part de la semaine du 23/11/2026. La colonne « État » reflète le dépôt au 19/11/2026.
+Le calendrier part de la semaine du 23/11/2026. La colonne « État » reflète le dépôt au 27/11/2026.
 
-| Semaine | Priorité | Action | État au 19/11/2026 |
+| Semaine | Priorité | Action | État au 27/11/2026 |
 |---|---|---|---|
-| **S1** (23–27/11) | P1 | Automatisation de la CI et livraison automatique de l'image aux Ops (reprise rapide en cas de défaut urgent). | CI de tests + build **en place** (GitHub Actions) ; publication d'image à faire. |
-| S1 | P2 | Analyse statique du back (SonarQube) en mode non bloquant ; ajout de Trivy et lint. | SonarQube en place ; Trivy et lint à faire. |
-| **S2** (30/11–04/12) | P3 | Automatiser toutes les opérations (dont sécurité) jusqu'au déploiement, avec **déclenchement manuel de secours**. | À faire. |
-| S2 | P4 | Registre d'images : GHCR (voir 2.3.3). | À faire. |
-| **S3** (07–11/12) | P5 | Versionnement automatique de la livraison à la fusion d'une PR. | À faire. |
+| **S1** (23–27/11) | P1 | Automatisation de la CI et livraison automatique de l'image aux Ops (reprise rapide en cas de défaut urgent). | **Fait** : CI GitHub Actions, versions publiées automatiquement sur GHCR. |
+| S1 | P2 | Analyse statique du back (SonarQube) en mode non bloquant ; ajout de Trivy et lint. | **Fait** : SonarQube (trois projets), Trivy, ESLint, hadolint, Checkstyle, SpotBugs. |
+| **S2** (30/11–04/12) | P3 | Automatiser toutes les opérations (dont sécurité) jusqu'au déploiement, avec **déclenchement manuel de secours**. | **Fait en démonstration** (cluster jetable) ; environnement permanent à décider. |
+| S2 | P4 | Registre d'images : GHCR (voir 2.3.3). | **Fait**. |
+| **S3** (07–11/12) | P5 | Versionnement automatique de la livraison à la fusion d'une PR. | **Fait** (SemVer à partir des conventional commits). |
 
-Cas particulier : le passage du Quality Gate SonarQube en mode **bloquant** est prévu en S3, une fois les
-issues du front traitées (état au 26/11/2026 : gate de `main` vert, couverture globale 69,6 %), avec des seuils de couverture de 80 % distincts pour
-le front et pour le back, vérifiés par un job dédié (voir Modèle 2, §2.6).
+Cas particulier : le passage du Quality Gate SonarQube en mode **bloquant** était prévu en S3, une fois les
+issues du front traitées. Elles le sont et les gates de `main` sont verts (27/11/2026) ; la décision reste à
+prendre. Les seuils de couverture de 80 %, distincts pour le front et pour le back, sont bloquants (voir Modèle 2,
+§2.6).
 
 *Il n'est pas nécessaire d'implémenter toutes les recommandations dans le cadre du projet : la priorité est
 donnée à P1 à P3.*

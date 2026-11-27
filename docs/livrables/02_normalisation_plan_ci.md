@@ -51,7 +51,7 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
 | Front (Angular / TypeScript) | Guide de style Angular ; pas de promesse non gérée ; champs de formulaire avec label | ESLint (`angular-eslint`), SonarQube |
 | Back (Java 21 / Spring Boot) | Conventions Java usuelles, couches contrôleur / service / dépôt, pas de logique dans les contrôleurs | Checkstyle, SpotBugs, SonarQube |
 | Dockerfile | Mot-clé `AS` en majuscules, un stage par cible, utilisateur non root | hadolint, SonarQube |
-| Scripts | Bash : `set -euo pipefail`, ShellCheck ; Python : tests `pytest` | ShellCheck, pytest |
+| Scripts | Bash : `set -euo pipefail`, ShellCheck ; Python : tests `unittest`, bibliothèque standard | `unittest` (CI), ShellCheck (à la main, pas encore dans la CI) |
 | Commits | Conventional commits (`feat:`, `fix:`, `ci:`, `docs:`, `build:`) | contrôle en revue |
 
 ## 2.3 Gestion des versions
@@ -85,7 +85,7 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
   GitHub, GitHub Actions, GHCR (voir 3.5, risque R2 pour le lien GitLab attendu par le sujet).
 - Ordre des jobs : lint, puis tests avec couverture, puis, en parallèle, les trois analyses SonarQube (une par
   projet : front, back et infra, voir 2.6) et le contrôle des seuils de couverture (job `coverage`), puis build,
-  scan de l'image, release et déploiement. SonarQube vient après les tests car il importe leur couverture (les
+  bout en bout et scan, release et déploiement. SonarQube vient après les tests car il importe leur couverture (les
   rapports des tests sont réutilisés, sans relancer les tests) ; le build attend les analyses pour ne pas
   construire une version dont l'analyse a échoué. L'analyse de l'infra n'attend rien et part dès le début.
 - Lint : le job `lint` ne contient qu'**ESLint** et **hadolint**. **Checkstyle** et **SpotBugs** sont lancés par
@@ -93,7 +93,10 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
   leurs erreurs n'apparaissent qu'à l'étape de build, et ce job relance les tests du back.
 - Durée de référence : **127 s** au tag `v0.0.2` (Sonar en parallèle des tests, sans cache). Avec un seul scan
   Sonar entre les tests et le build : **181 s** sur `main` (run 45809708667, scan de 104 s). Avec trois scans
-  parallèles : **131 s** sur `main` (run 45880516355), le plus long scan (back) durant 62 s.
+  parallèles : **131 s** sur `main` (run 45880516355), le plus long scan (back) durant 62 s. Pipeline complet,
+  avec images, scan, release et déploiement de démonstration (27/11/2026) : **631 s** sur `main`
+  (run 45926860668, dont 272 s de déploiement), 597 s sur une PR et **264 s** sur une branche, où le déploiement
+  n'est pas lancé.
 
 ## 2.6 Tests
 
@@ -102,7 +105,9 @@ produite ni publiée, aucun déploiement, aucune notification, aucune mesure.
 | Unitaires back | JUnit (Gradle) | chaque push | couverture du code nouveau ≥ 80 % |
 | Unitaires front | Vitest (via `ng test`, DOM simulé jsdom, sans navigateur) | chaque push | couverture du code nouveau ≥ 80 % |
 | Intégration back | Spring Boot Test | chaque push | endpoints principaux |
-| Scripts d'automatisation | pytest, Bash Unit, ShellCheck | chaque push | chaque script testé |
+| Fonctionnels back | Spring Boot sur un port réel, client HTTP | chaque push | scénarios de l'API tels que le front les appelle |
+| Bout en bout | Playwright (Chromium), contre l'application construite | chaque push | principaux parcours utilisateur |
+| Scripts d'automatisation | `unittest` (Python) ; syntaxe Bash vérifiée ; scripts de déploiement et de secours exécutés par le déploiement de démonstration | chaque push (secours : PR et `main`) | scripts Python testés, scripts de déploiement éprouvés |
 | Sécurité | SonarQube, Trivy | PR, `main`, hebdomadaire | 0 vulnérabilité critique/haute |
 | Déploiement | script de test de déploiement (santé HTTP) | après déploiement | application répond |
 
@@ -128,7 +133,8 @@ branches).
   `coverage` reste en plus : il contrôle les 80 % sur tout le code et sur le code nouveau, ce que le gate par
   défaut de Sonar ne fait pas (il ne porte que sur le code nouveau).
 
-Les tests de bout en bout et de performance seront ajoutés avec la partie 2 (déploiement, charge).
+Les tests de bout en bout sont en place (`docs/TESTS.md`). Les tests de charge et de performance restent à
+ajouter.
 
 ## 2.7 Sécurité
 
@@ -174,14 +180,18 @@ déclencher manuellement une livraison en cas de panne de l'automatisation.
 - **Livrables** : jobs `lint`, `trivy`, `sonar-front`, `sonar-back`, `sonar-infra` ; rapport des résultats ; seuils documentés.
 - **État** : SonarQube **fait**, en trois projets (front, back, infra) depuis le 26/11/2026, gates non
   bloquants ; seuils de couverture
-  par partie **faits** (bloquants depuis le 26/11/2026) ; Trivy et lint **à faire**.
+  par partie **faits** (bloquants depuis le 26/11/2026) ; lint (ESLint, hadolint), Checkstyle, SpotBugs et Trivy
+  **faits**, bloquants. Passage des Quality Gates en bloquant : en attente de décision.
 
 ### 3.2.3 Étape 3 : Scripts d'automatisation
 
 - **Description** : scripts Bash/Python pour la gestion des dépendances, l'exécution des tests, le
-  déploiement, la sauvegarde et la notification des résultats ; tests des scripts (ShellCheck, pytest).
+  déploiement, la sauvegarde et la notification des résultats ; tests des scripts.
 - **Responsables** : Ops (Bash, Ansible) avec un Dev pour Python.
 - **Livrables** : dossier `scripts/` documenté dans le README (but, fonctionnement, paramètres).
+- **État** : **fait** pour l'exécution des tests, le déploiement, la sauvegarde, la restauration, le retour arrière,
+  la notification et la release (en-tête de chaque script : but, fonctionnement, paramètres). Reste : ShellCheck
+  dans la CI et un script de gestion des dépendances.
 
 ### 3.2.4 Étape 4 : Livraison automatisée de l'image
 
@@ -189,6 +199,8 @@ déclencher manuellement une livraison en cas de panne de l'automatisation.
   manuelle de secours.
 - **Responsables** : Dev et Ops.
 - **Livrables** : images dans le registre ; tag de version ; notes de release.
+- **État** : **fait** (premières versions `v0.1.0` à `v0.2.2` le 27/11/2026 : images sur GHCR, tag, notes, chart
+  Helm). La livraison manuelle de secours a été lancée une fois sans publication.
 
 ### 3.2.5 Étape 5 : Déploiement automatisé
 
@@ -196,6 +208,10 @@ déclencher manuellement une livraison en cas de panne de l'automatisation.
   Terraform + Ansible, cf. partie 2) ; test de déploiement ; procédure de rollback ; sauvegarde.
 - **Responsables** : Ops.
 - **Livrables** : charts Helm, fichiers Terraform, playbooks Ansible, pipeline CD.
+- **État** : **fait en démonstration** : Docker Compose, chart Helm (dev, staging, production), Terraform
+  (modules et environnements), pipeline CD, test de santé, retour arrière, sauvegarde et restauration, sur un
+  cluster **jetable** créé par la CI. **Il n'y a pas encore d'environnement permanent** (hébergement à décider).
+  Ansible n'est pas utilisé : aucune machine n'est à configurer.
 
 ## 3.3 Ressources nécessaires
 
@@ -242,14 +258,15 @@ processus automatisé, répétable et mesurable.
 
 ## 4.2 Prochaines étapes
 
-- Terminer les étapes 2 et 3 du plan (Trivy, lint, scripts) ; passer le Quality Gate en mode bloquant.
-- Compléter la documentation CI/CD : stratégie de tests, schémas d'architecture IaC, plan de sécurité,
-  plans de release, de rollback et de sauvegarde.
-- Mettre en œuvre la partie 2 : Docker, Kubernetes, Helm, Terraform, Ansible, monitoring, métriques DORA.
+- Décider l'hébergement, puis créer un environnement permanent (cluster, domaine, certificat, état Terraform
+  distant, sauvegardes planifiées).
+- Protéger l'API (authentification ou restriction réseau) avant toute exposition, et protéger la branche `main`.
+- Décider le passage des Quality Gates en mode bloquant.
+- Raccourcir le pipeline ; ajouter ShellCheck à la CI, les tests de charge, le monitoring et les métriques DORA.
 - Réviser ce document à chaque jalon.
 
 # Annexe : schéma du pipeline cible
 
-Vert : fait ; orange : à faire ; rouge : secours et rollback. Source modifiable : `schema_pipeline_ci_cd.drawio`.
+Vert : fait ; orange : à faire ; les cases de secours gardent une bordure rouge (retour arrière) ou grise (livraison manuelle). Source modifiable : `schema_pipeline_ci_cd.drawio`.
 
 ![Pipeline CI/CD cible d'Orion](schema_pipeline_ci_cd.png){width=9.4in}

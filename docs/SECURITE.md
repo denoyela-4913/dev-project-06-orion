@@ -11,6 +11,8 @@
 | Bugs et style du Java | SpotBugs et Checkstyle (`./gradlew build`) | oui |
 | TypeScript, templates, Dockerfile | job `lint` (ESLint, hadolint) | oui |
 | Versions figées | verrous, images et actions épinglées par SHA ou digest, Dependabot | – |
+| Droits de la CI | écriture réservée aux jobs `release` (dépôt, registre), `notify` (commentaire) et à la livraison manuelle (registre) | – |
+| Conteneurs | utilisateur non root, aucune capacité Linux, lecture seule en staging, production et Kubernetes ; niveau « restricted » imposé par Terraform | – |
 
 En local : `scripts/trivy.sh repo` et `scripts/trivy.sh image <image>…` (Docker suffit).
 
@@ -40,6 +42,11 @@ pour les images.
 
 Contrôle du contrôle : sur un verrou de test contenant `lodash 4.17.15`, le script sort bien en erreur.
 
+**Contrôle du 27/11 sur les images publiées `0.2.2`** (lues depuis GHCR, utilisateur `10001`, étiquette de
+révision égale au commit du tag) : 0 critique, 0 haute, **7 moyennes** par image dans les paquets Alpine (OpenSSL et
+zlib, correctifs disponibles), suivies au backlog. L'audit du 26/11 ne les voyait pas pour les images, car il ne
+portait sur elles qu'à partir du niveau « haute ».
+
 C'est un état à une date donnée : de nouvelles vulnérabilités sont publiées en permanence, d'où le rescan
 hebdomadaire. Référence de départ (`v0.0.1`) : 90 vulnérabilités npm, dont 5 critiques.
 
@@ -51,3 +58,5 @@ hebdomadaire. Référence de départ (`v0.0.1`) : 90 vulnérabilités npm, dont 
 | `main` sans protection : une PR en échec reste fusionnable | en attente de décision (réglage du dépôt) |
 | Quality Gates Sonar non bloquants | décision du 26/11 |
 | Image de Trivy non suivie par Dependabot (référence dans un script) | mise à jour manuelle (backlog) |
+| Images publiées sur GHCR lisibles sans authentification | attendu pour un dépôt public ; aucune donnée ni secret dans les images (scan de secrets) |
+| Sauvegardes (données personnelles) en local, non chiffrées, non planifiées | à traiter avec l'hébergement (backlog) |
