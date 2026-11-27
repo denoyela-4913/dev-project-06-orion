@@ -55,8 +55,35 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 - [ ] ci: suivre les mises à jour des images de Trivy et de Playwright (références par digest dans
   `scripts/trivy.sh` et `scripts/e2e.sh`, que Dependabot ne voit pas), ainsi que celle de hadolint (`ci.yml`) et
   les versions de kind, Helm et Terraform
-- [ ] données (en attente de décision: base de données de production): HSQLDB interne au back limite à une instance
-  et à une coupure par mise à jour; PostgreSQL (et un outil de migration à la place de `ddl-auto=update`) à décider
+- [ ] données: séparer la base du back pour pouvoir lancer plusieurs réplicas du back avec une seule base
+  - Besoin donné par l'utilisateur le 27/11. HSQLDB, interne au processus, limite à une instance et à une coupure
+    par mise à jour. À commencer après la fusion du lot `ci/staging-release` (mêmes fichiers Helm, Terraform,
+    Compose). Plan ci-dessous: proposition, ajoutée au backlog à la demande de l'utilisateur.
+  - Choix proposés: PostgreSQL 18 (version et fin de support à vérifier au démarrage), image épinglée par digest;
+    Flyway et `ddl-auto=validate`; tests avec Testcontainers; base gérée à part de la release Helm de
+    l'application (un `helm rollback` ne la touche pas); en cluster, un StatefulSet dans un module Terraform
+    `database` (CloudNativePG jugé trop lourd; base managée à préférer sur un vrai hébergement); URL JDBC en
+    configuration, mot de passe dans un Secret absent de Git.
+  - PR 1, back: pilote, Flyway, schéma initial (séquences conformes à `GenerationType.AUTO`), Testcontainers.
+    `InitialDataFixture` (table vide puis insertion: doublons possibles si deux réplicas démarrent ensemble)
+    désactivé en staging et en production, réservé au développement à une instance. Un seul réplica à ce stade.
+  - PR 2, Compose: service `db`, volume, sonde de santé, secret.
+  - PR 3, Kubernetes: module `database`, accès à la base réservé au back, `backup.sh`, `restore.sh` et
+    `test_recovery.sh` passés à `pg_dump` et `pg_restore`, parité staging et production (`check_parity.sh`).
+  - PR 4, réplicas: retirer le blocage du chart, 2 réplicas en staging et en production, `RollingUpdate` et
+    PodDisruptionBudget; vérifier que réplicas × taille du pool, marge de mise à jour comprise, reste sous
+    `max_connections`; tester démarrage simultané, perte d'un pod et mise à jour sans coupure. Migrations
+    compatibles avec la version précédente (ajouter d'abord, supprimer dans une version ultérieure).
+  - PR 5, documentation: déploiement, sécurité, schéma, livrables.
+  - Limite: une seule instance de base reste un point de panne unique (haute disponibilité hors périmètre). HPA
+    après les tests de charge.
+  - En attente de réponse: (1) image `standalone`: HSQLDB en mémoire pour la démonstration seulement
+    (recommandé, mais second moteur à tester) ou PostgreSQL externe obligatoire; (2) données locales à conserver
+    ou base vide au départ (recommandé: aucun environnement permanent).
+- [ ] back (à vérifier, non testé): `Organization.persons` est en `CascadeType.ALL`; d'après le code, supprimer
+  une organisation pourrait supprimer ses personnes. Écrire d'abord un test qui le montre
+- [ ] outillage: valider la branche `ci/local-scripts` (scripts de lancement et Helm sur minikube, CI locale,
+  ShellCheck, lancement manuel de la CI). Installation Helm à rejouer jusqu'au bout avant la PR
 - [ ] ci: mettre en cache les couches Docker d'un run à l'autre (le job `images` reconstruit tout à chaque run). Autre
   piste à essayer: prêter le cache Gradle du runner à `docker build` en lecture seule (`GRADLE_RO_DEP_CACHE`)
 - [ ] ci (priorité accélération, en attente de décision: ordre du schéma): ne plus faire attendre `images` après les
@@ -164,7 +191,7 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
-- [x] ci/cd: staging avant la release et même binaires en production (branche `ci/staging-promotion`, 27/11)
+- [x] ci/cd: staging avant la release et même binaires en production (branche `ci/staging-release`, 27/11)
   - Un seul job `images`; `standalone` réutilise les étapes compilées et son démarrage est testé; `bootJar` dans le
     Dockerfile.
   - Jobs `candidate`, `staging`, `release` (pré-version) et workflow `promote.yml`; images désignées par empreinte.
