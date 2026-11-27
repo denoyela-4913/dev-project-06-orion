@@ -16,6 +16,7 @@ et outils, ce fichier est la seule mémoire commune).
 - **Demander avant de commiter ou pousser**, sauf si l'utilisateur l'a dit explicitement. Sa formule habituelle:
   « commit, push, PR et fusion en rebase ».
 - Ouvrir la PR seulement quand la CI de la branche est verte. Fusion en **rebase** (`gh pr merge --rebase --delete-branch`).
+  Exception: une branche qui ne touche que `**.md`, `docs/` ou `learning/` ne lance pas la CI (`paths-ignore`).
 - Versions: LTS avec support au-delà de 05/2027. Images et actions épinglées par SHA/digest, version en commentaire.
 - Ne pas écrire l'identifiant GitHub de l'utilisateur en dur dans les scripts.
 - Pas de `git reset --hard` ni de push forcé: créer une nouvelle branche à la place.
