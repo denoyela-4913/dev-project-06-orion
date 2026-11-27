@@ -28,7 +28,9 @@ COPY ./back /src
 
 WORKDIR /src
 
-RUN ./gradlew build
+# `bootJar` et non `build` : le JAR seul. Les tests, Checkstyle et SpotBugs sont exécutés par les jobs `test-back`
+# et `build-back` de la CI ; les relancer ici n'ajoutait aucun contrôle.
+RUN ./gradlew bootJar
 
 # Alpine 3.24.4 (LTS, fin de support 01/06/2028).
 FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS front
