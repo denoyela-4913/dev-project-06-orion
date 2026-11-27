@@ -8,8 +8,9 @@ Règles:
 - `fix`, `perf`, `build` (ce qui change le produit livré): correctif;
 - le reste (docs, ci, test, chore, style, refactor): pas de release à lui seul.
 
-Usage: release.py [--repository DOSSIER] [--notes FICHIER] [--outputs FICHIER]
---outputs reçoit `released=true|false`, puis `version=` et `tag=` (format de GITHUB_OUTPUT).
+Usage, à la racine du dépôt: release.py
+La sortie standard reçoit `released=true|false`, puis `version=` et `tag=` (format de GITHUB_OUTPUT: la CI la
+redirige vers ce fichier). Les notes sont écrites dans `release-notes.md`, dans le dossier courant.
 Le script ne crée ni tag ni release: c'est le job `release` de la CI qui publie.
 Bibliothèque standard seule.
 """
@@ -21,6 +22,7 @@ from typing import NamedTuple
 
 TAG = re.compile(r'^v(\d+)\.(\d+)\.(\d+)$')
 SUBJECT = re.compile(r'^(?P<kind>[a-z]+)(\((?P<scope>[^)]*)\))?(?P<breaking>!)?: (?P<text>.+)$')
+NOTES_FILE = 'release-notes.md'
 PATCH_KINDS = {'fix', 'perf', 'build'}
 SECTIONS = (('breaking', 'Changements incompatibles'), ('feat', 'Nouveautés'), ('fix', 'Corrections'),
             ('other', 'Autres changements'))
@@ -97,22 +99,16 @@ def plan(repository):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('--repository', default='.')
-    parser.add_argument('--notes', default='release-notes.md')
-    parser.add_argument('--outputs')
-    options = parser.parse_args(argv)
+    # Aucune option: tout chemin est fixe, rien venant de la ligne de commande n'est ouvert (Sonar S8707).
+    argparse.ArgumentParser(description=__doc__.splitlines()[0]).parse_args(argv)
 
-    version, commits = plan(options.repository)
-    lines = ['released=false'] if version is None else [
-        'released=true', f'version={text(version)}', f'tag=v{text(version)}']
-    if version is not None:
-        with open(options.notes, 'w', encoding='utf-8') as file:
-            file.write(notes(version, commits))
-    if options.outputs:
-        with open(options.outputs, 'a', encoding='utf-8') as file:
-            file.write('\n'.join(lines) + '\n')
-    print('\n'.join(lines))
+    version, commits = plan('.')
+    if version is None:
+        print('released=false')
+        return 0
+    with open(NOTES_FILE, 'w', encoding='utf-8') as file:
+        file.write(notes(version, commits))
+    print(f'released=true\nversion={text(version)}\ntag=v{text(version)}')
     return 0
 
 
