@@ -14,7 +14,6 @@
 
 Objectif: toutes les cases du schéma « faites », ou une entrée « en attente de décision ». Une PR par lot.
 
-- [ ] tests: compléter les tests unitaires, fonctionnels et de bout en bout
 - [ ] docs: documentation CI/CD et déploiement à jour, schéma à jour
 - [ ] docs: fiches et flashcards sur le projet, dont les processus CI et CD (`learning/`)
 - [ ] docs: audit et état des lieux de la nuit (à écrire vers 04h00 le 27/11, tenu à jour jusqu'à la fin)
@@ -24,6 +23,13 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 
 ### Autres tâches
 
+- [ ] front (en attente de décision: format de téléphone accepté): le message « Phone must be a valid phone number. »
+  attend une erreur `tel` qu'aucun validateur ne produit; ajouter un validateur (quel format?) ou retirer le message
+- [ ] sonar (en attente de décision: Quality Gates bloquants): `-Dsonar.qualitygate.wait=true` dans les `args` des
+  trois jobs `sonar-*` de `ci.yml`, et commentaires, `docs/SECURITE.md`, schéma et livrables à jour. Les trois gates
+  de `main` sont verts le 27/11; le schéma annonçait ce passage « à v0.1.0 », publiée le 27/11. Non fait: la
+  décision n'est pas prise (l'autorisation donnée portait sur les seuils de couverture)
+- [ ] tests: charge et performance, accessibilité au-delà des règles ESLint, autres navigateurs que Chromium
 - [ ] ci: raccourcir encore la CI. Avec la CD, un run de `main` est passé d'environ 2 min à 12 min 42 s (run
   45921077822, avant l'accélération). Postes: `deploy-demo` 386 s, `images` jusqu'à 102 s (le build Docker du back
   relance les tests et retélécharge tout: cache de couches, ou construire l'image à partir du JAR de `build-back`),
@@ -31,7 +37,6 @@ Objectif: toutes les cases du schéma « faites », ou une entrée « en attente
 - [ ] ci: à la première release (v0.1.0), l'envoi de l'image `standalone` sur GHCR a été refusé (`denied`) après
   ceux de `front` et `back`; la relance du job a réussi (aucune release incomplète: le tag vient en dernier). Cause
   non identifiée. Surveiller la prochaine release; si cela se répète, réessayer l'envoi dans le script
-- [ ] cd: essayer une fois le workflow « Livraison manuelle de secours » (sans `publish` sur une version existante)
 - [ ] cd (en attente de décision: canal de notification): créer le secret `NOTIFY_WEBHOOK_URL` (Slack, Teams…); en
   attendant, résumé du run, commentaire du commit et courriels de GitHub
 - [ ] cd (en attente de décision: hébergement): créer un environnement permanent (cluster, domaine, certificat,
@@ -127,20 +132,6 @@ la cible au moment de la migration si une version plus récente est sortie.
     `org.sonarqube`.
   - Piste: une tâche Gradle qui écrit le classpath de compilation, passé au scan via `-Dsonar.java.libraries=...`.
   - À faire après la migration de Spring Boot (le classpath change), et à comparer au nombre d'issues Java actuel.
-- [ ] front: corriger les défauts d'affichage et de navigation relevés pendant le lot des promesses (26/11)
-  - Une correction par commit, avec un test qui échoue d'abord. Aucun n'est signalé par les issues Sonar traitées
-    dans les trois lots d'issues Sonar du front (cf. « Fait »). Priorité non décidée.
-  - Vu à l'écran (front lancé sans le back):
-    - tableau de bord: après un échec de chargement, « No person yet » et « No organization yet » s'affichent sous
-      les messages d'erreur, comme si les listes étaient vides;
-    - page d'une organisation: après un échec de chargement, le titre est `Organization ""`. La page d'une personne
-      a le même modèle de titre (non vu à l'écran).
-  - Vu à la lecture du code, non reproduit dans le navigateur:
-    - tableau de bord: le lien « Create one » des organisations vise `organization/new` (singulier,
-      `main-dashboard.component.html`). Aucune route ne correspond: la route `**` renvoie à l'accueil;
-    - page d'une personne, bouton « + »: **corrigé** avec le lot lint (26/11);
-    - page d'une personne: le message « Phone must be a valid phone number. » attend une erreur `tel` qu'aucun
-      validateur ne produit.
 - [ ] sécurité: CORS n'est pas un contrôle d'accès, protéger l'API (portée et solution non décidées)
   - Constat (26/11): aucune dépendance ni configuration de sécurité dans le back. Spring Data REST expose les
     personnes et les organisations (`PersonRepository`, `OrganizationRepository`), lecture et écriture, sur le port
@@ -155,6 +146,18 @@ la cible au moment de la migration si une version plus récente est sortie.
 
 ## Fait
 
+- [x] front: défauts d'affichage et de navigation relevés pendant le lot des promesses (26-27/11)
+  - Plus de « liste vide » après un chargement en échec, plus de titre au nom vide, lien « Create one » des
+    organisations corrigé, bouton « + » actif au clavier (PR du lint). Chaque correctif a un test qui échouait sur
+    l'ancien code. Reste le message du téléphone (entrée « À faire »).
+- [x] cd: essayer une fois le workflow « Livraison manuelle de secours » (sans `publish` sur une version existante)
+  - Fait le 27/11 sans publication (run 45922352264, 394 s): v0.2.0 relue depuis GHCR, trois environnements
+    déployés, secours éprouvés, notification. L'option `publish` n'a pas été essayée (elle publie une version).
+- [x] tests: compléter les tests unitaires, fonctionnels et de bout en bout
+  - Back: 6 scénarios fonctionnels sur un port réel (`ApiScenarioTests`). Front: 6 tests d'états d'affichage. Bout en
+    bout: 5 parcours Playwright dans Chromium contre l'application construite (job `e2e`, préalable à la release et
+    au déploiement). Stratégie: `docs/TESTS.md`. Couverture: front 100 % des lignes et 92,7 % des branches (Vitest).
+  - Les seuils de couverture à 80 % étaient déjà atteints et bloquants (PR #42, autre session).
 - [x] ci: éviter que le scan Sonar télécharge la distribution Gradle (étape « Detecting build system
   information », 27 à 38 s mesurées sur les runs à un seul scan après la PR #19, contre 8 s avant). À remesurer
   avec les trois scans parallèles (PR #33) avant de corriger
