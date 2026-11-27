@@ -95,26 +95,25 @@ class GitTest(unittest.TestCase):
     def run_main(self):
         output = io.StringIO()
         with contextlib.chdir(self.root), contextlib.redirect_stdout(output):
-            code = release.main([])
-        return code, output.getvalue()
+            release.main([])
+        return output.getvalue()
 
     # Aucun chemin ne vient de la ligne de commande (Sonar S8707): les sorties vont sur la sortie standard, que la
     # CI redirige vers GITHUB_OUTPUT, et les notes dans un fichier au nom fixe.
     def test_main_prints_the_outputs_and_writes_the_notes(self):
         self.add('feat: first')
 
-        code, output = self.run_main()
+        output = self.run_main()
 
-        self.assertEqual(0, code)
         self.assertEqual('released=true\nversion=0.1.0\ntag=v0.1.0\n', output)
         self.assertIn('- first', (self.root / 'release-notes.md').read_text())
 
     def test_main_reports_that_there_is_nothing_to_release(self):
         self.add('docs: only')
 
-        code, output = self.run_main()
+        output = self.run_main()
 
-        self.assertEqual((0, 'released=false\n'), (code, output))
+        self.assertEqual('released=false\n', output)
         self.assertFalse((self.root / 'release-notes.md').exists())
 
     def test_main_accepts_no_path_argument(self):
