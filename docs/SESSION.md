@@ -90,7 +90,7 @@ format de téléphone; ordre ou parallélisme du job `lint`; sort de `.gitlab-ci
 - Vu une fois le 26/11, machine très chargée (charge moyenne autour de 57): `ng test --coverage` en échec
   (`Timeout waiting for worker to respond`, aucun test exécuté). Réussi ensuite, charge retombée.
 
-- **Nuit du 26 au 27/11** (PR #43 à #55 environ, toutes fusionnées en rebase): pipeline CI/CD complet du schéma
+- **Nuit du 26 au 27/11** (PR #43 à #56, toutes fusionnées en rebase): pipeline CI/CD complet du schéma
   (lint, Checkstyle et SpotBugs, images et Compose, Trivy, Helm, Terraform, release, déploiement de démonstration,
   secours, notification), tests fonctionnels et de bout en bout, fiches et flashcards. Versions publiées:
   `v0.1.0` à `v0.2.2`; cliché Sonar `docs/quality/v0.1.0/`. Bilan, preuves et réserves:
