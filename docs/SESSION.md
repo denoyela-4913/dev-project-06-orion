@@ -13,6 +13,10 @@ Chaque job rejouable de `ci.yml` lance `scripts/ci/<job>.sh`, que `ci_local.sh <
 46080588509). L'autorisation de fusionner valait pour ce lot: **la redemander**. Reste possible: essais réels des
 scripts des développeurs (`app.sh`, `run_*.sh`, Helm), que la CI ne joue pas.
 
+Documentation alignée ensuite (branche `docs/scripts-par-job`): déploiement, tests, livrable 02 et son `.docx`,
+passages périmés du backlog et de ces notes. Schéma inchangé (noms des jobs identiques). L'autorisation de fusionner
+valait pour ce lot: **la redemander**.
+
 ## Lot précédent: documentation et scripts (27/11)
 
 - PR #59 à #62: `standalone` supprimée, images construites à partir des artefacts des tests, jobs de build supprimés,
@@ -43,8 +47,8 @@ format de téléphone; ordre ou parallélisme du job `lint`; sort de `.gitlab-ci
 
 ## Où on en est
 
-- Fin de la nuit du 26 au 27/11: PR #43 à #56 ([`docs/AUDIT-2026-11-27.md`](AUDIT-2026-11-27.md)). Dernière release
-  au 27/11 au soir: `v0.2.4` (promue). Les trois Quality Gates Sonar ne sont pas bloquants.
+- Fin de la nuit du 26 au 27/11: PR #43 à #56 ([`docs/AUDIT-2026-11-27.md`](AUDIT-2026-11-27.md)).
+- Dernière release au 28/11: `v0.2.4` (promue). Les trois Quality Gates Sonar ne sont pas bloquants.
 - **Une fusion sur `main` contenant `feat`, `fix`, `perf`, `build` ou un changement cassant publie des images
   candidates, puis une pré-version après le staging.**
 - Historique détaillé (mesures, incidents, branches supprimées): [`docs/HISTORIQUE-SESSIONS.md`](HISTORIQUE-SESSIONS.md),
@@ -60,11 +64,13 @@ format de téléphone; ordre ou parallélisme du job `lint`; sort de `.gitlab-ci
 
 ## Prochaine étape (proposée, non décidée)
 
-- Séparation de la base (besoin donné le 27/11): plan en 5 PR dans le backlog, à commencer après accord de
-  l'utilisateur; une réponse attendue (données à conserver).
 1. Prendre les décisions ci-dessus, en commençant par la sécurité (API, `main`).
-2. Corriger les 7 vulnérabilités moyennes des images (backlog).
-3. Accélération: détection Gradle du scan `sonar-back` (31 s), cache des couches Docker.
+2. Mesurer de nouveau les vulnérabilités moyennes des images publiées (relevé sur `0.2.2`), puis corriger.
+3. Accélération: détection Gradle du scan `sonar-back` (31 s au 27/11). Le job `images` est court (32 s): un cache
+   Docker serait à mesurer sur les jobs de tests.
+
+Aussi: séparation de la base (besoin donné le 27/11), plan en 5 PR dans le backlog, à commencer après accord de
+l'utilisateur; une réponse attendue (données à conserver).
 
 Seuils de couverture: 80 % pour le front et pour le back, tout le code et code nouveau, **bloquants**. Sonar ne
 compte pas les templates HTML.
