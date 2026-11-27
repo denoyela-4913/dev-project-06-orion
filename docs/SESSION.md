@@ -5,12 +5,15 @@ lot de travail. Les règles de travail sont dans `CLAUDE.md`, les tâches dans `
 
 **Dernière mise à jour: 28/11/2026**
 
-## Lot en cours: un script par job (branche `ci/scripts-par-job`, 28/11)
+## Dernier lot: un script par job (PR #66, 28/11)
 
-Chaque job rejouable de `ci.yml` lance `scripts/ci/<job>.sh`, que `ci_local.sh <job>` lance aussi. Commit, PR et
-fusion autorisés par l'utilisateur pour ce lot.
+Chaque job rejouable de `ci.yml` lance `scripts/ci/<job>.sh`, que `ci_local.sh <job>` lance aussi (les anciennes
+étapes `test`, `infra` et `compose` n'existent plus). Vérifié: `ci_local.sh all` sur le poste; les deux chemins de
+`ci/staging.sh` sur des runners GitHub (minikube, et « version prévue » avec les empreintes de `v0.2.4`, run
+46080588509). L'autorisation de fusionner valait pour ce lot: **la redemander**. Reste possible: essais réels des
+scripts des développeurs (`app.sh`, `run_*.sh`, Helm), que la CI ne joue pas.
 
-## Dernier lot: documentation et scripts (27/11)
+## Lot précédent: documentation et scripts (27/11)
 
 - PR #59 à #62: `standalone` supprimée, images construites à partir des artefacts des tests, jobs de build supprimés,
   Checkstyle et SpotBugs dans `test-back` et dans Sonar, `v0.2.4` **promue**, retours arrière essayés.
