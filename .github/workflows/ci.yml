@@ -494,8 +494,11 @@ jobs:
   deploy-demo:
     needs: [images, compose-test, scan, infra-check, release]
     # `release` est sauté hors de `main` : le déploiement s'exécute quand même. Son échec, lui, l'arrête.
+    # Sur les PR et `main` seulement, comme Sonar : c'est le job le plus long (plus de 6 minutes), et la CI d'une
+    # branche de dev, qui précède toujours sa PR, n'a pas à le faire une première fois.
     if: >-
       !cancelled() &&
+      (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') &&
       needs.images.result == 'success' && needs.compose-test.result == 'success' &&
       needs.scan.result == 'success' && needs.infra-check.result == 'success' &&
       (needs.release.result == 'success' || needs.release.result == 'skipped')
@@ -656,6 +659,13 @@ jobs:
       # Résultats du job `test-back` (couverture et classes Java), replacés aux chemins attendus par
       # back/sonar-project.properties. Pas de setup-java : les tests ne tournent plus ici et le scanner
       # télécharge son propre JRE.
+      # Le scanner détecte le projet Gradle et en demande les informations au wrapper, qui télécharge alors toute la
+      # distribution Gradle (38 s mesurées sur 91 s de job, run 45921077822). Ce cache la conserve d'un run à
+      # l'autre ; sa clé change avec la version de Gradle.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.gradle/wrapper/dists
+          key: gradle-wrapper-${{ runner.os }}-${{ hashFiles('back/gradle/wrapper/gradle-wrapper.properties') }}
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: analysis-back
