@@ -29,7 +29,7 @@ et outils, ce fichier est la seule mémoire commune).
 cd back && ./gradlew bootRun
 cd front && npm ci --ignore-scripts && npm start
 
-# Lint (job `lint` de la CI ; Checkstyle et SpotBugs sont dans `./gradlew build`)
+# Lint (job `lint` de la CI ; Checkstyle et SpotBugs : `./gradlew check`, job `test-back`)
 cd front && npm run lint
 docker run --rm -i hadolint/hadolint:v2.15.1-alpine hadolint - < Dockerfile
 

@@ -22,7 +22,7 @@ puis la déploie. Cette fiche suit un commit, du poste du développeur au déplo
 | 1. lint | `lint` | le code et le Dockerfile respectent-ils les règles ? | rien d'autre ne tourne pour le front et le back |
 | 2. test et couverture | `test-front`, `test-back`, `infra-check` | le code fait-il ce qu'il doit ? l'infrastructure décrite est-elle valide ? | pas d'analyse ni de build |
 | 3. qualité | `sonar-front`, `sonar-back`, `sonar-infra`, `coverage` | la qualité et la couverture suffisent-elles ? | couverture : bloquante ; Quality Gate Sonar : non bloquant |
-| 4. build | `build-front`, `build-back`, `images`, `compose-test` | l'application se construit-elle et démarre-t-elle ? | pas de release |
+| 4. build | `images`, `compose-test` | l'application se construit-elle et démarre-t-elle ? | pas de release |
 | 5. bout en bout et scan | `e2e`, `scan` | les parcours fonctionnent-ils ? une vulnérabilité grave est-elle corrigeable ? | pas de release |
 | 6. candidate (`main`) | `candidate` | quelles images, quel numéro ? | pas de release |
 | 7. staging (PR et `main`) | `staging` | la version se déploie-t-elle, et sait-on revenir en arrière ? | pas de release |

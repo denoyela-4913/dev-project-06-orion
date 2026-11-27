@@ -17,6 +17,9 @@ Le principe du **shift-left** : détecter le plus tôt possible, quand corriger 
 **SAST** (*Static Application Security Testing*) analyse le code sans l'exécuter. Un scan de dépendances compare
 les versions utilisées à une base de **CVE** (*Common Vulnerabilities and Exposures*, vulnérabilités publiées).
 
+Checkstyle et SpotBugs s'exécutent dans `test-back` (`./gradlew check`). Sonar importe leurs rapports sans les
+relancer : tous les résultats se lisent au même endroit, et Gradle reste le seul à bloquer.
+
 ## La couverture
 
 Part des lignes et branches exécutées par les tests. Orion exige 80 % pour le front **et** pour le back, sur tout
