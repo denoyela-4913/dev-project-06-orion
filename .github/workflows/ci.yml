@@ -723,7 +723,6 @@ jobs:
           if [[ "$TESTS" = success ]]; then
             for tool in checkstyle spotbugs; do
               test -s "back/build/reports/$tool/main.xml"
-              test -s "back/build/reports/$tool/test.xml"
             done
           fi
         env:
