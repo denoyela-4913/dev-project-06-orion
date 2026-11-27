@@ -12,15 +12,21 @@ name: CI
 # push + pull_request, sans filtre de branche : équivalent du comportement par
 # défaut de GitLab CI (pipeline à chaque push). Le workflow de dev impose de
 # valider la CI sur la branche de dev (push) avant d'ouvrir la pull request.
+# workflow_dispatch : lancement à la main, sur la branche choisie (onglet Actions, ou `gh workflow run ci.yml
+# --ref <branche>`). Il joue les tests, les images, les scans et le staging. Il ne publie rien : `candidate` exige un
+# push sur `main`. Les analyses Sonar restent réservées aux PR et à `main`. GitHub ne propose ce lancement que
+# lorsque ce déclencheur est présent sur la branche par défaut.
 # paths-ignore : un push ou une PR qui ne touche que de la documentation ou les fiches ne lance pas la CI, qui ne lit
 # aucun de ces fichiers. Un seul autre fichier modifié suffit à la lancer (sur une PR, c'est tout son diff qui compte).
-# La liste est écrite deux fois : GitHub la lit séparément pour chaque déclencheur. Attention si ces jobs deviennent
-# un jour des contrôles obligatoires : une PR de documentation resterait en attente, faute de run.
+# La liste est écrite deux fois : GitHub la lit séparément pour chaque déclencheur. Le lancement à la main n'est pas
+# filtré. Attention si ces jobs deviennent un jour des contrôles obligatoires : une PR de documentation resterait en
+# attente, faute de run.
 on:
   push:
     paths-ignore: ['**.md', 'docs/**', 'learning/**']
   pull_request:
     paths-ignore: ['**.md', 'docs/**', 'learning/**']
+  workflow_dispatch:
 
 # Jeton du workflow en lecture seule, écrit ici pour ne pas dépendre du réglage du dépôt. Les jobs qui doivent
 # écrire le déclarent eux-mêmes (`release`, `notify`).
@@ -466,10 +472,11 @@ jobs:
     needs: [images, compose-test, e2e, scan, infra-check, candidate]
     # `candidate` est sauté hors de `main` : le staging s'exécute quand même. Son échec, lui, l'arrête.
     # Sur les PR et `main` seulement, comme Sonar : c'est le job le plus long, et la CI d'une branche de dev, qui
-    # précède toujours sa PR, n'a pas à le faire une première fois.
+    # précède toujours sa PR, n'a pas à le faire une première fois. Un lancement à la main le joue toujours.
     if: >-
       !cancelled() &&
-      (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') &&
+      (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' ||
+      github.ref == 'refs/heads/main') &&
       needs.images.result == 'success' && needs.compose-test.result == 'success' &&
       needs.scan.result == 'success' && needs.infra-check.result == 'success' && needs.e2e.result == 'success' &&
       (needs.candidate.result == 'success' || needs.candidate.result == 'skipped')
