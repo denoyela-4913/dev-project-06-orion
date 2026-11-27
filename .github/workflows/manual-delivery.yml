@@ -47,12 +47,9 @@ jobs:
       - run: echo "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
       - name: Construire, scanner et publier
         if: inputs.publish
+        # Sans artefact : les étapes de compilation du Dockerfile produisent le front et le JAR.
         run: |
-          for target in front back; do
-            docker build --target "$target" -t "microcrm-$target:ci" \
-              --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
-              --label "org.opencontainers.image.revision=$GITHUB_SHA" .
-          done
+          IMAGE_SOURCE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" IMAGE_REVISION="$GITHUB_SHA" scripts/build_images.sh
           scripts/trivy.sh image microcrm-front:ci microcrm-back:ci
           scripts/publish_images.sh "ghcr.io/$GITHUB_REPOSITORY/" "$VERSION"
       - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0

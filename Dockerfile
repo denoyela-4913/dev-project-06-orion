@@ -5,6 +5,11 @@
 # Paquets Alpine épinglés à la mineure (`=~2.11`, hadolint DL3018) : les correctifs de sécurité restent pris, un
 # changement de mineure casse le build et se décide. Le dépôt Alpine ne garde pas les anciennes révisions :
 # épingler la version exacte (`-rN`) casserait le build à chaque correctif.
+# Compilation et assemblage sont séparés. `front-build` et `back-build` compilent : les jobs de tests de la CI les
+# construisent, y jouent les tests et en extraient le produit (scripts/ci_test.sh). `front-dist` et `back-dist` ne
+# contiennent que ce produit, et les images le lisent chez elles. À la main, il vient de l'étape de compilation. En
+# CI, `docker build --build-context front-dist=<dossier>` remplace l'étape par l'artefact du job de tests :
+# BuildKit saute alors la compilation, et l'image contient le produit testé (scripts/build_images.sh).
 # `USER 10001` (numérique, hadolint DL3066) : Kubernetes (`runAsNonRoot`) ne peut pas vérifier un nom.
 
 # Node 24.22.3 (LTS, fin de support 30/04/2028), Debian 12. Remplace `node` (latest).
@@ -20,6 +25,11 @@ WORKDIR /src
 RUN npm ci --ignore-scripts \
     && npm run build -- --optimization
 
+# Le front compilé, et lui seul. `scratch` : image vide, rien d'autre à fournir quand un artefact la remplace.
+FROM scratch AS front-dist
+
+COPY --from=front-build /src/dist/microcrm/browser /
+
 # Gradle 9.9.1 (celui du wrapper) avec JDK 21 (LTS, celui de build.gradle et de l'image d'exécution).
 # `./gradlew` télécharge sa propre distribution: l'image apporte surtout le JDK.
 FROM gradle:9.9.1-jdk21@sha256:607055593f1acc874a98aa7c1cb5adb414b3879bb0a5e1e7240180020fb97277 AS back-build
@@ -32,10 +42,15 @@ WORKDIR /src
 # et `build-back` de la CI ; les relancer ici n'ajoutait aucun contrôle.
 RUN ./gradlew bootJar
 
+# Le JAR, et lui seul (cf. `front-dist`).
+FROM scratch AS back-dist
+
+COPY --from=back-build /src/build/libs/microcrm-0.0.1-SNAPSHOT.jar /
+
 # Alpine 3.24.4 (LTS, fin de support 01/06/2028).
 FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS front
 
-COPY --from=front-build /src/dist/microcrm/browser /app/front
+COPY --from=front-dist / /app/front
 COPY misc/docker/Caddyfile /app/Caddyfile
 
 # Utilisateur non privilégié (Sonar S6471), uid fixe pour que les stages soient cohérents.
@@ -61,7 +76,7 @@ CMD ["/usr/sbin/caddy", "run"]
 # Alpine 3.24.4, cf. ci-dessus.
 FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS back
 
-COPY --from=back-build /src/build/libs/microcrm-0.0.1-SNAPSHOT.jar /app/back/microcrm-0.0.1-SNAPSHOT.jar
+COPY --from=back-dist /microcrm-0.0.1-SNAPSHOT.jar /app/back/microcrm-0.0.1-SNAPSHOT.jar
 
 RUN apk add --no-cache 'openjdk21-jre-headless=~21' \
     && adduser -D -u 10001 app \

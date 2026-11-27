@@ -21,8 +21,8 @@ jobs:
         run: scripts/trivy.sh repo
       - name: Construire les images
         if: ${{ !cancelled() }}
-        run: |
-          for target in front back; do docker build --target "$target" -t "microcrm-$target:ci" .; done
+        # Sans artefact : les étapes de compilation du Dockerfile produisent le front et le JAR.
+        run: scripts/build_images.sh
       - name: Scanner les images
         if: ${{ !cancelled() }}
         run: scripts/trivy.sh image microcrm-front:ci microcrm-back:ci

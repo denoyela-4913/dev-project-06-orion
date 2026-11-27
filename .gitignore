@@ -20,3 +20,6 @@ __pycache__/
 
 # Verrou créé par `terraform test` dans le module (les verrous suivis sont ceux des environnements)
 deploy/terraform/modules/platform/.terraform.lock.hcl
+
+# Produits des jobs de tests, extraits des étapes de compilation (scripts/ci_test.sh)
+/artifacts
