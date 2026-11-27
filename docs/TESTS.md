@@ -10,7 +10,7 @@
 | Bout en bout | Playwright, Chromium | l'application assemblée (front, proxy, back) pilotée dans un navigateur | `e2e/tests` | `e2e` |
 | Déploiement | `scripts/smoke_test.sh` | santé, routes, API, écriture, refus d'une origine étrangère | – | `compose-test`, `staging`, production |
 | Secours | `scripts/test_recovery.sh` | restauration, annulation, retour arrière | – | `staging` (production : essai ponctuel du 27/11, cf. `DEPLOIEMENT.md`) |
-| Scripts | `unittest` | couverture (`coverage_gate.py`), version et notes (`release.py`), lancement des conteneurs et construction des images | `scripts/test_*.py` | `coverage` |
+| Scripts | `unittest` | couverture (`coverage_gate.py`), version et notes (`release.py`), lancement des conteneurs et construction des images, garde-fous des scripts de lancement et de CI locale, correspondance entre jobs et scripts | `scripts/test_*.py` | `coverage` |
 | Terraform | `terraform test` (fournisseur simulé) | garde-fous du module `platform` | `modules/platform/tests` | `infra-check` |
 
 Dans la CI, les tests du front et du back tournent dans l'étape de compilation du `Dockerfile`
